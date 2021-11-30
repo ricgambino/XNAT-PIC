@@ -14,10 +14,7 @@ import datetime
 import pydicom
 import sys
 import traceback
-try:
-    import tkinter as tk        # python v3
-except:
-    import Tkinter as tk        # python v2
+import tkinter as tk
 from tkinter import filedialog
 
 # from tkinter import ttk
@@ -58,7 +55,12 @@ def xnat_uploader(folder_to_convert, project_id, num_cust_vars, address, user, p
                         custom_vars.append(os.path.basename(path))
                         path = os.path.dirname(path)
                     custom_vars = custom_vars[::-1]
-                    custom_values = custom_values[::-1]                  
+                    custom_values = custom_values[::-1] 
+                    #######################################
+                    # Problem with os.path.join() function: 
+                    #######################################
+                    # a = root + '/' + subject_dir
+                    # folder_list = sorted(glob(root + '/' + subject_dir + '/*/', recursive=True))
                     folder_list = sorted(glob(os.path.join(root, subject_dir) + '/*/', recursive=True))
                     for item in folder_list:
                         print(item)
@@ -153,11 +155,11 @@ def xnat_uploader(folder_to_convert, project_id, num_cust_vars, address, user, p
             "XNAT-PIC - Uploader", "DICOM images have been successfully imported to XNAT!"
         )
 
-        os._exit(0)
+        # os._exit(0)
 
     except Exception as err:
         messagebox.showerror("XNAT-PIC - Uploader", err)
         exc_type, exc_value, exc_traceback = sys.exc_info()
         traceback.print_tb(exc_traceback)
-        session.disconnect()
+        # session.disconnect()
         sys.exit(1)   
