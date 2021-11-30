@@ -5,7 +5,8 @@ Created on Fri Mar 29 17:25:38 2019
 
 @author: Sara Zullino, Alessandro Paglialonga
 """
-
+import json
+from glob import glob
 import xnat
 import os, re
 import tkinter as tk
@@ -30,10 +31,16 @@ from read_method import read_method_parameters
 import traceback
 import sys
 
-bufferSize = 64 * 1024
-password = "worstsymmetricpasswordever19"
+# bufferSize = 64 * 1024
+# password = "worstsymmetricpasswordever19"
 
+# Password to access to saved credentials now is stored in a local folder
+with open(os.path.join(os.path.expanduser("~"), "Documents", "XNAT_login_credentials.json")) as auth_file:
+    data = json.load(auth_file)
+    password = data['password']
+    bufferSize = int(data['bufferSize_1']) * int(data['bufferSize_2'])
 
+       
 class xnat_pic_gui(tk.Frame):
 
     def __init__(self, master):
