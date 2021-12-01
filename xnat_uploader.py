@@ -61,7 +61,8 @@ def xnat_uploader(folder_to_convert, project_id, num_cust_vars, address, user, p
                     #######################################
                     # a = root + '/' + subject_dir
                     # folder_list = sorted(glob(root + '/' + subject_dir + '/*/', recursive=True))
-                    folder_list = sorted(glob(os.path.join(root, subject_dir) + '/*/', recursive=True))
+                    # folder_list = sorted(glob(os.path.join(root, subject_dir) + '/*/', recursive=True))
+                    folder_list = sorted(glob(root + '/*/', recursive=True))
                     for item in folder_list:
                         print(item)
                         file_list = sorted(glob(item + '/*/*', recursive=True))
