@@ -1,9 +1,10 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Created on Tue Mar  3 15:23:32 2020
 
 @author: Sara Zullino
+
+Modified by Riccardo Gambino
 """
 
 import os, re
@@ -15,13 +16,9 @@ import pydicom.uid
 from read_visupars import read_visupars_parameters
 from cest_dict import add_cest_dict
 from read_method import read_method_parameters
-try:
-    import tkinter as tk  # python v3
-    from tkinter import messagebox
+import tkinter as tk
+from tkinter import messagebox
 
-except ImportError:
-    import Tkinter as tk  # python v2
-    from Tkinter import *
 
 def bruker2dicom_pv360(folder_to_convert, master):
     
@@ -37,10 +34,11 @@ def bruker2dicom_pv360(folder_to_convert, master):
     res = []
     parameters=0
     
-    for root,dirs,files in sorted(os.walk(folder_to_convert, topdown=True)):
-        for dir in dirs:
-            res = os.path.join(root) 
-            dirs[:] = [] # Don't recurse any deeper
+    for root, dirs, files in sorted(os.walk(folder_to_convert, topdown=True)):
+        if dirs != []:
+            # for dir in dirs:
+            res = os.path.join(root, dirs[0]) 
+            # dirs[:] = [] # Don't recurse any deeper
             visu_pars_file = os.path.abspath(os.path.join(res,a,c))
             dseq_file = os.path.abspath(os.path.join(res,a,d))
             reco_file = os.path.abspath(os.path.join(res,a,g))
@@ -57,7 +55,7 @@ def bruker2dicom_pv360(folder_to_convert, master):
                     acqp_parameters = read_visupars_parameters(acqp_file)                    
             else:
                 break
-                                                       
+                                                        
             filename_little_endian = 'Im'
         
             img_type = parameters.get("VisuCoreWordType")
@@ -88,10 +86,10 @@ def bruker2dicom_pv360(folder_to_convert, master):
             
             raw_data = open(dseq_file, 'rb')
             img_data_precision = np.fromfile(raw_data, dtype=data_precision)
-#                output = open("img_data_precision","wb")
-#                output.write(img_data_precision)
-#                output.close()
-#                del output
+    #                output = open("img_data_precision","wb")
+    #                output.write(img_data_precision)
+    #                output.close()
+    #                del output
             raw_data.close()
                         
             head2,tail2 = os.path.split(res)                       
@@ -109,38 +107,38 @@ def bruker2dicom_pv360(folder_to_convert, master):
                     img_data_corrected +=  intercept[0]
                     
                 factor = ((2**16)-1)/(np.amax(img_data_corrected))
-             
+                
                 img_float = img_data_corrected * factor
-#                    output = open("img_float","wb")
-#                    output.write(img_float)
-#                    output.close()
-#                    del output
+    #                    output = open("img_float","wb")
+    #                    output.write(img_float)
+    #                    output.close()
+    #                    del output
                 
                 # cast at the very end
                 img = np.array(img_float,np.uint16)
-#                    output = open("img","wb")
-#                    output.write(img)
-#                    output.close()
-#                    del output
-    
+    #                    output = open("img","wb")
+    #                    output.write(img)
+    #                    output.close()
+    #                    del output
+
                 # reconstruct the 32 bit signed image back
-#                    img_data_corrected2 = img/factor
-#                    output = open("img_data_corrected2","wb")
-#                    output.write(img_data_corrected2)
-#                    output.close()
-#                    del output
+    #                    img_data_corrected2 = img/factor
+    #                    output = open("img_data_corrected2","wb")
+    #                    output.write(img_data_corrected2)
+    #                    output.close()
+    #                    del output
                 
-#                    img_data_precision_float2 = img_data_corrected2/slope
-#                    output = open("img_data_precision_float2","wb")
-#                    output.write(img_data_precision_float2)
-#                    output.close()
-#                    del output
+    #                    img_data_precision_float2 = img_data_corrected2/slope
+    #                    output = open("img_data_precision_float2","wb")
+    #                    output.write(img_data_precision_float2)
+    #                    output.close()
+    #                    del output
                 
-#                    img_data_precision2 = np.array(img_data_precision_float2,np.int32) 
-#                    output = open("img_data_precision2","wb")
-#                    output.write(img_data_precision2)
-#                    output.close()
-#                    del output
+    #                    img_data_precision2 = np.array(img_data_precision_float2,np.int32) 
+    #                    output = open("img_data_precision2","wb")
+    #                    output.write(img_data_precision2)
+    #                    output.close()
+    #                    del output
                     
             # if 32 bit, slope and intercept correction                        
             elif img_type == '_32BIT_SGN_INT' and img_endianness == 'littleEndian': 
@@ -153,38 +151,38 @@ def bruker2dicom_pv360(folder_to_convert, master):
                     img_data_corrected +=  intercept[0]
                     
                 factor = ((2**16)-1)/(np.amax(img_data_corrected))
-             
+                
                 img_float = img_data_corrected * factor
-#                    output = open("img_float","wb")
-#                    output.write(img_float)
-#                    output.close()
-#                    del output
+    #                    output = open("img_float","wb")
+    #                    output.write(img_float)
+    #                    output.close()
+    #                    del output
                 
                 # cast at the very end
                 img = np.array(img_float,np.uint16)
-#                    output = open("img","wb")
-#                    output.write(img)
-#                    output.close()
-#                    del output
+    #                    output = open("img","wb")
+    #                    output.write(img)
+    #                    output.close()
+    #                    del output
 
-#                    # reconstruct the 32 bit signed image back
-#                    img_data_corrected2 = img/factor
-#                    output = open("img_data_corrected2","wb")
-#                    output.write(img_data_corrected2)
-#                    output.close()
-#                    del output
-#                    
-#                    img_data_precision_float2 = img_data_corrected2/slope[0]
-#                    output = open("img_data_precision_float2","wb")
-#                    output.write(img_data_precision_float2)
-#                    output.close()
-#                    del output
-#                    
-#                    img_data_precision2 = np.array(img_data_precision_float2,np.int32) 
-#                    output = open("img_data_precision2","wb")
-#                    output.write(img_data_precision2)
-#                    output.close()
-#                    del output
+    #                    # reconstruct the 32 bit signed image back
+    #                    img_data_corrected2 = img/factor
+    #                    output = open("img_data_corrected2","wb")
+    #                    output.write(img_data_corrected2)
+    #                    output.close()
+    #                    del output
+    #                    
+    #                    img_data_precision_float2 = img_data_corrected2/slope[0]
+    #                    output = open("img_data_precision_float2","wb")
+    #                    output.write(img_data_precision_float2)
+    #                    output.close()
+    #                    del output
+    #                    
+    #                    img_data_precision2 = np.array(img_data_precision_float2,np.int32) 
+    #                    output = open("img_data_precision2","wb")
+    #                    output.write(img_data_precision2)
+    #                    output.close()
+    #                    del output
 
             else:
                 messagebox.showerror(
@@ -192,7 +190,7 @@ def bruker2dicom_pv360(folder_to_convert, master):
                     "The image you are trying to convert is neither 16 bit nor 32 bit!",
                 )
                 os._exit(0)
-                                       
+                                        
             # Populate required values for file meta information
             file_meta = Dataset()
         
@@ -200,11 +198,11 @@ def bruker2dicom_pv360(folder_to_convert, master):
             file_meta.MediaStorageSOPInstanceUID = parameters.get("VisuUid")
             file_meta.ImplementationClassUID = '1.2.276.0.7230010.3.0.3.6.3'
             file_meta.ImplementationVersionName = 'OFFIS_DCMTK_363'
-     
+        
             # Create the FileDataset instance (initially no data elements, but file_meta supplied)
             ds = FileDataset(filename_little_endian, {}, file_meta=file_meta, preamble=b"\0"*128)                  
             ds.file_meta.TransferSyntaxUID = pydicom.uid.ExplicitVRLittleEndian
-                           
+                            
             # Add the data elements --  Check DICOM standard
             
             head_ID, tail_ID = os.path.split(head2)
@@ -233,7 +231,7 @@ def bruker2dicom_pv360(folder_to_convert, master):
             ds.StudyID = parameters.get("VisuStudyId")
             ds.AccessionNumber = ''
             ds.StudyDescription = parameters.get("VisuStudyDescription")
-                           
+                            
             # Patient Study Module of created SOP instances
             ds.PatientWeight = parameters.get("VisuSubjectWeight")
             
@@ -359,10 +357,10 @@ def bruker2dicom_pv360(folder_to_convert, master):
             ds.ImagingFrequency = parameters.get("VisuAcqImagingFrequency")
             ds.ImagedNucleus = parameters.get("VisuAcqImagedNucleus")                   
             ds.MagneticFieldStrength = parameters.get('VisuMagneticFieldStrength')
-#                z1 = parameters.get("VisuCorePosition")[0]
-#                z2 = parameters.get("VisuCorePosi tion")[1]
-#                spacing = abs(z1)-abs(z2)
-#                ds_temp.SpacingBetweenSlices = abs(round(spacing[2],1))
+    #                z1 = parameters.get("VisuCorePosition")[0]
+    #                z2 = parameters.get("VisuCorePosi tion")[1]
+    #                spacing = abs(z1)-abs(z2)
+    #                ds_temp.SpacingBetweenSlices = abs(round(spacing[2],1))
             ds.NumberOfPhaseEncodingSteps = parameters.get("VisuAcqPhaseEncSteps")
             ds.PercentPhaseFieldOfView = '100' 
             ds.PixelBandwidth = parameters.get("VisuAcqPixelBandwidth")
@@ -375,7 +373,7 @@ def bruker2dicom_pv360(folder_to_convert, master):
                 acqmat = np.insert(parameters.get("VisuAcqSize"),1,[0,0])
                 ds.AcquisitionMatrix = list(np.flip(np.array(acqmat,dtype=int),0))  #check                                                                        
             ds.FlipAngle=parameters.get("VisuAcqFlipAngle")
- 
+
             # Enhanced MR Image Module created in Enhanced MR Image Sop class
             ds.AcquisitionDuration = parameters.get("VisuAcqScanTime") 
 
@@ -384,12 +382,12 @@ def bruker2dicom_pv360(folder_to_convert, master):
             ds.NumberOfFrames = parameters.get("VisuCoreFrameCount")
             nframes = parameters.get("VisuCoreFrameCount")
             ds.NumberOfSlices = acqp_parameters.get("NSLICES")
-                   
+                    
     #        # Uncomment you want to save all the slices in one dicom file
     #        head2, tail2 = os.path.split(res)
     #        os.chdir(res)
     #        ds.save_as(filename_little_endian)
-                           
+                            
             # Write dicom in separate slices only if number of slices is greater than 1                     
             if nframes==1:
                 head2,tail2 = os.path.split(res)
@@ -417,14 +415,14 @@ def bruker2dicom_pv360(folder_to_convert, master):
                     file_meta_temp.MediaStorageSOPInstanceUID = parameters.get("VisuUid") + ".%s" % (k)
                     file_meta_temp.ImplementationClassUID = '1.2.276.0.7230010.3.0.3.6.3'
                     file_meta_temp.ImplementationVersionName = 'OFFIS_DCMTK_363'
-               
+                
                     # Create the FileDataset instance (initially no data elements, but file_meta supplied)
                     ds_temp = FileDataset(filename_little_endian, {}, file_meta=file_meta_temp, preamble=b"\0" * 128)
                     
                     ds_temp.file_meta.TransferSyntaxUID = pydicom.uid.ExplicitVRLittleEndian
-                                                                                                                               
+                                                                                                                                
                     # Add the data elements --  Check DICOM standard
-                   
+                    
                     head_ID, tail_ID = os.path.split(head2)
                     
                     # Patient Module of created SOP instances
@@ -485,7 +483,7 @@ def bruker2dicom_pv360(folder_to_convert, master):
                     ds_temp.ManufacturerModelName = parameters.get("VisuStation")
                     ds_temp.DeviceSerialNumber = parameters.get('VisuSystemOrderNumber')
                     ds_temp.SoftwareVersions = str(parameters.get("VisuCreator")) + ' ' + str(parameters.get("VisuCreatorVersion"))  
-                   
+                    
                     # Image Pixel Module of created SOP instances               
                     ds_temp.PixelData = layer
                     ds_temp[0x7FE0,0x0010].VR = 'OW' 
@@ -532,8 +530,8 @@ def bruker2dicom_pv360(folder_to_convert, master):
                     ds_temp.AcquisitionTime = AcqDate.strftime("%H%M%S")
                     ds_temp.ImagesInAcquisition = parameters.get("VisuCoreFrameCount")
                     ds_temp.RealWorldValueMappingSequence = None
-#                        ds_temp.RealWorldValueFirstValueMapped = int(np.amin(layer))
-#                        ds_temp.RealWorldValueLastValueMapped =  len(np.amax(layer))
+    #                        ds_temp.RealWorldValueFirstValueMapped = int(np.amin(layer))
+    #                        ds_temp.RealWorldValueLastValueMapped =  len(np.amax(layer))
                     if isinstance(parameters.get("VisuCoreDataSlope"), str) and isinstance(parameters.get("VisuCoreDataOffs"), str): 
                         ds_temp.RealWorldValueIntercept =  float(parameters.get("VisuCoreDataOffs")[parameters.get("VisuCoreDataOffs").find('(') \
                                         + 1 : parameters.get("VisuCoreDataOffs").find(')')]) 
@@ -585,7 +583,7 @@ def bruker2dicom_pv360(folder_to_convert, master):
                         repetition_time = []
                         for t in range(0,np.size(parameters.get("VisuAcqRepetitionTime"))):
                             for kk in range(0,r_step):
-                                 repetition_time.append(parameters.get("VisuAcqRepetitionTime")[t])  
+                                    repetition_time.append(parameters.get("VisuAcqRepetitionTime")[t])  
                         ds_temp.RepetitionTime = str(np.array(repetition_time,dtype=float)[k])                           
                     else:
                         ds_temp.RepetitionTime = parameters.get("VisuAcqRepetitionTime")                
@@ -596,7 +594,7 @@ def bruker2dicom_pv360(folder_to_convert, master):
                         echo_time = []
                         for t in range(0,np.size(parameters.get("VisuAcqEchoTime"))):
                             for kk in range(0,e_step):
-                                 echo_time.append(parameters.get("VisuAcqEchoTime")[t])  
+                                    echo_time.append(parameters.get("VisuAcqEchoTime")[t])  
                         ds_temp.EchoTime = str(np.array(echo_time,dtype=float)[k])                           
                     else:
                         ds_temp.EchoTime = parameters.get("VisuAcqEchoTime")   
@@ -606,10 +604,10 @@ def bruker2dicom_pv360(folder_to_convert, master):
                     ds_temp.ImagingFrequency=parameters.get("VisuAcqImagingFrequency")
                     ds_temp.ImagedNucleus=parameters.get("VisuAcqImagedNucleus")
                     ds_temp.MagneticFieldStrength = parameters.get('VisuMagneticFieldStrength')
-#                        z1 = parameters.get("VisuCorePosition")[0]
-#                        z2 = parameters.get("VisuCorePosition")[1]
-#                        spacing = abs(z1)-abs(z2)
-#                        ds_temp.SpacingBetweenSlices = abs(round(spacing[2],1))
+    #                        z1 = parameters.get("VisuCorePosition")[0]
+    #                        z2 = parameters.get("VisuCorePosition")[1]
+    #                        spacing = abs(z1)-abs(z2)
+    #                        ds_temp.SpacingBetweenSlices = abs(round(spacing[2],1))
                     ds_temp.NumberOfPhaseEncodingSteps=parameters.get("VisuAcqPhaseEncSteps")
                     ds_temp.PercentPhaseFieldOfView = '100' 
                     ds_temp.PixelBandwidth = parameters.get("VisuAcqPixelBandwidth")
@@ -624,7 +622,7 @@ def bruker2dicom_pv360(folder_to_convert, master):
                         ds_temp.AcquisitionMatrix = list(np.flip(np.array(acqmat,dtype=int),0))  #check                                                                        
                         ds_temp.PixelSpacing = ([core_ext[0]/img_dims[0],core_ext[1]/img_dims[1]])                      
                     ds_temp.FlipAngle = str(parameters.get("VisuAcqFlipAngle"))       
-          
+            
                     # Enhanced MR Image Module created in Enhanced MR Image Sop class
                     ds_temp.AcquisitionDuration = parameters.get("VisuAcqScanTime")                                                   
                     
@@ -681,7 +679,7 @@ def bruker2dicom_pv360(folder_to_convert, master):
                         step = int(nframes/len(b_values))
                         for t in range(0,len(b_values)):
                             for kk in range(0,step):
-                                 vect3.append(bvalues[t])                           
+                                    vect3.append(bvalues[t])                           
                         ds_temp.DiffusionBValue = np.array(vect3)[k]      
                             # overwrite corresponding tag got from visupars with new info?
                             
@@ -727,7 +725,7 @@ def bruker2dicom_pv360(folder_to_convert, master):
                                     SatFreqPpm = []
                                     for t in range(0, NSatFreq):
                                         for kk in range(0, f_step):
-                                           SatFreqPpm.append(sat_freq_ppm[t])                                   
+                                            SatFreqPpm.append(sat_freq_ppm[t])                                   
                                     ds_temp.SaturationOffsetPpm = str(np.array(SatFreqPpm,dtype=float)[k]) 
                                     sat_freq_hz = SatFreqPpm[k] * ds_temp.ImagingFrequency 
                                     ds_temp.SaturationOffsetHz = sat_freq_hz  
@@ -761,7 +759,7 @@ def bruker2dicom_pv360(folder_to_convert, master):
                                     SatFreqHz = []
                                     for t in range(0, NSatFreq):
                                         for kk in range(0, f_step):
-                                           SatFreqHz.append(sat_freq_hz[t])                                   
+                                            SatFreqHz.append(sat_freq_hz[t])                                   
                                     ds_temp.SaturationOffsetHz = str(np.array(SatFreqHz,dtype=float)[k]) 
                                     sat_freq_ppm = SatFreqHz[k] * ds_temp.ImagingFrequency 
                                     ds_temp.SaturationOffsetPpm = sat_freq_ppm  
@@ -799,7 +797,7 @@ def bruker2dicom_pv360(folder_to_convert, master):
                             sat_freq_hz = np.array(freq_list, dtype=float)  
                             ds_temp.SaturationOffsetHz = sat_freq_hz[k]
                             ds_temp.SaturationOffsetPpm =  sat_freq_hz[k] * ds_temp.ImagingFrequency                                               
-                                                                                                              
+                                                                                                                
                     outfile = "%s%s.dcm" % (filename_little_endian, str(count))
                     
                     # Save dicoms in separate slices
