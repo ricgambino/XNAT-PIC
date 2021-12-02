@@ -1,9 +1,10 @@
-#!/home/xnat/anaconda3/envs/py3/bin/python3.7
 # -*- coding: utf-8 -*-
 """
 Created on Mar 1, 2019
 
 @author: Sara Zullino, Alessandro Paglialonga
+
+Modified by Riccardo Gambino
 """
 import shutil, os
 import xnat
@@ -91,8 +92,16 @@ def xnat_uploader(folder_to_convert, project_id, num_cust_vars, address, user, p
                                 experiment_id += "_" + var
                             print(experiment_id)
                             try:
+                                # Maybe we can try with 
+                                # session = xnat.connect(address, user, psw)
+                                # .
+                                # .
+                                # .
+                                # session.disconnect()
+                                
                                 with xnat.connect(address, user, psw) as session:
                                     zip_dst = shutil.make_archive(subject_id, "zip", item)
+                                    zip_ext = os.path.splitext(zip_dst)
                                     project = session.classes.ProjectData(
                                     name=project_id, parent=session
                                     )
