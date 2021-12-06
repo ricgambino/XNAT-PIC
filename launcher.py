@@ -14,7 +14,10 @@ import tkinter as tk
 from tkinter import filedialog,messagebox
 import threading
 import shutil
-from bruker2dicom import bruker2dicom
+try:
+    from bruker2dicom_converter import bruker2dicom
+except:
+    from bruker2dicom import bruker2dicom
 from bruker2dicom_pv360 import bruker2dicom_pv360
 from include_patterns import include_patterns
 from remove_empty_dirs import remove_empty_dirs
@@ -153,8 +156,6 @@ class xnat_pic_gui(tk.Frame):
                     title="XNAT-PIC: Select project directory in Bruker ParaVision format",
                 )
 
-                start_time = time.time()
-
                 if not folder_to_convert:
                     os._exit(1)
                 master.root.deiconify()
@@ -163,9 +164,10 @@ class xnat_pic_gui(tk.Frame):
                 master.root.title("Bruker2DICOM")
                 head, tail = os.path.split(folder_to_convert)
                 project_foldername = tail.split('.',1)[0] + "_dcm"
-                dst = os.path.join(head, project_foldername)
+                dst = os.path.join(head, project_foldername).replace('\\', '/')
 
                 master._inprogress("Conversion in progress")
+                
                 if os.path.isdir(dst):
                     master.progress.stop()
                     messagebox.showwarning(
@@ -181,41 +183,74 @@ class xnat_pic_gui(tk.Frame):
                 a = "1"
                 c = "visu_pars"
                 e = "method"
-                for root, dirs, files in sorted(os.walk(folder_to_convert, topdown=True)):
-                    if dirs != []:
-                        # for dir in dirs:
-                        res = os.path.join(root, dirs[0])
-                        # dirs[:] = []  # Don't recurse any deeper
-                        visupars_file = os.path.abspath(os.path.join(res, a, c))
-                        method_file = os.path.abspath(os.path.join(os.path.dirname(res), e))
-                        #print(visupars_file)
-                        #print(method_file)
-                        if os.path.exists(visupars_file):
-                            try:
-                                with open(visupars_file, "r"):
-                                    visupars_parameters = read_visupars_parameters(visupars_file)
-                                    PV_version = visupars_parameters.get("VisuCreatorVersion")
-                                    #print(visupars_file)
-                                    #print(PV_version)
-                                    del visupars_parameters
-                            except Exception as e:
-                                messagebox.showerror("XNAT-PIC - Bruker2Dicom", e)
-                                exc_type, exc_value, exc_traceback = sys.exc_info()
-                                traceback.print_tb(exc_traceback)
-                                sys.exit(1)
-                        elif os.path.exists(method_file):
-                            try:
-                                with open(method_file, "r"):
-                                    method_parameters = read_method_parameters(method_file)
-                                    PV_version = method_parameters.get("TITLE")
-                                    #print(method_file)
-                                    #print(PV_version)
-                                    del method_parameters
-                            except Exception as e:
-                                messagebox.showerror("XNAT-PIC - Bruker2Dicom", e)
-                                exc_type, exc_value, exc_traceback = sys.exc_info()
-                                traceback.print_tb(exc_traceback)
-                                sys.exit(1)
+                PV_version = ''
+
+                visupars_path = glob(folder_to_convert + '/**/**/**/visu_pars')
+                method_path = glob(folder_to_convert + '/**/method')
+                if visupars_path != []:
+                    try:
+                        visupars_file = visupars_path[0]
+                        with open(visupars_file, "r"):
+                            visupars_parameters = read_visupars_parameters(visupars_file)
+                            PV_version = visupars_parameters.get("VisuCreatorVersion")
+                    except Exception as e:
+                        messagebox.showerror("XNAT-PIC - Bruker2Dicom", e)
+                        exc_type, exc_value, exc_traceback = sys.exc_info()
+                        traceback.print_tb(exc_traceback)
+                        sys.exit(1)
+                elif method_path != []:
+                    try:
+                        method_file = method_path[0]
+                        with open(method_file, "r"):
+                            method_parameters = read_method_parameters(method_file)
+                            PV_version = method_parameters.get("TITLE")
+                    except Exception as e:
+                        messagebox.showerror("XNAT-PIC - Bruker2Dicom", e)
+                        exc_type, exc_value, exc_traceback = sys.exc_info()
+                        traceback.print_tb(exc_traceback)
+                        sys.exit(1)
+                else:
+                    messagebox.showerror(
+                        "Error!",
+                        "Can't get ParaVision version!")
+                    os._exit(1)
+
+
+                # for root, dirs, files in sorted(os.walk(folder_to_convert, topdown=True)):
+                #     if dirs != []:
+                #         # for dir in dirs:
+                #         res = os.path.join(root, dirs[0])
+                #         # dirs[:] = []  # Don't recurse any deeper
+                #         visupars_file = os.path.abspath(os.path.join(res, a, c))
+                #         method_file = os.path.abspath(os.path.join(os.path.dirname(res), e))
+                #         #print(visupars_file)
+                #         #print(method_file)
+                #         if os.path.exists(visupars_file):
+                #             try:
+                #                 with open(visupars_file, "r"):
+                #                     visupars_parameters = read_visupars_parameters(visupars_file)
+                #                     PV_version = visupars_parameters.get("VisuCreatorVersion")
+                #                     #print(visupars_file)
+                #                     #print(PV_version)
+                #                     del visupars_parameters
+                #             except Exception as e:
+                #                 messagebox.showerror("XNAT-PIC - Bruker2Dicom", e)
+                #                 exc_type, exc_value, exc_traceback = sys.exc_info()
+                #                 traceback.print_tb(exc_traceback)
+                #                 sys.exit(1)
+                #         elif os.path.exists(method_file):
+                #             try:
+                #                 with open(method_file, "r"):
+                #                     method_parameters = read_method_parameters(method_file)
+                #                     PV_version = method_parameters.get("TITLE")
+                #                     #print(method_file)
+                #                     #print(PV_version)
+                #                     del method_parameters
+                #             except Exception as e:
+                #                 messagebox.showerror("XNAT-PIC - Bruker2Dicom", e)
+                #                 exc_type, exc_value, exc_traceback = sys.exc_info()
+                #                 traceback.print_tb(exc_traceback)
+                #                 sys.exit(1)
                             
                 ####################
                 if PV_version == "360.1.1" or 'ParaVision 360' in PV_version:
@@ -302,8 +337,7 @@ class xnat_pic_gui(tk.Frame):
                                 folder = os.listdir(subject_dir)
                                 for f in folder:
                                     shutil.move(os.path.join(subject_dir,f), destination)
-                end_time = time.time()
-                print('Elapsed time for conversion: ' + str(end_time - start_time) + ' s')
+                
 
                 answer = messagebox.askyesno(
                     "XNAT-PIC  ~  Uploader", "Do you want to upload your project to XNAT?"
