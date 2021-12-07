@@ -24,7 +24,10 @@ from remove_empty_dirs import remove_empty_dirs
 from restore_raw_dirs import restore_raw_dirs
 from shutil import copytree
 from functools import partial
-from xnat_uploader import xnat_uploader
+try:
+    from xnat_upload import xnat_uploader
+except:
+    from xnat_uploader import xnat_uploader
 import platform
 import pyAesCrypt
 from list_cust_vars import list_cust_vars
@@ -305,38 +308,38 @@ class xnat_pic_gui(tk.Frame):
                 #     shutil.move(os.path.join(source,f), destination)
                 # dest = shutil.move(destination, source) 
                 
-                flag = []
+                # flag = []
 
-                ## FIND DEPTH OF SUBJECT FOLDER ##
-                for root, dirs, files in sorted(os.walk(dst, topdown=True)):
-                    depth = root[len(dst) :].count(os.path.sep)
-                    for file in files:
-                        if re.match("([^^]|[a-z]|[A-Z]|[0-9])*$", file):
-                            flag = 1
-                        else:
-                            flag = 0
-                    if flag == 1:
-                        subject_depth = depth - 2
-                        if subject_depth < 0:
-                            subject_depth = 0
-                        del dirs
-                        dirs = []
-                        dirs[:] = []
-                for root, dirs, files in sorted(os.walk(dst, topdown=True)):
-                    depth = root[len(dst) :].count(os.path.sep)
-                    if subject_depth == depth:
-                        for subject_name in dirs:
-                            subject_dir = os.path.join(root,subject_name)
-                            if os.path.exists(subject_dir) is True:
+                # ## FIND DEPTH OF SUBJECT FOLDER ##
+                # for root, dirs, files in sorted(os.walk(dst, topdown=True)):
+                #     depth = root[len(dst) :].count(os.path.sep)
+                #     for file in files:
+                #         if re.match("([^^]|[a-z]|[A-Z]|[0-9])*$", file):
+                #             flag = 1
+                #         else:
+                #             flag = 0
+                #     if flag == 1:
+                #         subject_depth = depth - 2
+                #         if subject_depth < 0:
+                #             subject_depth = 0
+                #         del dirs
+                #         dirs = []
+                #         dirs[:] = []
+                # for root, dirs, files in sorted(os.walk(dst, topdown=True)):
+                #     depth = root[len(dst) :].count(os.path.sep)
+                #     if subject_depth == depth:
+                #         for subject_name in dirs:
+                #             subject_dir = os.path.join(root,subject_name)
+                #             if os.path.exists(subject_dir) is True:
                                 
-                                destination = os.path.join(subject_dir,'MR')
+                #                 destination = os.path.join(subject_dir,'MR')
                 
-                                os.mkdir(destination)
+                                # os.mkdir(destination)
                 
-                                # Move the content of source to destination  
-                                folder = os.listdir(subject_dir)
-                                for f in folder:
-                                    shutil.move(os.path.join(subject_dir,f), destination)
+                                # # Move the content of source to destination  
+                                # folder = os.listdir(subject_dir)
+                                # for f in folder:
+                                #     shutil.move(os.path.join(subject_dir,f), destination)
                 
 
                 answer = messagebox.askyesno(
@@ -344,7 +347,8 @@ class xnat_pic_gui(tk.Frame):
                 )
                 # self.frame_main.destroy()
                 if answer is True and os.path.isdir(dst) == True:
-                    master.xnat_dcm_uploader(master,os.path.join(head,project_foldername))
+                    # master.xnat_dcm_uploader(master,os.path.join(head,project_foldername))
+                    master.xnat_dcm_uploader(master, dst)
                 else:
                     os._exit(0)
    
@@ -354,7 +358,7 @@ class xnat_pic_gui(tk.Frame):
 
     class xnat_dcm_uploader():
 
-        def __init__(self, master,home=""):
+        def __init__(self, master, home=""):
             self.home = os.path.expanduser("~")
             master.root.update()
             master.root.title("XNAT-PIC  ~  Uploader")
@@ -768,7 +772,7 @@ class xnat_pic_gui(tk.Frame):
                 num_vars = int(self.label_num_vars.var)
             else:
                 num_vars = int(self.label_num_vars.get())
-            master._inprogress("Upload in progress")
+            # master._inprogress("Upload in progress")
             xnat_uploader(
                 self.folder_to_upload,
                 self.project,
@@ -778,7 +782,7 @@ class xnat_pic_gui(tk.Frame):
                 self.entry_psw.var.get(),
             )
 
-            master.progress.stop()
+            # master.progress.stop()
             os._exit(0)
 
 
