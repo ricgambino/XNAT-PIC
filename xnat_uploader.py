@@ -23,6 +23,7 @@ from tkinter import filedialog
 
 def xnat_uploader(folder_to_convert, project_id, num_cust_vars, address, user, psw):
 
+    folder_to_convert = os.path.join(folder_to_convert, 'MR').replace('\\', '/')
     try:
         flag = 1
         path = folder_to_convert
@@ -66,7 +67,7 @@ def xnat_uploader(folder_to_convert, project_id, num_cust_vars, address, user, p
                     folder_list = sorted(glob(root + '/*/', recursive=True))
                     for item in folder_list:
                         print(item)
-                        file_list = sorted(glob(item + '/*/*', recursive=True))
+                        file_list = sorted(glob(item + '/*', recursive=True))
                         print(file_list[0])                   
                         try:
                             ds = pydicom.dcmread(file_list[0])
