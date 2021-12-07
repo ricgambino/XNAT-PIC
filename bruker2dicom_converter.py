@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Oct 26 14:05:21 2018
+Created on Dec 7 2021
 
 @author: Riccardo Gambino
 
@@ -34,10 +34,16 @@ def bruker2dicom(folder_to_convert, dst_folder, master):
     g = "reco"
     parameters = 0
 
-    for root, dirs, files in os.walk(folder_to_convert, topdown=True):
-        for dir in dirs:
-            current_path = os.path.join(root, dir).replace('\\', '/')
+    list_path = os.listdir(folder_to_convert)
+    for path in list_path:
+        current_path = os.path.join(folder_to_convert, path).replace('\\', '/')
+        if os.path.isdir(current_path):
             dseq_file = glob(current_path + '/**/2dseq', recursive=True)
+
+    # for root, dirs, files in os.walk(folder_to_convert, topdown=True):
+    #     for dir in dirs:
+    #         current_path = os.path.join(root, dir).replace('\\', '/')
+    #         dseq_file = glob(current_path + '/**/2dseq', recursive=True)
             if dseq_file != []:
                 dseq_path = dseq_file[0].replace('\\', '/')
                 visu_pars_path = '/'.join(dseq_path.split('/')[:-1]) + '/' + c
@@ -87,7 +93,7 @@ def bruker2dicom(folder_to_convert, dst_folder, master):
                 head2, _ = os.path.split(res)
                 rel_path = os.path.relpath(res, folder_to_convert)
                 # parent_folder = os.path.basename(head2)
-                dst_path = os.path.join(dst_folder, rel_path).replace('\\', '/')
+                dst_path = os.path.join(dst_folder, 'MR', rel_path).replace('\\', '/')
                 if not os.path.isdir(dst_path):
                     os.makedirs(dst_path)
                 os.chdir(dst_path)
@@ -684,7 +690,7 @@ def bruker2dicom(folder_to_convert, dst_folder, master):
                         k += 1
                         ii += 1
 
-        break
+        # break
 
     if parameters:
         # if "parameters" in globals() or "parameters" in locals():
