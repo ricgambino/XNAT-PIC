@@ -101,7 +101,7 @@ class xnat_pic_gui(tk.Frame):
         self.label_aspect_dicom.pack(anchor="w", pady=8)
         self.label_dicom_uploader = tk.Label(
             self.frame_labels,
-            text="   Upload DICOM images to XNAT  ",
+            text="   Upload DICOM files to XNAT  ",
             anchor="w",
         )
         self.label_dicom_uploader.pack(anchor="w", pady=7)
@@ -183,40 +183,40 @@ class xnat_pic_gui(tk.Frame):
                 else:
                     os.mkdir(dst)
            
-                a = "1"
-                c = "visu_pars"
-                e = "method"
-                PV_version = ''
+                # a = "1"
+                # c = "visu_pars"
+                # e = "method"
+                # PV_version = ''
 
-                visupars_path = glob(folder_to_convert + '/**/**/**/visu_pars')
-                method_path = glob(folder_to_convert + '/**/method')
-                if visupars_path != []:
-                    try:
-                        visupars_file = visupars_path[0]
-                        with open(visupars_file, "r"):
-                            visupars_parameters = read_visupars_parameters(visupars_file)
-                            PV_version = visupars_parameters.get("VisuCreatorVersion")
-                    except Exception as e:
-                        messagebox.showerror("XNAT-PIC - Bruker2Dicom", e)
-                        exc_type, exc_value, exc_traceback = sys.exc_info()
-                        traceback.print_tb(exc_traceback)
-                        sys.exit(1)
-                elif method_path != []:
-                    try:
-                        method_file = method_path[0]
-                        with open(method_file, "r"):
-                            method_parameters = read_method_parameters(method_file)
-                            PV_version = method_parameters.get("TITLE")
-                    except Exception as e:
-                        messagebox.showerror("XNAT-PIC - Bruker2Dicom", e)
-                        exc_type, exc_value, exc_traceback = sys.exc_info()
-                        traceback.print_tb(exc_traceback)
-                        sys.exit(1)
-                else:
-                    messagebox.showerror(
-                        "Error!",
-                        "Can't get ParaVision version!")
-                    os._exit(1)
+                # visupars_path = glob(folder_to_convert + '/**/**/**/visu_pars')
+                # method_path = glob(folder_to_convert + '/**/method')
+                # if visupars_path != []:
+                #     try:
+                #         visupars_file = visupars_path[0]
+                #         with open(visupars_file, "r"):
+                #             visupars_parameters = read_visupars_parameters(visupars_file)
+                #             PV_version = visupars_parameters.get("VisuCreatorVersion")
+                #     except Exception as e:
+                #         messagebox.showerror("XNAT-PIC - Bruker2Dicom", e)
+                #         exc_type, exc_value, exc_traceback = sys.exc_info()
+                #         traceback.print_tb(exc_traceback)
+                #         sys.exit(1)
+                # elif method_path != []:
+                #     try:
+                #         method_file = method_path[0]
+                #         with open(method_file, "r"):
+                #             method_parameters = read_method_parameters(method_file)
+                #             PV_version = method_parameters.get("TITLE")
+                #     except Exception as e:
+                #         messagebox.showerror("XNAT-PIC - Bruker2Dicom", e)
+                #         exc_type, exc_value, exc_traceback = sys.exc_info()
+                #         traceback.print_tb(exc_traceback)
+                #         sys.exit(1)
+                # else:
+                #     messagebox.showerror(
+                #         "Error!",
+                #         "Can't get ParaVision version!")
+                #     os._exit(1)
 
 
                 # for root, dirs, files in sorted(os.walk(folder_to_convert, topdown=True)):
@@ -256,22 +256,22 @@ class xnat_pic_gui(tk.Frame):
                 #                 sys.exit(1)
                             
                 ####################
-                if PV_version == "360.1.1" or 'ParaVision 360' in PV_version:
-                    try:                     
-                        bruker2dicom_pv360(folder_to_convert, dst, master)
-                    except Exception as e:
-                        messagebox.showerror("XNAT-PIC - Bruker2DICOM", e)
-                        exc_type, exc_value, exc_traceback = sys.exc_info()
-                        traceback.print_tb(exc_traceback)
-                        sys.exit(1)                
-                else:
-                    try:
-                        bruker2dicom(folder_to_convert, dst, master)
-                    except Exception as e:
-                        messagebox.showerror("XNAT-PIC - Bruker2Dicom", e)
-                        exc_type, exc_value, exc_traceback = sys.exc_info()
-                        traceback.print_tb(exc_traceback)
-                        sys.exit(1)
+                # if PV_version == "360.1.1" or 'ParaVision 360' in PV_version:
+                    # try:                     
+                    #     bruker2dicom_pv360(folder_to_convert, dst, master)
+                    # except Exception as e:
+                    #     messagebox.showerror("XNAT-PIC - Bruker2DICOM", e)
+                    #     exc_type, exc_value, exc_traceback = sys.exc_info()
+                    #     traceback.print_tb(exc_traceback)
+                    #     sys.exit(1)                
+                # else:
+                try:
+                    bruker2dicom(folder_to_convert, dst, master)
+                except Exception as e:
+                    messagebox.showerror("XNAT-PIC - Bruker2Dicom", e)
+                    exc_type, exc_value, exc_traceback = sys.exc_info()
+                    traceback.print_tb(exc_traceback)
+                    sys.exit(1)
                 ####################
 
                 ####################
