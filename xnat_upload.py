@@ -18,11 +18,6 @@ import tkinter as tk
 from tkinter import filedialog
 from tqdm import tqdm
 
-def progress_bar(ind, num_ind):
-
-    num_sign = int((ind*100)/num_ind)
-    print('[' + '*'*num_sign + '-'*(100-num_sign) + ']')
-    return
 
 def xnat_uploader(folder_to_upload, project_id, num_cust_vars, address, user, psw):
 
@@ -38,7 +33,6 @@ def xnat_uploader(folder_to_upload, project_id, num_cust_vars, address, user, ps
     list_dirs = os.listdir(folder_to_upload)
     # Loop over directories
     for dir in tqdm(range(len(list_dirs))):
-        # progress_bar(dir, len(list_dirs))
         # Manage custom variables
         folder_to_upload_elem = folder_to_upload.split('/')
         folder_to_upload_elem.pop() # The last element is dropped
