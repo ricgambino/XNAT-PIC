@@ -24,7 +24,7 @@ def xnat_uploader(folder_to_upload, project_id, num_cust_vars, address, user, ps
     subject_id = '_'.join(os.path.basename(folder_to_upload).split('_')[:-1])
 
     # Check if 'MR' folder is already into the folder_to_upload path
-    if 'MR' not in os.listdir(folder_to_upload):
+    if 'MR' != os.path.basename(folder_to_upload):
         folder_to_upload = os.path.join(folder_to_upload, 'MR').replace('\\', '/')
     else:
         folder_to_upload = folder_to_upload.replace('\\', '/')
@@ -50,7 +50,8 @@ def xnat_uploader(folder_to_upload, project_id, num_cust_vars, address, user, ps
         file_list = sorted(glob(local_path + '/*', recursive=True))
         for file in file_list:
             # progress_bar(file, len(file_list))
-            file_path = os.path.join(local_path, file).replace('\\', '/')
+            # file_path = os.path.join(local_path, file).replace('\\', '/')
+            file_path = file.replace('\\', '/')
             # Check for Date and Time of the study
             ds = pydicom.dcmread(file_path)
             if ds.StudyTime != '':
@@ -72,7 +73,6 @@ def xnat_uploader(folder_to_upload, project_id, num_cust_vars, address, user, ps
             for var in custom_values:
                 experiment_id += "_" + var
             
-
         try:
             ####################################################################################################
             # XNAT connection
@@ -83,7 +83,7 @@ def xnat_uploader(folder_to_upload, project_id, num_cust_vars, address, user, ps
                 subject = session.classes.SubjectData(parent=project, label=subject_id)
                 # Import data to XNAT
                 session.services.import_(zip_dst,
-                                        overwrite="delete", # Overwite parameter is important!
+                                        overwrite="delete", # Overwrite parameter is important!
                                         project=project_id,
                                         subject=subject_id,
                                         experiment=experiment_id,
@@ -95,7 +95,7 @@ def xnat_uploader(folder_to_upload, project_id, num_cust_vars, address, user, ps
                 for i, element in enumerate(custom_vars):
                     subject.fields[element] = custom_values[i]
                     exp.fields[element] = custom_values[i]
-                    print("custom values ",custom_values[i])
+                    # print("custom values ",custom_values[i])
                 os.remove(zip_dst) # Remove temporary .zip file
             # XNAT connection is closed automatically
             ####################################################################################################
