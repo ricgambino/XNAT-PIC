@@ -48,7 +48,8 @@ def bruker2dicom(folder_to_convert, dst_folder, master):
     #         dseq_file = glob(current_path + '/**/2dseq', recursive=True)
             if dseq_file != []:
                 dseq_path = dseq_file[0].replace('\\', '/')
-                visu_pars_path = '/'.join(dseq_path.split('/')[:-1]) + '/' + c
+                visu_pars_path = glob(current_path + '/**/**/visu_pars', recursive=True)[0].replace('\\', '/')
+                # visu_pars_path = '/'.join(dseq_path.split('/')[:-1]) + '/' + c
                 with open(visu_pars_path, "r"):
                     parameters = read_visupars_parameters(visu_pars_path)
                 reco_path = '/'.join(dseq_path.split('/')[:-1]) + '/' + g
@@ -241,19 +242,19 @@ def bruker2dicom(folder_to_convert, dst_folder, master):
                     ds_temp.PatientWeight = parameters.get("VisuSubjectWeight")
                     ds_temp.PatientComments = parameters.get("VisuSubjectComment")
                     ds_temp.PatientSpeciesDescription = parameters.get("VisuSubjectType")
-                    ds_temp.ReferringPhysicianName = parameters.get("VisuStudyReferringPhysician")
+                    ds_temp.ReferringPhysicianName = ' '.join(parameters.get("VisuStudyReferringPhysician"))
                     ds_temp.PatientBreedDescription = None
                     ds_temp.PatientBreedCodeSequence = None
                     ds_temp.ResponsiblePerson = None
                     ds_temp.BreedRegistrationSequence = None
-                    ds_temp.ResponsibleOrganization = parameters.get("VisuInstitution")
+                    ds_temp.ResponsibleOrganization = ' '.join(parameters.get("VisuInstitution"))
 
                     ds_temp.StudyID = parameters.get("VisuStudyId")
                     ds_temp.SeriesNumber = os.path.basename(res)
                     ds_temp.Modality = str("MR")
                     ds_temp.ScanningSequence = str("RM")
                     ds_temp.SequenceVariant = str("None")
-                    ds_temp.SequenceName = parameters.get("VisuAcqSequenceName")
+                    ds_temp.SequenceName = ' '.join(parameters.get("VisuAcqSequenceName"))
                     ds_temp.ProtocolName = parameters.get("VisuAcquisitionProtocol")
                     ds_temp.SeriesDescription = parameters.get("VisuAcquisitionProtocol")
 
@@ -330,43 +331,7 @@ def bruker2dicom(folder_to_convert, dst_folder, master):
                         ds_temp.ImagesInAcquisition = parameters.get("VisuCoreFrameCount")
                         ds_temp.SliceLocation = list(map(str, parameters.get("VisuCorePosition")[iteration - 1]))[2]
 
-                    # Image pixel module with the tags starting with 0028.
-                    # This group is responsible for describing how to read the pixels
-                    ds_temp.SamplesPerPixel = 1
-                    ds_temp.PhotometricInterpretation = "MONOCHROME2"
-                    ds_temp.PixelRepresentation = 0
-                    ds_temp.BitsAllocated = 16
-                    ds_temp.BitsStored = 16
-                    ds_temp.HighBit = 15
-                    ds_temp.WindowCenterWidthExplanation = "MinMax"
-                    ds_temp.PixelData = layer
-                    ds_temp[0x7FE0, 0x0010].VR = "OW"
-                    ds_temp.WindowWidth = int(np.amax(img) + 1)
-                    ds_temp.WindowCenter = int((np.amax(img) + 1) / 2)
-                    ds_temp[0x0028, 0x1050].VR = "DS"
-                    ds_temp[0x0028, 0x1051].VR = "DS"
-                    ds_temp.SmallestImagePixelValue = int(np.amin(layer))
-                    ds_temp.LargestImagePixelValue = int(np.amax(layer))
-                    ds_temp[0x0028, 0x0106].VR = "US"
-                    ds_temp[0x0028, 0x0107].VR = "US"
-                    ds_temp.RescaleSlope = factor
-                    ds_temp.RescaleIntercept = str(list(parameters.get("VisuCoreDataOffs"))[iteration])
-
-                    # Set creation date/time
-                    dt = datetime.datetime.now()
-                    ds_temp.InstanceCreationDate = dt.strftime("%Y%m%d")
-                    timeStr = dt.strftime("%H%M%S")
-                    ds_temp.InstanceCreationTime = timeStr
-
-                    ds_temp.NumberOfSlices = acqp_parameters.get("NSLICES")
-
-                    string2 = str(reco_parameters.get("RECO_fov"))
-                    vect2 = re.findall("[0-9]+", string2)
-                    vect2.pop(0)
-                    vect3 = []
-                    for elem in vect2:
-                        vect3.append(float(elem))
-                    ds_temp.ReconstructionFieldOfView = vect3
+                    
 
                     # Get other parameters which differ among PV versions
                     
@@ -381,6 +346,8 @@ def bruker2dicom(folder_to_convert, dst_folder, master):
                         ds_temp.AcquisitionDate = acquisitiondate.strftime("%Y%m%d")
                         ds_temp.AcquisitionTime = acquisitiontime.strftime("%H%M%S")
                         VisuAcqImagePhaseEncDir = parameters.get("VisuAcqImagePhaseEncDir")
+                        ds_temp.Columns = int(img_dims[0])
+                        ds_temp.Rows = int(img_dims[1])
                         if np.size(VisuAcqImagePhaseEncDir) == 1:
                             ds_temp.InPlanePhaseEncodingDirection = parameters.get("VisuAcqImagePhaseEncDir").split("_")[0]
                         else:
@@ -398,7 +365,7 @@ def bruker2dicom(folder_to_convert, dst_folder, master):
                         gamma = 42.5756
                         Bo = round(ds_temp.ImagingFrequency / gamma)
                         ds_temp.MagneticFieldStrength = Bo
-
+                        
                     elif PV_version == "6.0.1":
                         ########################### ParaVision 6.0.1 ##############################
                         s = parameters.get("VisuStudyDate")
@@ -600,6 +567,45 @@ def bruker2dicom(folder_to_convert, dst_folder, master):
                                 sat_freq_hz = np.array(freq_list, dtype=float)  
                                 ds_temp.SaturationOffsetHz = sat_freq_hz[iteration]
                                 ds_temp.SaturationOffsetPpm =  sat_freq_hz[iteration] * ds_temp.ImagingFrequency
+
+                    # Image pixel module with the tags starting with 0028.
+                    # This group is responsible for describing how to read the pixels
+                    ds_temp.SamplesPerPixel = 1
+                    ds_temp.PhotometricInterpretation = "MONOCHROME2"
+                    ds_temp.PixelRepresentation = 0
+                    ds_temp.BitsAllocated = 16
+                    ds_temp.BitsStored = 16
+                    ds_temp.HighBit = 15
+                    ds_temp.WindowCenterWidthExplanation = "MinMax"
+                    ds_temp.PixelData = layer
+                    ds_temp[0x7FE0, 0x0010].VR = "OW"
+                    ds_temp.WindowWidth = int(np.amax(img) + 1)
+                    ds_temp.WindowCenter = int((np.amax(img) + 1) / 2)
+                    ds_temp[0x0028, 0x1050].VR = "DS"
+                    ds_temp[0x0028, 0x1051].VR = "DS"
+                    ds_temp.SmallestImagePixelValue = int(np.amin(layer))
+                    ds_temp.LargestImagePixelValue = int(np.amax(layer))
+                    ds_temp[0x0028, 0x0106].VR = "US"
+                    ds_temp[0x0028, 0x0107].VR = "US"
+                    ds_temp.RescaleSlope = factor
+                    for j in range(0, nframes - 1):
+                            ds_temp.RescaleIntercept = str(parameters.get("VisuCoreDataOffs")[j])
+
+                    # Set creation date/time
+                    dt = datetime.datetime.now()
+                    ds_temp.InstanceCreationDate = dt.strftime("%Y%m%d")
+                    timeStr = dt.strftime("%H%M%S")
+                    ds_temp.InstanceCreationTime = timeStr
+
+                    ds_temp.NumberOfSlices = acqp_parameters.get("NSLICES")
+
+                    string2 = str(reco_parameters.get("RECO_fov"))
+                    vect2 = re.findall("[0-9]+", string2)
+                    vect2.pop(0)
+                    vect3 = []
+                    for elem in vect2:
+                        vect3.append(float(elem))
+                    ds_temp.ReconstructionFieldOfView = vect3
 
                     outfile = "%s%s.dcm" % (filename_little_endian, str(iteration + 1))
                     
