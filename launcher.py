@@ -8,6 +8,8 @@ Modified by Riccardo Gambino
 """
 import json, time
 from glob import glob
+from tkinter.constants import BOTH, BOTTOM, RIGHT, TOP, W
+from numpy.core import function_base
 import xnat
 import os, re
 import tkinter as tk
@@ -74,48 +76,59 @@ class xnat_pic_gui(tk.Frame):
         self.x = (int(self.root.screenwidth) - self.root.width) / 2
         self.y = (int(self.root.screenheight)- self.root.height) / 3
         self.root.geometry("%dx%d+%d+%d" % (self.root.width, self.root.height, self.x, self.y))
+        
 
         self.frame_main = tk.Frame(self.root)
-        self.frame_main.pack()
+        # self.frame_main.pack()
+        self.frame_main.grid()
+        self.frame_main.columnconfigure(0, weight=3)
+        self.frame_main.columnconfigure(1, weight=1)
 
-        self.frame_labels = tk.Frame(self.frame_main)
-        self.frame_labels.pack(side="left")
-        self.frame_buttons = tk.Frame(self.frame_main)
-        self.frame_buttons.pack(side="right")
-        self.frame_progress = tk.Frame(self.frame_main)
-        self.frame_progress.pack()
-        self.frame_dialogs = tk.Frame(self.frame_main)
-        self.frame_dialogs.pack()
+        # self.frame_labels = tk.Frame(self.frame_main)
+        # # self.frame_labels.pack(side="left")
+        # self.frame_buttons = tk.Frame(self.frame_main)
+        # # self.frame_buttons.pack(side="right")
+        # self.frame_progress = tk.Frame(self.frame_main)
+        # # self.frame_progress.pack()
+        # self.frame_dialogs = tk.Frame(self.frame_main)
+        # # self.frame_dialogs.pack()
 
         self.label_bruker_dicom = tk.Label(
-            self.frame_labels,
+            self.frame_main,
             text="   Convert images from Bruker ParaVision format to DICOM standard  ",
             anchor="w",
         )
-        self.label_bruker_dicom.pack(anchor="w", pady=3)
+        # self.label_bruker_dicom.pack(anchor="w", pady=3)
+        self.label_bruker_dicom.grid(row=0, column=0, sticky=W, pady=2)
         self.label_aspect_dicom = tk.Label(
-            self.frame_labels,
+            self.frame_main,
             text="   Convert images from Aspect Imaging to DICOM standard  ",
             anchor="w",
         )
-        self.label_aspect_dicom.pack(anchor="w", pady=8)
+        # self.label_aspect_dicom.pack(anchor="w", pady=8)
+        self.label_aspect_dicom.grid(row=1, column=0, sticky=W, pady=2)
         self.label_dicom_uploader = tk.Label(
-            self.frame_labels,
+            self.frame_main,
             text="   Upload DICOM files to XNAT  ",
             anchor="w",
         )
-        self.label_dicom_uploader.pack(anchor="w", pady=7)
+        # self.label_dicom_uploader.pack(anchor="w", pady=7)
+        self.label_dicom_uploader.grid(row=2, column=0, sticky=W, pady=2)
 
         self.button1 = tk.Button(
-            self.frame_buttons, text="  Bruker2DICOM  ", command=partial(self.bruker2dicom_conversion,self))
+            self.frame_main, text="  Bruker to DICOM  ", command=partial(self.bruker2dicom_conversion,self))
 
-        self.button1.pack(padx=10, pady=0)
-        self.button2 = tk.Button(self.frame_buttons, text="  Aspect2DICOM  ")
-        self.button2.pack(padx=10, pady=1)
+        # self.button1.pack(padx=10, pady=0)
+        self.button1.grid(row=0, column=1, sticky=W, pady=2)
+
+        self.button2 = tk.Button(self.frame_main, text="  Aspect2DICOM  ")
+        # self.button2.pack(padx=10, pady=1)
+        self.button2.grid(row=1, column=1, sticky=W, pady=2)
         self.button3 = tk.Button(
-            self.frame_buttons, text="   Uploader   ", command=partial(self.xnat_dcm_uploader,self)
+            self.frame_main, text="   Uploader   ", command=partial(self.xnat_dcm_uploader,self)
         )
-        self.button3.pack(padx=10, pady=1)
+        # self.button3.pack(padx=10, pady=1)
+        self.button3.grid(row=2, column=1, sticky=W, pady=2)
 
 
     def _inprogress(self, text):
@@ -140,7 +153,7 @@ class xnat_pic_gui(tk.Frame):
         self.button_conversion.pack(side="top", fill="x")
 
         self.progress = ttk.Progressbar(
-            self.frame_main, orient=tk.HORIZONTAL, mode="indeterminate"
+            self.frame_main, orient=tk.HORIZONTAL, mode="determinate"
         )
         self.progress.pack(side="bottom", fill="x")
         self.progress.start()
@@ -354,7 +367,6 @@ class xnat_pic_gui(tk.Frame):
    
             threading.Thread(target=start_conversion).start()
 
-            
 
     class xnat_dcm_uploader():
 
@@ -373,7 +385,6 @@ class xnat_pic_gui(tk.Frame):
             self.instantiate_frames(master)
             self.stack_frames = []
             self.stack_frames.append(self.frame_main)
-
 
 
             ''' XNAT ADDRESS '''
@@ -506,7 +517,7 @@ class xnat_pic_gui(tk.Frame):
                         )
                     except FileNotFoundError:
                         pass
-                self.xnat_dcm_uploader_select_project(session,master)
+                self.xnat_common_uploader(session, master)
             except xnat.exceptions.XNATLoginFailedError as err:
                 messagebox.showerror("Error!", err)
             except Exception as error:
@@ -593,6 +604,36 @@ class xnat_pic_gui(tk.Frame):
             else:
                 self.xnat_dcm_uploader_select_custom_vars(master)
 
+        def xnat_common_uploader(self, session, master):
+
+            # # FRAME
+            self.stack_frames[-1].grid_remove()
+            self.frame_two = tk.Frame(master.root)
+            self.frame_two.grid()
+            self.stack_frames.append(self.frame_two)
+
+            # # LABEL
+            self.label_dcm = tk.Label(
+                self.frame_two, text="  Upload new DICOM images to XNAT project    ", anchor="w",
+            )
+            self.label_files = tk.Label(
+                self.frame_two, text="  Upload other files to XNAT project  ", anchor="w"
+            )
+            self.label_files.grid(row=4, column=0)
+            self.label_dcm.grid(row=2, column=0, sticky="W", columnspan=1)
+
+            self.button_dcm = tk.Button(
+                self.frame_two, text="DICOM2XNAT", command=partial(self.xnat_dcm_uploader_select_project, session, master),
+                background='green', fg='white'
+            )
+            self.button_dcm.grid(row=2, column=2)
+            self.button_files = tk.Button(
+                self.frame_two, text="FILES2XNAT", command=partial(self.xnat_files_uploader, session, master),
+                background='red', fg='white'
+            )
+            self.button_files.grid(row=4, column=2)
+
+
         def xnat_dcm_uploader_select_project(self,session,master):
 
             # # FRAME
@@ -602,11 +643,11 @@ class xnat_pic_gui(tk.Frame):
             self.frame_two.grid()
             self.stack_frames.append(self.frame_two)
 
-            master.root.width = 600
-            master.root.height = 150
-            master.x = (int(master.root.screenwidth) - master.root.width) / 2
-            master.y = (int(master.root.screenheight)- master.root.height) / 3
-            master.root.geometry("%dx%d+%d+%d" % (master.root.width, master.root.height, master.x, master.y))
+            # master.root.width = 600
+            # master.root.height = 100
+            # master.x = (int(master.root.screenwidth) - master.root.width) / 2
+            # master.y = (int(master.root.screenheight)- master.root.height) / 3
+            # master.root.geometry("%dx%d+%d+%d" % (master.root.width, master.root.height, master.x, master.y))
 
             # # LABEL
             self.label_prjname = tk.Label(
@@ -654,6 +695,11 @@ class xnat_pic_gui(tk.Frame):
 
             session.disconnect()
 
+        def xnat_files_uploader(self, session, master):
+
+
+            session.disconnect()
+
 
         def navigate_back(self,master):
             self.stack_frames[-1].grid_remove()
@@ -661,6 +707,7 @@ class xnat_pic_gui(tk.Frame):
             self.stack_frames[-1].grid()
 
         def xnat_dcm_uploader_select_custom_vars(self,master):
+            
             if self.newprj_var.get() == 1:
                 self.project = self.entry_prjname.var.get()
             else:
