@@ -153,7 +153,7 @@ class xnat_pic_gui(tk.Frame):
         self.button_conversion.pack(side="top", fill="x")
 
         self.progress = ttk.Progressbar(
-            self.frame_main, orient=tk.HORIZONTAL, mode="determinate"
+            self.frame_main, orient=tk.HORIZONTAL, mode="indeterminate"
         )
         self.progress.pack(side="bottom", fill="x")
         self.progress.start()
@@ -181,9 +181,7 @@ class xnat_pic_gui(tk.Frame):
                 head, tail = os.path.split(folder_to_convert)
                 project_foldername = tail.split('.',1)[0] + "_dcm"
                 dst = os.path.join(head, project_foldername).replace('\\', '/')
-
-                master._inprogress("Conversion in progress")
-                
+ 
                 if os.path.isdir(dst):
                     master.progress.stop()
                     messagebox.showwarning(
@@ -278,6 +276,7 @@ class xnat_pic_gui(tk.Frame):
                     #     traceback.print_tb(exc_traceback)
                     #     sys.exit(1)                
                 # else:
+                # master._inprogress("Conversion in progress")
                 try:
                     bruker2dicom(folder_to_convert, dst, master)
                 except Exception as e:
@@ -288,7 +287,7 @@ class xnat_pic_gui(tk.Frame):
                 ####################
 
                 ####################
-                master.progress.stop()
+                # master.progress.stop()
                 ####################
 
                 # # Copy the directory tree while keeping DICOM files only
@@ -827,6 +826,7 @@ class xnat_pic_gui(tk.Frame):
                 self.entry_address_complete,
                 self.entry_user.var.get(),
                 self.entry_psw.var.get(),
+                master
             )
 
             # master.progress.stop()
