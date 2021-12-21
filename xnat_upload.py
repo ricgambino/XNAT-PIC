@@ -136,3 +136,27 @@ def xnat_uploader(folder_to_upload, project_id, num_cust_vars, address, user, ps
     master.progress.stop()
 
     return
+
+def upload_files_xnat(folder_to_upload, project_id, num_cust_vars, address, user, psw, master):
+
+    with xnat.connect(address, user, psw) as session:
+        test_project = session.projects[project_id]
+        test_subjects = test_project.subjects['da_PyMT_5']
+        test_exp = test_subjects.experiments['da_PyMT_5_20190327_134300']
+        test_resources = test_exp.resources
+
+
+    files = os.scandir(folder_to_upload)
+
+    for file in enumerate(files, 1):
+        if file.is_file():
+
+            with xnat.connect(address, user=user, password=psw) as session:
+
+                local_path = 'E:\\Desktop\\Riccardo\\Project\\Data\\InVivo\\da_PyMT_5_dcm\\MR\\resources\\Results_8_9_0.99\\8_9_deltaST_map_4.2_ppm.jpg'.replace('\\', '/')
+                with open(local_path, 'rb') as f:
+                    img = f.read()
+                image = {"1": img}
+                answer = session.put(path=test_resources.uri + '/Results/files/Im1.jpg', files=image)
+                print('Done')
+    return
