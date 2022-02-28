@@ -25,7 +25,7 @@ import xnat
 import pyAesCrypt
 
 DELTA_SCREEN = 200
-PATH_IMAGE = "C:\\Users\\Sara Zullino.HARI\\Desktop\\FG\\Image\\"
+PATH_IMAGE = "images\\"
 
 # Password to access to saved credentials now is stored in a local folder
 with open(os.path.join(os.path.expanduser("~"), "Documents", "XNAT_login_credentials.json")) as auth_file:
