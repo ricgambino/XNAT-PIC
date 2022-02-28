@@ -1,47 +1,31 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Mar 29 17:25:38 2019
-
-@author: Sara Zullino, Alessandro Paglialonga
-
-Modified by Riccardo Gambino
-"""
-import json, time
-from glob import glob
-from tkinter.constants import BOTH, BOTTOM, RIGHT, TOP, W
-from numpy.core import function_base
-import xnat
-import os, re
+from ast import Str
+from doctest import master
+from logging import raiseExceptions
 import tkinter as tk
-from tkinter import filedialog,messagebox
+from tkinter import CENTER, filedialog,messagebox
+from tkinter import font
+from tkinter.tix import COLUMN, Balloon
+from PIL import Image, ImageTk, ImageDraw
+from tkinter import Button, Tk, HORIZONTAL
+from tkinter import ttk
+import json
+import time
+import os, re
+from functools import partial
+import subprocess
+import platform 
+import sys
 import threading
-import shutil
+from progressbar import progressbar
 try:
     from bruker2dicom_converter import bruker2dicom
 except:
     from bruker2dicom import bruker2dicom
-from bruker2dicom_pv360 import bruker2dicom_pv360
-from include_patterns import include_patterns
-from remove_empty_dirs import remove_empty_dirs
-from restore_raw_dirs import restore_raw_dirs
-from shutil import copytree
-from functools import partial
-try:
-    from xnat_upload import xnat_uploader
-except:
-    from xnat_uploader import xnat_uploader
-import platform
+import xnat    
 import pyAesCrypt
-from list_cust_vars import list_cust_vars
-import subprocess
-from tkinter import ttk
-from read_visupars import read_visupars_parameters
-from read_method import read_method_parameters
-import traceback
-import sys
 
-# bufferSize = 64 * 1024
-# password = "worstsymmetricpasswordever19"
+DELTA_SCREEN = 200
+PATH_IMAGE = "C:\\Users\\Sara Zullino.HARI\\Desktop\\FG\\Image\\"
 
 # Password to access to saved credentials now is stored in a local folder
 with open(os.path.join(os.path.expanduser("~"), "Documents", "XNAT_login_credentials.json")) as auth_file:
@@ -55,7 +39,8 @@ class xnat_pic_gui(tk.Frame):
     def __init__(self, master):
 
         self.root = master
-
+        root.attributes('-fullscreen', True)
+        root.bind("<Escape>", lambda event: root.attributes("-fullscreen", False))
         ### GET PRIMARY SCREEN RESOLUTION
         ### MADE FOR MULTISCREEN ENVIRONMENTS
         if (platform.system()=='Linux'):
@@ -69,397 +54,281 @@ class xnat_pic_gui(tk.Frame):
             self.root.screenwidth=self.root.winfo_screenwidth()
             self.root.screenheight=self.root.winfo_screenheight()
 
+        # Adjust size based on screen resolution
+        w = self.root.screenwidth
+        h = self.root.screenheight
+        self.root.geometry(str(w) + "x" + str(h))
         self.root.title("   XNAT-PIC   ~   Molecular Imaging Center   ~   University of Torino   ")
-        self.root.resizable(False, False)
-        self.root.width = 600
-        self.root.height = 100
-        self.x = (int(self.root.screenwidth) - self.root.width) / 2
-        self.y = (int(self.root.screenheight)- self.root.height) / 3
-        self.root.geometry("%dx%d+%d+%d" % (self.root.width, self.root.height, self.x, self.y))
+        self.root.configure(background='black')
+        # If you want the logo 
+        #self.root.iconbitmap(r"logo3.ico")
+
+        # Define Canvas and logo in background
+        mywidth = self.root.screenwidth-DELTA_SCREEN
+        logo = Image.open(PATH_IMAGE + "NW_Header2.png")
+        wpercent = (mywidth/float(logo.size[0]))
+        hsize = int((float(logo.size[1])*float(wpercent)))
+        my_canvas = tk.Canvas(self.root, width=mywidth, height=hsize, bg="#31C498", highlightthickness=3, highlightbackground="black")
+        my_canvas.pack(padx=40, pady=40)
+      
+        logo = logo.resize((mywidth,hsize), Image.ANTIALIAS)  
+        self.logo = ImageTk.PhotoImage(logo)
+        my_canvas.create_image(-0.5, 0, anchor=tk.NW, image=self.logo)
+        
+        # Button to enter
+        enter_text = tk.StringVar()
+        enter_btn = tk.Button(self.root, textvariable=enter_text, font=("Calibri", 22, "bold"), bg="#80FFE6", fg="black", height=1, width=18, borderwidth=0, command=lambda: (my_canvas.pack_forget(), enter_btn.pack_forget(), xnat_pic_gui.choose_you_action(self, "")), cursor="hand2")
+        enter_text.set("ENTER")
+        my_canvas.create_window(680, 750, anchor = "nw", window = enter_btn)
+        
+        self.frame_main = tk.Frame(self.root)
+        
+        # Choose to upload files, fill in the info, convert files, process images
+    def choose_you_action(self, where):
+        # Canvas
+        # If condition: to know if you get to this frame from the enter button or from the back button
+         if where == "":
+             ind = self.root
+         else:
+             ind = where
+         
+         # Define Canvas and update logo in background
+         mywidth = ind.screenwidth-DELTA_SCREEN
+         logo2 = Image.open(PATH_IMAGE + "logo41.png")
+         wpercent = (mywidth/float(logo2.size[0]))
+         hsize = int((float(logo2.size[1])*float(wpercent)))
+         self.my_canvas = tk.Canvas(ind, width=mywidth, height=hsize, bg="#31C498", highlightthickness=1, highlightbackground="black")
+         self.my_canvas.pack(padx=40, pady=40)
+
+         logo2 = logo2.resize((mywidth,hsize), Image.ANTIALIAS)
+         self.logo2 = ImageTk.PhotoImage(logo2)
+         self.my_canvas.create_image(1, 1, anchor=tk.NW, image=self.logo2)
+            
+         # Positions for button
+         x_btn = 100
+         y_btn = 400
+         xdelta_btn = 400
+        
+         # Convert files Bruker2DICOM
+         convert_text = tk.StringVar()
+         self.convert_btn = tk.Button(ind, textvariable=convert_text, font=("Calibri", 22, "bold"), bg="#80FFE6", fg="black", height=1, width=20, borderwidth=0, command=partial(self.bruker2dicom_conversion, self), cursor="hand2")
+         convert_text.set("Bruker2DICOM")
+         self.my_canvas.create_window(x_btn, y_btn, anchor = "nw", window = self.convert_btn)
+         
+         # Fill in the info
+         info_text = tk.StringVar()
+         self.info_btn = tk.Button(ind, textvariable=info_text, font=("Calibri", 22, "bold"), bg="#80FFE6", fg="black", height=1, width=20, borderwidth=0, cursor="hand2")
+         info_text.set("Fill in the info")
+         self.my_canvas.create_window(x_btn + xdelta_btn, y_btn, anchor = "nw", window = self.info_btn)
+
+         # Upload files
+         upload_text = tk.StringVar()
+         self.upload_btn = tk.Button(ind, textvariable=upload_text, font=("Calibri", 22, "bold"), bg="#80FFE6", fg="black", height=1, width=20, borderwidth=0, command=partial(self.xnat_dcm_uploader, self), cursor="hand2")
+         upload_text.set("Uploader")
+         self.my_canvas.create_window(x_btn + 2*xdelta_btn, y_btn, anchor = "nw", window = self.upload_btn)        
+        
+         # Processing your files
+         process_text = tk.StringVar()
+         self.process_btn = tk.Button(ind, textvariable=process_text, font=("Calibri", 22, "bold"), bg="#80FFE6", fg="black", height=1, width=20, borderwidth=0, cursor="hand2")
+         process_text.set("Processing")
+         self.my_canvas.create_window(x_btn + 3*xdelta_btn, y_btn, anchor = "nw", window = self.process_btn)
         
 
-        self.frame_main = tk.Frame(self.root)
-        # self.frame_main.pack()
-        self.frame_main.grid()
-        self.frame_main.columnconfigure(0, weight=3)
-        self.frame_main.columnconfigure(1, weight=1)
+         # Info 
+         # Info msg
+         def helpmsg(text):  
+             if text == "button1":
+                 msg="Convert images from Bruker ParaVision format to DICOM standard" 
+             elif text == "button2":
+                 msg="Fill in the information about the acquisition" 
+             elif text == "button3":
+                 msg="Upload DICOM images to XNAT" 
+             elif text == "button4":
+                 msg="Process images" 
 
-        # self.frame_labels = tk.Frame(self.frame_main)
-        # # self.frame_labels.pack(side="left")
-        # self.frame_buttons = tk.Frame(self.frame_main)
-        # # self.frame_buttons.pack(side="right")
-        # self.frame_progress = tk.Frame(self.frame_main)
-        # # self.frame_progress.pack()
-        # self.frame_dialogs = tk.Frame(self.frame_main)
-        # # self.frame_dialogs.pack()
+             messagebox.showinfo("XNAT-PIC",msg)
+                 
+         # Button for info 
+         # Positions for button
+         x_btn = 245
+         y_btn = 470
+         xdelta_btn = 400
 
-        self.label_bruker_dicom = tk.Label(
-            self.frame_main,
-            text="   Convert images from Bruker ParaVision format to DICOM standard  ",
-            anchor="w",
-        )
-        # self.label_bruker_dicom.pack(anchor="w", pady=3)
-        self.label_bruker_dicom.grid(row=0, column=0, sticky=W, pady=2)
-        self.label_aspect_dicom = tk.Label(
-            self.frame_main,
-            text="   Convert images from Aspect Imaging to DICOM standard  ",
-            anchor="w",
-        )
-        # self.label_aspect_dicom.pack(anchor="w", pady=8)
-        self.label_aspect_dicom.grid(row=1, column=0, sticky=W, pady=2)
-        self.label_dicom_uploader = tk.Label(
-            self.frame_main,
-            text="   Upload DICOM files to XNAT  ",
-            anchor="w",
-        )
-        # self.label_dicom_uploader.pack(anchor="w", pady=7)
-        self.label_dicom_uploader.grid(row=2, column=0, sticky=W, pady=2)
+         logo_info = Image.open(PATH_IMAGE + "info.png")
+         self.logo_info = ImageTk.PhotoImage(logo_info)
+         
+         self.info_convert_btn = tk.Button(ind, image = self.logo_info, bg="#80FFE6", borderwidth=0, command = lambda: helpmsg("button1"), cursor="question_arrow")
+         self.my_canvas.create_window(x_btn, y_btn, anchor="nw", window=self.info_convert_btn)
 
-        self.button1 = tk.Button(
-            self.frame_main, text="  Bruker to DICOM  ", command=partial(self.bruker2dicom_conversion,self))
+         self.info_info_btn = tk.Button(ind, image = self.logo_info, bg="#80FFE6", borderwidth=0, command = lambda: helpmsg("button2"), cursor="question_arrow")
+         self.my_canvas.create_window(x_btn + xdelta_btn, y_btn, anchor="nw", window=self.info_info_btn)
 
-        # self.button1.pack(padx=10, pady=0)
-        self.button1.grid(row=0, column=1, sticky=W, pady=2)
+         self.info_upload_btn = tk.Button(ind, image = self.logo_info, bg="#80FFE6", borderwidth=0, command = lambda: helpmsg("button3"), cursor="question_arrow")
+         self.my_canvas.create_window(x_btn + 2*xdelta_btn, y_btn, anchor="nw", window=self.info_upload_btn)
 
-        self.button2 = tk.Button(self.frame_main, text="  Aspect2DICOM  ")
-        # self.button2.pack(padx=10, pady=1)
-        self.button2.grid(row=1, column=1, sticky=W, pady=2)
-        self.button3 = tk.Button(
-            self.frame_main, text="   Uploader   ", command=partial(self.xnat_dcm_uploader,self)
-        )
-        # self.button3.pack(padx=10, pady=1)
-        self.button3.grid(row=2, column=1, sticky=W, pady=2)
+         self.info_process_btn = tk.Button(ind, image = self.logo_info, bg="#80FFE6", borderwidth=0, command = lambda: helpmsg("button4"), cursor="question_arrow")
+         self.my_canvas.create_window(x_btn + 3*xdelta_btn, y_btn, anchor="nw", window=self.info_process_btn) 
 
+         # Logo on top
+         logo3 = Image.open(PATH_IMAGE + "path163.png")
+         self.logo3 = ImageTk.PhotoImage(logo3)
+         label1 = tk.Label(ind, image=self.logo3,  bg="#31C498", width=1716)
+         self.my_canvas.create_window(0.5, 20, anchor=tk.NW, window=label1)
+         
 
-    def _inprogress(self, text):
-
-        self.frame_main.destroy()
-        try:
-            for element in self.stack_frames:
-                element.destroy()
-        except:
-            pass
-        self.root.width = 300
-        self.root.height = 46
-        self.x = (int(self.root.screenwidth) - self.root.width) / 2
-        self.y = (int(self.root.screenheight)- self.root.height) / 3
-        self.root.geometry("%dx%d+%d+%d" % (self.root.width, self.root.height, self.x, self.y))
-        self.root.resizable(False, False)
-        self.frame_main = tk.Frame(self.root)
-        self.frame_main.pack(fill="x", side="top")
-
-        self.button_conversion = tk.Button(self.frame_main, text=text)
-        self.button_conversion["state"] = "disabled"
-        self.button_conversion.pack(side="top", fill="x")
-
-        self.progress = ttk.Progressbar(
-            self.frame_main, orient=tk.HORIZONTAL, mode="indeterminate"
-        )
-        self.progress.pack(side="bottom", fill="x")
-        self.progress.start()
-
+    def get_page(self):
+        return self.root   
 
     class bruker2dicom_conversion():
-        def __init__(self,master):
-
-            def start_conversion():
-
-                master.root.withdraw()
-
-                folder_to_convert = filedialog.askdirectory(
-                    parent=master.root,
-                    initialdir=os.path.expanduser("~"),
-                    title="XNAT-PIC: Select project directory in Bruker ParaVision format",
-                )
-
+        def __init__(self, master):
+        
+             def start_conversion():               
+                messagebox.showinfo("Bruker2DICOM","Select project directory in Bruker ParaVision format")
+                
+                # Choose your directory
+                folder_to_convert = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC: Select project directory in Bruker ParaVision format")
+                
                 if not folder_to_convert:
-                    os._exit(1)
+                    sys.exit(0)
+                     
                 master.root.deiconify()
-
                 master.root.update()
                 master.root.title("Bruker2DICOM")
                 head, tail = os.path.split(folder_to_convert)
                 project_foldername = tail.split('.',1)[0] + "_dcm"
                 dst = os.path.join(head, project_foldername).replace('\\', '/')
- 
-                if os.path.isdir(dst):
-                    master.progress.stop()
-                    messagebox.showwarning(
-                        "Destination folder already exists",
-                        "Destination folder %s already exists and it won't be overridden \
-                        by a new conversion. If you want to proceed with the conversion, please \
-                        delete/move/rename the existing folder"
-                        % dst,
-                    )
-                else:
-                    os.mkdir(dst)
-           
-                # a = "1"
-                # c = "visu_pars"
-                # e = "method"
-                # PV_version = ''
 
-                # visupars_path = glob(folder_to_convert + '/**/**/**/visu_pars')
-                # method_path = glob(folder_to_convert + '/**/method')
-                # if visupars_path != []:
-                #     try:
-                #         visupars_file = visupars_path[0]
-                #         with open(visupars_file, "r"):
-                #             visupars_parameters = read_visupars_parameters(visupars_file)
-                #             PV_version = visupars_parameters.get("VisuCreatorVersion")
-                #     except Exception as e:
-                #         messagebox.showerror("XNAT-PIC - Bruker2Dicom", e)
-                #         exc_type, exc_value, exc_traceback = sys.exc_info()
-                #         traceback.print_tb(exc_traceback)
-                #         sys.exit(1)
-                # elif method_path != []:
-                #     try:
-                #         method_file = method_path[0]
-                #         with open(method_file, "r"):
-                #             method_parameters = read_method_parameters(method_file)
-                #             PV_version = method_parameters.get("TITLE")
-                #     except Exception as e:
-                #         messagebox.showerror("XNAT-PIC - Bruker2Dicom", e)
-                #         exc_type, exc_value, exc_traceback = sys.exc_info()
-                #         traceback.print_tb(exc_traceback)
-                #         sys.exit(1)
-                # else:
-                #     messagebox.showerror(
-                #         "Error!",
-                #         "Can't get ParaVision version!")
-                #     os._exit(1)
-
-
-                # for root, dirs, files in sorted(os.walk(folder_to_convert, topdown=True)):
-                #     if dirs != []:
-                #         # for dir in dirs:
-                #         res = os.path.join(root, dirs[0])
-                #         # dirs[:] = []  # Don't recurse any deeper
-                #         visupars_file = os.path.abspath(os.path.join(res, a, c))
-                #         method_file = os.path.abspath(os.path.join(os.path.dirname(res), e))
-                #         #print(visupars_file)
-                #         #print(method_file)
-                #         if os.path.exists(visupars_file):
-                #             try:
-                #                 with open(visupars_file, "r"):
-                #                     visupars_parameters = read_visupars_parameters(visupars_file)
-                #                     PV_version = visupars_parameters.get("VisuCreatorVersion")
-                #                     #print(visupars_file)
-                #                     #print(PV_version)
-                #                     del visupars_parameters
-                #             except Exception as e:
-                #                 messagebox.showerror("XNAT-PIC - Bruker2Dicom", e)
-                #                 exc_type, exc_value, exc_traceback = sys.exc_info()
-                #                 traceback.print_tb(exc_traceback)
-                #                 sys.exit(1)
-                #         elif os.path.exists(method_file):
-                #             try:
-                #                 with open(method_file, "r"):
-                #                     method_parameters = read_method_parameters(method_file)
-                #                     PV_version = method_parameters.get("TITLE")
-                #                     #print(method_file)
-                #                     #print(PV_version)
-                #                     del method_parameters
-                #             except Exception as e:
-                #                 messagebox.showerror("XNAT-PIC - Bruker2Dicom", e)
-                #                 exc_type, exc_value, exc_traceback = sys.exc_info()
-                #                 traceback.print_tb(exc_traceback)
-                #                 sys.exit(1)
-                            
-                ####################
-                # if PV_version == "360.1.1" or 'ParaVision 360' in PV_version:
-                    # try:                     
-                    #     bruker2dicom_pv360(folder_to_convert, dst, master)
-                    # except Exception as e:
-                    #     messagebox.showerror("XNAT-PIC - Bruker2DICOM", e)
-                    #     exc_type, exc_value, exc_traceback = sys.exc_info()
-                    #     traceback.print_tb(exc_traceback)
-                    #     sys.exit(1)                
-                # else:
-                # master._inprogress("Conversion in progress")
                 try:
+                    # If the destination folder already exists, throw exception
+                    if os.path.isdir(dst):
+                        raise Exception("Destination folder %s already exists" % dst)
+                    else:
+                      os.mkdir(dst)
+                    # Convert from bruker to DICOM and disable the buttons
+                    master.convert_btn['state'] = tk.DISABLED
+                    master.info_btn['state'] = tk.DISABLED
+                    master.upload_btn['state'] = tk.DISABLED
+                    master.process_btn['state'] = tk.DISABLED
+                    master.root.config(cursor="watch")               
                     bruker2dicom(folder_to_convert, dst, master)
+                    master.root.config(cursor="arrow")
+                    my_exeption = False
+                    
                 except Exception as e:
+                    master.root.config(cursor="arrow") 
                     messagebox.showerror("XNAT-PIC - Bruker2Dicom", e)
-                    exc_type, exc_value, exc_traceback = sys.exc_info()
-                    traceback.print_tb(exc_traceback)
-                    sys.exit(1)
-                ####################
+                    master.convert_btn['state'] = tk.NORMAL
+                    master.info_btn['state'] = tk.NORMAL
+                    master.upload_btn['state'] = tk.NORMAL
+                    master.process_btn['state'] = tk.NORMAL
 
-                ####################
-                # master.progress.stop()
-                ####################
+                if my_exeption is False:
+                    messagebox.showinfo("Bruker2DICOM","Done! Now you can upload your files to XNAT.")
+                    master.convert_btn['state'] = tk.NORMAL
+                    master.info_btn['state'] = tk.NORMAL
+                    master.upload_btn['state'] = tk.NORMAL
+                    master.process_btn['state'] = tk.NORMAL
+                    sys.exit(0)
 
-                # # Copy the directory tree while keeping DICOM files only
-                # try:
-                #     copytree(
-                #         folder_to_convert, dst, ignore=include_patterns("*.dcm")
-                #     )
-                # except Exception as error:
-                #     messagebox.showerror("Error", str(error))
-                # # Remove DICOM files from Bruker raw directory
-                # restore_raw_dirs(folder_to_convert)
-                # Remove empty directories
-                # remove_empty_dirs(dst)
-                
-                # # Source path  
-                # source = dst
-                  
-                # # Destination path  
-                
-                # destination = os.path.join(head,'MR')
+             threading.Thread(target=start_conversion).start()
 
-                # os.mkdir(destination)
-
-                # # Move the content of  
-                # # source to destination  
-                # folder = os.listdir(source)
-                # print(folder)
-                # for f in folder:
-                #     print(f)
-                #     shutil.move(os.path.join(source,f), destination)
-                # dest = shutil.move(destination, source) 
-                
-                # flag = []
-
-                # ## FIND DEPTH OF SUBJECT FOLDER ##
-                # for root, dirs, files in sorted(os.walk(dst, topdown=True)):
-                #     depth = root[len(dst) :].count(os.path.sep)
-                #     for file in files:
-                #         if re.match("([^^]|[a-z]|[A-Z]|[0-9])*$", file):
-                #             flag = 1
-                #         else:
-                #             flag = 0
-                #     if flag == 1:
-                #         subject_depth = depth - 2
-                #         if subject_depth < 0:
-                #             subject_depth = 0
-                #         del dirs
-                #         dirs = []
-                #         dirs[:] = []
-                # for root, dirs, files in sorted(os.walk(dst, topdown=True)):
-                #     depth = root[len(dst) :].count(os.path.sep)
-                #     if subject_depth == depth:
-                #         for subject_name in dirs:
-                #             subject_dir = os.path.join(root,subject_name)
-                #             if os.path.exists(subject_dir) is True:
-                                
-                #                 destination = os.path.join(subject_dir,'MR')
-                
-                                # os.mkdir(destination)
-                
-                                # # Move the content of source to destination  
-                                # folder = os.listdir(subject_dir)
-                                # for f in folder:
-                                #     shutil.move(os.path.join(subject_dir,f), destination)
-                
-
-                answer = messagebox.askyesno(
-                    "XNAT-PIC  ~  Uploader", "Do you want to upload your project to XNAT?"
-                )
-                # self.frame_main.destroy()
-                if answer is True and os.path.isdir(dst) == True:
-                    # master.xnat_dcm_uploader(master,os.path.join(head,project_foldername))
-                    master.xnat_dcm_uploader(master, dst)
-                else:
-                    os._exit(0)
-   
-            threading.Thread(target=start_conversion).start()
-
-
+    # Upload files         
     class xnat_dcm_uploader():
 
-        def __init__(self, master, home=""):
+        def __init__(self, master):    
+            
             self.home = os.path.expanduser("~")
-            master.root.update()
-            master.root.title("XNAT-PIC  ~  Uploader")
-            master.root.deiconify()
-            master.frame_main.destroy()
-            master.root.width = 600
-            master.root.height = 150
+            self.stack_frames = []
+            self.stack_frames.append(master.get_page())
+            
+            # Log into XNAT
+            popup1 = tk.Toplevel()
+            popup1.title("XNAT-PIC  ~  Login")
+            master.root.width = 400
+            master.root.height = 130
             master.x = (int(master.root.screenwidth) - master.root.width) / 2
             master.y = (int(master.root.screenheight)- master.root.height) / 3
-            master.root.geometry("%dx%d+%d+%d" % (master.root.width, master.root.height, master.x, master.y))
-            master.root.resizable(True, True)
-            self.instantiate_frames(master)
-            self.stack_frames = []
-            self.stack_frames.append(self.frame_main)
+            popup1.geometry("%dx%d+%d+%d" % (master.root.width, master.root.height, master.x, master.y))           
+            
+            # XNAT ADDRESS      
+            popup1.label_address = tk.Label(popup1, text="  XNAT web address  ", font=("Calibri", 10, "bold"))   
+            popup1.label_address.grid(row=0, column=0, padx=1, ipadx=1)
+            popup1.entry_address = tk.Entry(popup1)
+            popup1.entry_address.var = tk.StringVar()
+            popup1.entry_address["textvariable"] = popup1.entry_address.var
+            popup1.entry_address.grid(row=0, column=1, padx=1, ipadx=1)
+           
+            # XNAT USER 
+            popup1.label_user = tk.Label(popup1, text="Username", font=("Calibri", 10, "bold"))
+            popup1.label_user.grid(row=1, column=0, padx=1, ipadx=1)
+            popup1.entry_user = tk.Entry(popup1)
+            popup1.entry_user.var = tk.StringVar()
+            popup1.entry_user["textvariable"] = popup1.entry_user.var
+            popup1.entry_user.grid(row=1, column=1, padx=1, ipadx=1)
+
+            # XNAT PASSWORD 
+            popup1.label_psw = tk.Label(popup1, text="Password", font=("Calibri", 10, "bold"))
+            popup1.label_psw.grid(row=2, column=0, padx=1, ipadx=1)           
+            
+            # Show/Hide the password
+            def toggle_password():
+                if popup1.entry_psw.cget('show') == '':
+                    popup1.entry_psw.config(show='*')
+                    popup1.toggle_btn.config(text='Show Password')
+                else:
+                    popup1.entry_psw.config(show='')
+                    popup1.toggle_btn.config(text='Hide Password')
+            
+
+            popup1.entry_psw = tk.Entry(popup1, show="*")
+            popup1.entry_psw.var = tk.StringVar()
+            popup1.entry_psw["textvariable"] = popup1.entry_psw.var
+            popup1.entry_psw.grid(row=2, column=1, padx=1, ipadx=1)
+            popup1.toggle_btn = tk.Button(popup1, text='Show Password',  command=toggle_password)
+            popup1.toggle_btn.grid(row=2, column=2)
 
 
-            ''' XNAT ADDRESS '''
+            # XNAT HTTP/HTTPS 
+            popup1.http = tk.StringVar()
 
-            self.label_address = tk.Label(
-                self.frame_upload_labels, text="  XNAT web address  ", anchor="w"
-            )
-            self.label_address.grid(row=0, column=0, padx=1, ipadx=1)
-            self.entry_address = tk.Entry(self.frame_upload_labels)
-            self.entry_address.var = tk.StringVar()
-            self.entry_address["textvariable"] = self.entry_address.var
-            self.entry_address.var.trace_add("write", self.enable_connect_button)
-            self.entry_address.grid(row=0, column=1)
+            # SAVE CREDENTIALS CHECKBOX
+            popup1.remember = tk.IntVar()
 
-            ''' XNAT USER '''
-            self.label_user = tk.Label(
-                self.frame_upload_labels, text="Username", anchor="w"
-            )
-            self.label_user.grid(row=1, column=0, padx=1)
-            self.entry_user = tk.Entry(self.frame_upload_labels)
-            self.entry_user.grid(row=1, column=1)
-            self.entry_user.var = tk.StringVar()
-            self.entry_user["textvariable"] = self.entry_user.var
-            self.entry_user.var.trace_add("write", self.enable_connect_button)
-
-            ''' XNAT PASSWORD '''
-
-            self.label_psw = tk.Label(self.frame_upload_labels, text="Password", anchor="w")
-            self.label_psw.grid(row=2, column=0, padx=1)
-            self.entry_psw = tk.Entry(self.frame_upload_labels, show="*")
-            self.entry_psw.grid(row=2, column=1)
-            self.entry_psw.var = tk.StringVar()
-            self.entry_psw["textvariable"] = self.entry_psw.var
-            self.entry_psw.var.trace_add("write", self.enable_connect_button)
-
-            ''' XNAT HTTP/HTTPS '''
-            self.http = tk.StringVar()
-            self.http.trace_add("write", self.enable_connect_button)
-
-            ''' SAVE CREDENTIALS CHECKBOX '''
-            self.remember = tk.IntVar()
-
-
+            # SHOW THE PASSWORD
+            popup1.show_psw = tk.BooleanVar()
+            
             # BUTTONS
-            self.button_connect = tk.Button(
-                self.frame_upload_button,
-                text="Login",
-                state="disabled",
-                command=partial(self.check_connection,master)
+            popup1.button_connect = tk.Button(
+                popup1,
+                text="Login", font=("Calibri", 10, "bold"), 
+                width=15,
+                command=partial(self.check_connection,master, popup1)
             )
-            self.button_connect.grid(row=4, column=5, sticky="SE")
-            self.button_http = tk.Radiobutton(
-                self.frame_upload_button,
+            popup1.button_connect.grid(row=5, column=1)
+            popup1.button_http = tk.Radiobutton(
+                popup1,
                 text=" http:// ",
-                variable=self.http,
+                variable=popup1.http,
                 value="http://",
             )
-            self.button_http.grid(row=0, column=0)
-            self.button_http.select()
-            self.button_https = tk.Radiobutton(
-                self.frame_upload_button,
+            popup1.button_http.grid(row=4, column=0)
+            popup1.button_http.select()
+            popup1.button_https = tk.Radiobutton(
+                popup1,
                 text=" https:// ",
-                variable=self.http,
+                variable=popup1.http,
                 value="https://",
             )
-            self.button_https.grid(row=0, column=1)
+            popup1.button_https.grid(row=4, column=1)
 
-            self.btn_remember = tk.Checkbutton(
-                self.frame_upload_button, text="Remember me", variable=self.remember
+            popup1.btn_remember = tk.Checkbutton(
+                popup1, text="Remember me", variable=popup1.remember
             )
-            self.btn_remember.grid(row=0, column=2)
-            self.load_saved_credentials()
-            ###
-
-        def load_saved_credentials(self):
-
+            popup1.btn_remember.grid(row=4, column=2, padx=1, ipadx=1)
+            self.load_saved_credentials(popup1)
+            
+           
+        def load_saved_credentials(self, popup1):
             # REMEMBER CREDENTIALS
             try:
                 home = os.path.expanduser("~")
@@ -470,45 +339,29 @@ class xnat_pic_gui(tk.Frame):
                 pyAesCrypt.decryptFile(encrypted_file, decrypted_file, password, bufferSize)
                 login_file = open(decrypted_file, "r")
                 line = login_file.readline()
-                self.entry_address.var.set(line[8:-1])
+                popup1.entry_address.var.set(line[8:-1])
                 line = login_file.readline()
-                self.entry_user.var.set(line[9:-1])
+                popup1.entry_user.var.set(line[9:-1])
                 line = login_file.readline()
-                self.entry_psw.var.set(line[9:-1])
+                popup1.entry_psw.var.set(line[9:-1])
                 login_file.close()
                 os.remove(decrypted_file)
-                self.btn_remember.select()
+                popup1.btn_remember.select()
             except Exception as error:
                 pass
 
-        def instantiate_frames(self,master):
-
-            # # FRAMES
-            self.frame_main = tk.Frame(master.root)
-            # self.frame_main.pack()
-            self.frame_main.grid(row=0, column=0)
-            # # LABELS
-            self.frame_upload_labels = tk.Frame(self.frame_main)
-            # self.frame_upload_labels.pack(side="left")
-            self.frame_upload_labels.grid(row=0, column=0, sticky="W")
-            self.frame_upload_button = tk.Frame(self.frame_main)
-            # self.frame_upload_button.pack(side="bottom",ipady=15,ipadx=5)
-            self.frame_upload_button.grid(row=3, column=0)
-            self.frame_upload_entries = tk.Frame(self.frame_main)
-
-        def check_connection(self,master):
-            self.entry_address_complete = self.http.get() + self.entry_address.var.get()
-            #
-
+        def check_connection(self, master, popup1):
+            # LOGIN
+            popup1.entry_address_complete = popup1.http.get() + popup1.entry_address.var.get()
             home = os.path.expanduser("~")
             try:
                 session = xnat.connect(
-                    self.entry_address_complete,
-                    self.entry_user.var.get(),
-                    self.entry_psw.var.get(),
+                    popup1.entry_address_complete,
+                    popup1.entry_user.var.get(),
+                    popup1.entry_psw.var.get(),
                 )
-                if self.remember.get() == True:
-                    self.save_credentials()
+                if popup1.remember.get() == True:
+                    self.save_credentials(popup1)
                 else:
                     try:
                         os.remove(
@@ -516,24 +369,14 @@ class xnat_pic_gui(tk.Frame):
                         )
                     except FileNotFoundError:
                         pass
+                popup1.destroy()
                 self.xnat_common_uploader(session, master)
             except xnat.exceptions.XNATLoginFailedError as err:
                 messagebox.showerror("Error!", err)
             except Exception as error:
                 messagebox.showerror("Error!", error)
 
-        def enable_connect_button(self, *_):
-            if (
-                self.entry_address.var.get()
-                and self.entry_user.var.get()
-                and self.entry_psw.var.get()
-                and self.http.get()
-            ):
-                self.button_connect["state"] = "normal"
-            else:
-                self.button_connect["state"] = "disabled"
-
-        def save_credentials(self):
+        def save_credentials(self, popup1):
 
             home = os.path.expanduser("~")
 
@@ -542,42 +385,70 @@ class xnat_pic_gui(tk.Frame):
                 login_file = open(file, "w+")
                 login_file.write(
                     "Address:"
-                    + self.entry_address.var.get()
+                    + popup1.entry_address.var.get()
                     + "\n"
                     + "Username:"
-                    + self.entry_user.var.get()
+                    + popup1.entry_user.var.get()
                     + "\n"
                     + "Password:"
-                    + self.entry_psw.var.get()
+                    + popup1.entry_psw.var.get()
                     + "\n"
                     + "HTTP:"
-                    + self.http.get()
+                    + popup1.http.get()
                 )
                 login_file.close()
                 # encrypt
                 encrypted_file = os.path.join(home, "Documents", ".XNAT_login_file.txt.aes")
                 pyAesCrypt.encryptFile(file, encrypted_file, password, bufferSize)
                 # decrypt
-                os.remove(file)
+                os.remove(file)   
+        
 
-            # elif platform.system()=='Windows':
-            #   login_file=open("/XNAT_login_file", "w+")
-            #   login_file.write("Address:"+self.entry_address.var.get()+'\n'+"Username:"+self.entry_user.var.get()+'\n'+"Password:"+self.entry_psw.var.get()+'\n'+"HTTP:"+self.http.get())
-            #   login_file.close()
+        def xnat_common_uploader(self, session, master):
+            # Frame
+            self.stack_frames[-1].update()
+            frame_two = self.stack_frames[-1]
+            
+            # Update canvas
+            my_elements = master.my_canvas.find_all()
+            master.my_canvas.delete(my_elements[1])
+            master.my_canvas.delete(my_elements[2])
+            master.my_canvas.delete(my_elements[3])
+            master.my_canvas.delete(my_elements[4])
+            master.my_canvas.delete(my_elements[5])
+            master.my_canvas.delete(my_elements[6])
+            master.my_canvas.delete(my_elements[7])
+            master.my_canvas.delete(my_elements[8])
 
-        def enable_project_entry(self, *_):
-            if self.newprj_var.get() == 1:
-                self.entry_prjname["state"] = "normal"
-                self.project_list["state"] = "disabled"
-                self.label_prjname["state"] = "normal"
-                self.label_choose_prj["state"] = "disabled"
-
-            else:
-                self.entry_prjname["state"] = "disabled"
-                self.label_prjname["state"] = "disabled"
-                self.project_list["state"] = "normal"
-                self.label_choose_prj["state"] = "normal"
-
+            xlabel_txtbox = 500
+            ylabel_txtbox = 400
+            ydelta_txt2btn = 70
+            xlabel_btn = 650
+            
+            # Upload DICOM files
+            label1 = tk.Label(frame_two, text='Upload new DICOM images to XNAT project', bg="#80FFE6", fg="black")
+            label1.config(font=("Calibri", 26, "bold"))
+            master.my_canvas.create_window(xlabel_txtbox, ylabel_txtbox, anchor=tk.NW, window=label1)
+            dicom_text = tk.StringVar()
+            self.dicom_btn = tk.Button(frame_two, textvariable=dicom_text, font=("Calibri", 22, "bold"), bg="black", fg="white", height=1, width=20, borderwidth=0, command=partial(self.xnat_dcm_uploader_select_project, session, master), cursor="hand2")
+            dicom_text.set("DICOM2XNAT")
+            master.my_canvas.create_window(xlabel_btn, ylabel_txtbox+ydelta_txt2btn, anchor = "nw", window = self.dicom_btn)
+            
+            # Upload files
+            label1 = tk.Label(frame_two, text='Upload other files to XNAT project', bg="#80FFE6", fg="black")
+            label1.config(font=("Calibri", 26, "bold"))
+            master.my_canvas.create_window(530, ylabel_txtbox+3*ydelta_txt2btn, anchor=tk.NW, window=label1)
+            file_text = tk.StringVar()
+            file_btn = tk.Button(frame_two, textvariable=file_text, font=("Calibri", 22, "bold"), bg="black", fg="white", height=1, width=20, borderwidth=0, command=partial(self.xnat_files_uploader, session, master), cursor="hand2")
+            file_text.set("FILES2XNAT")
+            master.my_canvas.create_window(xlabel_btn, ylabel_txtbox+4*ydelta_txt2btn, anchor = "nw", window = file_btn)
+            
+            # Button to go to the previous page
+            back_text = tk.StringVar()   
+            self.back_btn = tk.Button(frame_two, textvariable=back_text, font=("Calibri", 22, "bold"), bg="white", fg="black", height=1, width=10, borderwidth=0, command=lambda: (master.my_canvas.pack_forget(), xnat_pic_gui.choose_you_action(master, frame_two)), cursor="hand2")
+            back_text.set("Back")
+            master.my_canvas.create_window(20, 850, anchor = "nw", window = self.back_btn)
+        
         def enable_next(self, *_):
             # # EXISTING PROJECT
             if self.newprj_var.get() == 0:
@@ -602,235 +473,63 @@ class xnat_pic_gui(tk.Frame):
                 )
             else:
                 self.xnat_dcm_uploader_select_custom_vars(master)
-
-        def xnat_common_uploader(self, session, master):
-
-            # # FRAME
-            self.stack_frames[-1].grid_remove()
-            self.frame_two = tk.Frame(master.root)
-            self.frame_two.grid()
-            self.stack_frames.append(self.frame_two)
-
-            # # LABEL
-            self.label_dcm = tk.Label(
-                self.frame_two, text="  Upload new DICOM images to XNAT project    ", anchor="w",
-            )
-            self.label_files = tk.Label(
-                self.frame_two, text="  Upload other files to XNAT project  ", anchor="w"
-            )
-            self.label_files.grid(row=4, column=0)
-            self.label_dcm.grid(row=2, column=0, sticky="W", columnspan=1)
-
-            self.button_dcm = tk.Button(
-                self.frame_two, text="DICOM2XNAT", command=partial(self.xnat_dcm_uploader_select_project, session, master),
-                background='green', fg='white'
-            )
-            self.button_dcm.grid(row=2, column=2)
-            self.button_files = tk.Button(
-                self.frame_two, text="FILES2XNAT", command=partial(self.xnat_files_uploader, session, master),
-                background='red', fg='white'
-            )
-            self.button_files.grid(row=4, column=2)
-
-
+        
         def xnat_dcm_uploader_select_project(self,session,master):
 
-            # # FRAME
-            self.stack_frames[-1].grid_remove()
-            self.frame_two = tk.Frame(master.root)
-            # self.frame_two.pack(side="left")
-            self.frame_two.grid()
-            self.stack_frames.append(self.frame_two)
+            # Enable / Disable new / existing project
+            def isChecked():
+                 if self.newprj_var.get() == 1:
+                    popup2.label_prjname['state'] = tk.NORMAL
+                    popup2.label_choose_prj['state'] = tk.DISABLED
+                    popup2.entry_prjname['state'] = tk.NORMAL
+                    popup2.project_list['state'] = tk.DISABLED
+                 elif self.newprj_var.get() == 0:
+                    popup2.label_prjname['state'] = tk.DISABLED
+                    popup2.label_choose_prj['state'] = tk.NORMAL
+                    popup2.entry_prjname['state'] = tk.DISABLED
+                    popup2.project_list['state'] = tk.NORMAL
 
-            # master.root.width = 600
-            # master.root.height = 100
-            # master.x = (int(master.root.screenwidth) - master.root.width) / 2
-            # master.y = (int(master.root.screenheight)- master.root.height) / 3
-            # master.root.geometry("%dx%d+%d+%d" % (master.root.width, master.root.height, master.x, master.y))
+            # POPUP 
+            popup2 = tk.Toplevel()
+            popup2.title("XNAT-PIC")
+            master.root.width = 350
+            master.root.height = 100
+            master.x = (int(master.root.screenwidth) - master.root.width) / 2
+            master.y = (int(master.root.screenheight)- master.root.height) / 3
+            popup2.geometry("%dx%d+%d+%d" % (master.root.width, master.root.height, master.x, master.y))
 
-            # # LABEL
-            self.label_prjname = tk.Label(
-                self.frame_two, text="  New project    ", anchor="w", state="disabled"
-            )
-            self.label_choose_prj = tk.Label(
-                self.frame_two, text="  Select project in XNAT  ", anchor="w"
-            )
-            self.label_choose_prj.grid(row=2, column=0)
-            self.label_prjname.grid(row=0, column=0, sticky="W", columnspan=1)
-            # # ENTRY INSERT NEW PROJECT
-            self.value = tk.StringVar()
-            self.entry_prjname = tk.Entry(self.frame_two, state="disabled")
-            self.value.set("  Project ID  ")
-            self.entry_prjname.grid(row=0, column=1)
-            self.entry_prjname.var = tk.StringVar()
-            self.entry_prjname.var.set("  Project ID  ")
-            self.entry_prjname["textvariable"] = self.entry_prjname.var
+            # LABEL
+            popup2.label_prjname = tk.Label(popup2, text="  New project    ", anchor="w", state="disabled")
+            popup2.label_choose_prj = tk.Label(popup2, text="  Select project in XNAT:  ", anchor="w")
+            popup2.label_choose_prj.grid(row=2, column=0)
+            popup2.label_prjname.grid(row=0, column=0)
 
+            # ENTRY INSERT NEW PROJECT
+            popup2.value = tk.StringVar()
+            popup2.entry_prjname = tk.Entry(popup2, state="disabled")
+            popup2.value.set("  Project ID  ")
+            popup2.entry_prjname.grid(row=0, column=2)
+            popup2.entry_prjname.var = tk.StringVar()
+            popup2.entry_prjname.var.set("  Project ID  ")
+            popup2.entry_prjname["textvariable"] = popup2.entry_prjname.var
+           
             # PROJECTS LIST
-
             self.OPTIONS = session.projects
-
-            self.prj = tk.StringVar()
-            self.project_list = tk.OptionMenu(self.frame_two, self.prj, *self.OPTIONS)
-            self.project_list.grid(row=2, column=1)
+            popup2.prj = tk.StringVar()
+            popup2.project_list = tk.OptionMenu(popup2, popup2.prj, *self.OPTIONS)
+            popup2.project_list.grid(row=2, column=2)
             self.newprj_var = tk.IntVar()
-            self.btn_newprj = tk.Checkbutton(self.frame_two, variable=self.newprj_var)
-            self.btn_newprj.grid(row=0, column=0)
-            self.newprj_var.trace_add("write", self.enable_project_entry)
-
-            self.button_prev = tk.Button(
-                self.frame_two, text="Back", command=partial(self.navigate_back,master)
-            )
-            self.button_prev.grid(row=4, column=0)
-            self.button_next = tk.Button(
-                self.frame_two, text="Next", command=partial(self.check_project_name,master), state="disabled"
-            )
-            self.button_next.grid(row=4, column=2)
-            # TRACE PROJECT INSERTION
-
-            self.newprj_var.trace_add("write", self.enable_next)
-            self.entry_prjname.var.trace_add("write", self.enable_next)
-            self.prj.trace_add("write", self.enable_next)
-
+            popup2.btn_newprj = tk.Checkbutton(popup2, variable=self.newprj_var, onvalue=1, offvalue=0, command=isChecked)
+            popup2.btn_newprj.grid(row=0, column=1)           
+            
             session.disconnect()
 
         def xnat_files_uploader(self, session, master):
 
-
             session.disconnect()
 
 
-        def navigate_back(self,master):
-            self.stack_frames[-1].grid_remove()
-            self.stack_frames.pop()
-            self.stack_frames[-1].grid()
 
-        def xnat_dcm_uploader_select_custom_vars(self,master):
-            
-            if self.newprj_var.get() == 1:
-                self.project = self.entry_prjname.var.get()
-            else:
-                self.project = self.prj.get()
-
-            self.stack_frames[-1].grid_remove()
-            master.root.withdraw()
-
-            self.folder_to_upload = filedialog.askdirectory(
-                parent=master.root,
-                initialdir=self.home,
-                title="Please select project directory (DICOM only)",
-            )
-            if self.folder_to_upload==():
-                os._exit(1)
-            master.root.deiconify()
-            head, tail = os.path.split(self.folder_to_upload)
-            project_foldername = tail
-            dst = os.path.join(head, project_foldername)
-            project_id = self.project
-            ##############
-            self.frame_three = tk.Frame(master.root)
-            self.stack_frames.append(self.frame_three)
-            self.stack_frames[-1].grid()
-
-            self.label_descr = tk.Label(
-                self.frame_three,
-                text="   Enter the number of custom variables \n(from 0 to 3)   ",
-                anchor="w",
-                state="normal",
-            )
-            # self.label_descr.pack(side="top",anchor="w")
-            self.label_descr.grid(row=0, column=0)
-            self.label_num_vars = tk.Entry(self.frame_three)
-            # self.label_num_vars.pack()
-            self.label_num_vars.grid(row=1, column=0)
-            self.label_num_vars.var = tk.StringVar()
-            self.label_num_vars["textvariable"] = self.label_num_vars.var
-            self.label_num_vars.var.trace_add("write", self.enable_cust_vars_button)
-
-            self.btn_add = tk.Button(
-                self.frame_three,
-                text="List Custom Variables",
-                command=self.display_cust_vars_list,
-                state="disabled",
-            )
-            # self.btn_add.pack(side="right")
-            self.btn_add.grid(row=1, column=1)
-            self.btn_next = tk.Button(
-                self.frame_three, text="Next", command=partial(self.dicom2xnat,master)
-            )
-            # self.btn_next.pack(side="bottom")
-            self.btn_next.grid(row=3, column=1)
-
-            self.button_prev = tk.Button(
-                self.frame_three, text="Back", command=partial(self.navigate_back,master)
-            )
-            # self.button_prev.pack(side="left")
-            self.button_prev.grid(row=3, column=0)
-
-        #        self.list_cust_vars=[]
-        def display_cust_vars_list(self):
-            try:
-                self.frame_cst_vars.destroy()
-            except:
-                pass
-            self.frame_cst_vars = tk.Frame(self.frame_three)
-            self.frame_cst_vars_values = tk.Frame(self.frame_three)
-            self.cust_vars, self.cust_vars_values = list_cust_vars(self.folder_to_upload)
-            # self.folder_list=tk.OptionMenu(self.frame_three,self.folder,*(self.folders))
-            # self.frame_cst_vars.pack(side="left")
-            j = 2
-            self.frame_cst_vars.grid(row=j, column=0)
-            # self.frame_cst_vars_values.pack(side="right")
-            self.frame_cst_vars_values.grid(row=j, column=1)
-            # self.cust_vars=self.cust_vars[::-1]
-            tk.Label(
-                self.frame_cst_vars, text="Custom Variables", relief="raised", borderwidth=2
-            ).grid(row=j, column=0)
-            tk.Label(
-                self.frame_cst_vars,
-                text="Values",
-                relief="raised",
-                borderwidth=2,
-            ).grid(row=j, column=1)
-            for i in range(0, int(self.label_num_vars.get())):
-                tk.Label(self.frame_cst_vars, text=self.cust_vars[i], borderwidth=2).grid(
-                    row=j + i + 1, column=0
-                )
-                tk.Label(
-                    self.frame_cst_vars, text=self.cust_vars_values[i], borderwidth=2
-                ).grid(row=j + i + 1, column=1)
-
-        def enable_cust_vars_button(self, *_):
-
-            try:
-                if re.match("^[0123]$", str(self.label_num_vars.var.get())):
-                    self.btn_add["state"] = "normal"
-                else:
-                    self.btn_add["state"] = "disabled"
-            except:
-                pass
-
-        def dicom2xnat(self,master):
-
-            self.stack_frames[-1].grid_remove()
-            if (not self.label_num_vars.var.get()):
-                self.label_num_vars.var="0"
-                num_vars = int(self.label_num_vars.var)
-            else:
-                num_vars = int(self.label_num_vars.get())
-            # master._inprogress("Upload in progress")
-            xnat_uploader(
-                self.folder_to_upload,
-                self.project,
-                num_vars,
-                self.entry_address_complete,
-                self.entry_user.var.get(),
-                self.entry_psw.var.get(),
-                master
-            )
-
-            # master.progress.stop()
-            os._exit(0)
 
 
 if __name__ == "__main__":
