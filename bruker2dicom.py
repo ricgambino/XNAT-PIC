@@ -687,11 +687,11 @@ def bruker2dicom(folder_to_convert, dst_folder, master):
     if parameters:
         # if "parameters" in globals() or "parameters" in locals():
         master.progress.stop()
-        master.root.withdraw()
+        #master.root.withdraw()
         #messagebox.showinfo("Success!", "DICOM files have been successfully created!")
     else:
         master.progress.stop()
-        master.root.withdraw()
+       #master.root.withdraw()
         messagebox.showerror(
             "Error!",
             "Bruker files have not been found in the chosen folder/subfolders!",
