@@ -25,7 +25,7 @@ import xnat
 import pyAesCrypt
 
 DELTA_SCREEN = 200
-PATH_IMAGE = "C:\\Users\\Sara Zullino.HARI\\Desktop\\FG\\Image\\"
+PATH_IMAGE = "Images\\"
 
 # Password to access to saved credentials now is stored in a local folder
 with open(os.path.join(os.path.expanduser("~"), "Documents", "XNAT_login_credentials.json")) as auth_file:
@@ -65,23 +65,28 @@ class xnat_pic_gui(tk.Frame):
 
         # Define Canvas and logo in background
         mywidth = self.root.screenwidth-DELTA_SCREEN
-        logo = Image.open(PATH_IMAGE + "NW_Header2.png")
+        logo = Image.open(PATH_IMAGE + "logo41.png")
         wpercent = (mywidth/float(logo.size[0]))
         hsize = int((float(logo.size[1])*float(wpercent)))
-        my_canvas = tk.Canvas(self.root, width=mywidth, height=hsize, bg="#31C498", highlightthickness=3, highlightbackground="black")
-        my_canvas.pack(padx=40, pady=40)
+        self.my_canvas = tk.Canvas(self.root, width=mywidth, height=hsize, bg="#31C498", highlightthickness=3, highlightbackground="black")
+        self.my_canvas.pack(padx=40, pady=40)
       
         logo = logo.resize((mywidth,hsize), Image.ANTIALIAS)  
         self.logo = ImageTk.PhotoImage(logo)
-        my_canvas.create_image(-0.5, 0, anchor=tk.NW, image=self.logo)
+        self.my_canvas.create_image(-0.5, 0, anchor=tk.NW, image=self.logo)
         
+        # Logo on top
+        logo3 = Image.open(PATH_IMAGE + "path163.png")
+        self.logo3 = ImageTk.PhotoImage(logo3)
+        label1 = tk.Label(self.root, image=self.logo3,  bg="#31C498", width=1716)
+        self.my_canvas.create_window(0.5, 20, anchor=tk.NW, window=label1)
+
         # Button to enter
         enter_text = tk.StringVar()
-        enter_btn = tk.Button(self.root, textvariable=enter_text, font=("Calibri", 22, "bold"), bg="#80FFE6", fg="black", height=1, width=18, borderwidth=0, command=lambda: (my_canvas.pack_forget(), enter_btn.pack_forget(), xnat_pic_gui.choose_you_action(self, "")), cursor="hand2")
+        self.enter_btn = tk.Button(self.root, textvariable=enter_text, font=("Calibri", 22, "bold"), bg="#80FFE6", fg="black", height=1, width=18, borderwidth=0, command=lambda: (xnat_pic_gui.choose_you_action(self, "")), cursor="hand2")
         enter_text.set("ENTER")
-        my_canvas.create_window(680, 750, anchor = "nw", window = enter_btn)
+        self.my_canvas.create_window(680, 650, anchor = "nw", window = self.enter_btn)
         
-        self.frame_main = tk.Frame(self.root)
         
         # Choose to upload files, fill in the info, convert files, process images
     def choose_you_action(self, where):
@@ -92,18 +97,7 @@ class xnat_pic_gui(tk.Frame):
          else:
              ind = where
          
-         # Define Canvas and update logo in background
-         mywidth = ind.screenwidth-DELTA_SCREEN
-         logo2 = Image.open(PATH_IMAGE + "logo41.png")
-         wpercent = (mywidth/float(logo2.size[0]))
-         hsize = int((float(logo2.size[1])*float(wpercent)))
-         self.my_canvas = tk.Canvas(ind, width=mywidth, height=hsize, bg="#31C498", highlightthickness=1, highlightbackground="black")
-         self.my_canvas.pack(padx=40, pady=40)
-
-         logo2 = logo2.resize((mywidth,hsize), Image.ANTIALIAS)
-         self.logo2 = ImageTk.PhotoImage(logo2)
-         self.my_canvas.create_image(1, 1, anchor=tk.NW, image=self.logo2)
-            
+         self.enter_btn.destroy()            
          # Positions for button
          x_btn = 100
          y_btn = 400
@@ -167,14 +161,7 @@ class xnat_pic_gui(tk.Frame):
          self.my_canvas.create_window(x_btn + 2*xdelta_btn, y_btn, anchor="nw", window=self.info_upload_btn)
 
          self.info_process_btn = tk.Button(ind, image = self.logo_info, bg="#80FFE6", borderwidth=0, command = lambda: helpmsg("button4"), cursor="question_arrow")
-         self.my_canvas.create_window(x_btn + 3*xdelta_btn, y_btn, anchor="nw", window=self.info_process_btn) 
-
-         # Logo on top
-         logo3 = Image.open(PATH_IMAGE + "path163.png")
-         self.logo3 = ImageTk.PhotoImage(logo3)
-         label1 = tk.Label(ind, image=self.logo3,  bg="#31C498", width=1716)
-         self.my_canvas.create_window(0.5, 20, anchor=tk.NW, window=label1)
-         
+         self.my_canvas.create_window(x_btn + 3*xdelta_btn, y_btn, anchor="nw", window=self.info_process_btn)        
 
     def get_page(self):
         return self.root   
