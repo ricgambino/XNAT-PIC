@@ -1,9 +1,10 @@
-#!/home/xnat/anaconda3/envs/py3/bin/python3.7
 # -*- coding: utf-8 -*-
 """
 Created on Mar 1, 2019
 
 @author: Sara Zullino, Alessandro Paglialonga
+
+Modified by Riccardo Gambino
 """
 import shutil, os
 import xnat
@@ -14,10 +15,7 @@ import datetime
 import pydicom
 import sys
 import traceback
-try:
-    import tkinter as tk        # python v3
-except:
-    import Tkinter as tk        # python v2
+import tkinter as tk
 from tkinter import filedialog
 
 # from tkinter import ttk
@@ -25,6 +23,7 @@ from tkinter import filedialog
 
 def xnat_uploader(folder_to_convert, project_id, num_cust_vars, address, user, psw):
 
+    folder_to_convert = os.path.join(folder_to_convert, 'MR').replace('\\', '/')
     try:
         flag = 1
         path = folder_to_convert
@@ -58,11 +57,17 @@ def xnat_uploader(folder_to_convert, project_id, num_cust_vars, address, user, p
                         custom_vars.append(os.path.basename(path))
                         path = os.path.dirname(path)
                     custom_vars = custom_vars[::-1]
-                    custom_values = custom_values[::-1]                  
-                    folder_list = sorted(glob(os.path.join(root, subject_dir) + '/*/', recursive=True))
+                    custom_values = custom_values[::-1] 
+                    #######################################
+                    # Problem with os.path.join() function: 
+                    #######################################
+                    # a = root + '/' + subject_dir
+                    # folder_list = sorted(glob(root + '/' + subject_dir + '/*/', recursive=True))
+                    # folder_list = sorted(glob(os.path.join(root, subject_dir) + '/*/', recursive=True))
+                    folder_list = sorted(glob(root + '/*/', recursive=True))
                     for item in folder_list:
                         print(item)
-                        file_list = sorted(glob(item + '/*/*', recursive=True))
+                        file_list = sorted(glob(item + '/*', recursive=True))
                         print(file_list[0])                   
                         try:
                             ds = pydicom.dcmread(file_list[0])
@@ -88,8 +93,16 @@ def xnat_uploader(folder_to_convert, project_id, num_cust_vars, address, user, p
                                 experiment_id += "_" + var
                             print(experiment_id)
                             try:
+                                # Maybe we can try with 
+                                # session = xnat.connect(address, user, psw)
+                                # .
+                                # .
+                                # .
+                                # session.disconnect()
+                                
                                 with xnat.connect(address, user, psw) as session:
                                     zip_dst = shutil.make_archive(subject_id, "zip", item)
+                                    zip_ext = os.path.splitext(zip_dst)
                                     project = session.classes.ProjectData(
                                     name=project_id, parent=session
                                     )
@@ -153,11 +166,11 @@ def xnat_uploader(folder_to_convert, project_id, num_cust_vars, address, user, p
             "XNAT-PIC - Uploader", "DICOM images have been successfully imported to XNAT!"
         )
 
-        os._exit(0)
+        # os._exit(0)
 
     except Exception as err:
         messagebox.showerror("XNAT-PIC - Uploader", err)
         exc_type, exc_value, exc_traceback = sys.exc_info()
         traceback.print_tb(exc_traceback)
-        session.disconnect()
+        # session.disconnect()
         sys.exit(1)   
