@@ -44,7 +44,7 @@ def bruker2dicom(folder_to_convert, dst_folder, master):
 
     start_time = time.time()
     # Start progress bar
-    master._inprogress("Conversion in progress")
+    #master._inprogress("Conversion in progress")
 
     for path in list_path:
         if 'Results' not in path:
@@ -628,20 +628,26 @@ def bruker2dicom(folder_to_convert, dst_folder, master):
                 shutil.copytree(current_path, dst_path)
 
     if parameters:
+           pass
         # if "parameters" in globals() or "parameters" in locals():
-        master.progress.stop()
-        master.root.withdraw()
+        #master.progress.stop()
+        #master.root.withdraw()
         #messagebox.showinfo("Success!", "DICOM files have been successfully created!")
     else:
-        master.progress.stop()
-        master.root.withdraw()
+        #master.progress.stop()
+        #master.root.withdraw()
         messagebox.showerror(
             "Error!",
             "Bruker files have not been found in the chosen folder/subfolders!",
         )
-        os._exit(1)
+        master.root.config(cursor="arrow") 
+        master.convert_btn['state'] = tk.NORMAL
+        master.info_btn['state'] = tk.NORMAL
+        master.upload_btn['state'] = tk.NORMAL
+        master.process_btn['state'] = tk.NORMAL
+        sys.exit(1)
 
-    master.progress.stop()
+    #master.progress.stop()
 
     end_time = time.time()
     print('Elapsed time for conversion: ' + str(end_time - start_time) + ' s')
