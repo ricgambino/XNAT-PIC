@@ -83,21 +83,14 @@ class xnat_pic_gui(tk.Frame):
 
         # Button to enter
         enter_text = tk.StringVar()
-        self.enter_btn = tk.Button(self.root, textvariable=enter_text, font=("Calibri", 22, "bold"), bg="#80FFE6", fg="black", height=1, width=18, borderwidth=0, command=lambda: (xnat_pic_gui.choose_you_action(self, "")), cursor="hand2")
+        self.enter_btn = tk.Button(self.root, textvariable=enter_text, font=("Calibri", 22, "bold"), bg="#80FFE6", fg="black", height=1, width=18, borderwidth=0, command=lambda: (self.enter_btn.destroy(), xnat_pic_gui.choose_you_action(self)), cursor="hand2")
         enter_text.set("ENTER")
         self.my_canvas.create_window(680, 650, anchor = "nw", window = self.enter_btn)
         
         
         # Choose to upload files, fill in the info, convert files, process images
-    def choose_you_action(self, where):
-        # Canvas
-        # If condition: to know if you get to this frame from the enter button or from the back button
-         if where == "":
-             ind = self.root
-         else:
-             ind = where
-         
-         self.enter_btn.destroy()            
+    def choose_you_action(self):
+        # Canvas           
          # Positions for button
          x_btn = 100
          y_btn = 400
@@ -105,25 +98,25 @@ class xnat_pic_gui(tk.Frame):
         
          # Convert files Bruker2DICOM
          convert_text = tk.StringVar()
-         self.convert_btn = tk.Button(ind, textvariable=convert_text, font=("Calibri", 22, "bold"), bg="#80FFE6", fg="black", height=1, width=20, borderwidth=0, command=partial(self.bruker2dicom_conversion, self), cursor="hand2")
+         self.convert_btn = tk.Button(self.root, textvariable=convert_text, font=("Calibri", 22, "bold"), bg="#80FFE6", fg="black", height=1, width=20, borderwidth=0, command=partial(self.bruker2dicom_conversion, self), cursor="hand2")
          convert_text.set("Bruker2DICOM")
          self.my_canvas.create_window(x_btn, y_btn, anchor = "nw", window = self.convert_btn)
          
          # Fill in the info
          info_text = tk.StringVar()
-         self.info_btn = tk.Button(ind, textvariable=info_text, font=("Calibri", 22, "bold"), bg="#80FFE6", fg="black", height=1, width=20, borderwidth=0, cursor="hand2")
+         self.info_btn = tk.Button(self.root, textvariable=info_text, font=("Calibri", 22, "bold"), bg="#80FFE6", fg="black", height=1, width=20, borderwidth=0, cursor="hand2")
          info_text.set("Fill in the info")
          self.my_canvas.create_window(x_btn + xdelta_btn, y_btn, anchor = "nw", window = self.info_btn)
 
          # Upload files
          upload_text = tk.StringVar()
-         self.upload_btn = tk.Button(ind, textvariable=upload_text, font=("Calibri", 22, "bold"), bg="#80FFE6", fg="black", height=1, width=20, borderwidth=0, command=partial(self.xnat_dcm_uploader, self), cursor="hand2")
+         self.upload_btn = tk.Button(self.root, textvariable=upload_text, font=("Calibri", 22, "bold"), bg="#80FFE6", fg="black", height=1, width=20, borderwidth=0, command=partial(self.xnat_dcm_uploader, self), cursor="hand2")
          upload_text.set("Uploader")
          self.my_canvas.create_window(x_btn + 2*xdelta_btn, y_btn, anchor = "nw", window = self.upload_btn)        
         
          # Processing your files
          process_text = tk.StringVar()
-         self.process_btn = tk.Button(ind, textvariable=process_text, font=("Calibri", 22, "bold"), bg="#80FFE6", fg="black", height=1, width=20, borderwidth=0, cursor="hand2")
+         self.process_btn = tk.Button(self.root, textvariable=process_text, font=("Calibri", 22, "bold"), bg="#80FFE6", fg="black", height=1, width=20, borderwidth=0, cursor="hand2")
          process_text.set("Processing")
          self.my_canvas.create_window(x_btn + 3*xdelta_btn, y_btn, anchor = "nw", window = self.process_btn)
         
@@ -148,19 +141,19 @@ class xnat_pic_gui(tk.Frame):
          y_btn = 470
          xdelta_btn = 400
 
-         logo_info = Image.open(PATH_IMAGE + "info.png")
+         logo_info = Image.open(r"C:\Users\Sara Zullino.HARI\Desktop\FG\Image\info.png")
          self.logo_info = ImageTk.PhotoImage(logo_info)
          
-         self.info_convert_btn = tk.Button(ind, image = self.logo_info, bg="#80FFE6", borderwidth=0, command = lambda: helpmsg("button1"), cursor="question_arrow")
+         self.info_convert_btn = tk.Button(self.root, image = self.logo_info, bg="#80FFE6", borderwidth=0, command = lambda: helpmsg("button1"), cursor="question_arrow")
          self.my_canvas.create_window(x_btn, y_btn, anchor="nw", window=self.info_convert_btn)
 
-         self.info_info_btn = tk.Button(ind, image = self.logo_info, bg="#80FFE6", borderwidth=0, command = lambda: helpmsg("button2"), cursor="question_arrow")
+         self.info_info_btn = tk.Button(self.root, image = self.logo_info, bg="#80FFE6", borderwidth=0, command = lambda: helpmsg("button2"), cursor="question_arrow")
          self.my_canvas.create_window(x_btn + xdelta_btn, y_btn, anchor="nw", window=self.info_info_btn)
 
-         self.info_upload_btn = tk.Button(ind, image = self.logo_info, bg="#80FFE6", borderwidth=0, command = lambda: helpmsg("button3"), cursor="question_arrow")
+         self.info_upload_btn = tk.Button(self.root, image = self.logo_info, bg="#80FFE6", borderwidth=0, command = lambda: helpmsg("button3"), cursor="question_arrow")
          self.my_canvas.create_window(x_btn + 2*xdelta_btn, y_btn, anchor="nw", window=self.info_upload_btn)
 
-         self.info_process_btn = tk.Button(ind, image = self.logo_info, bg="#80FFE6", borderwidth=0, command = lambda: helpmsg("button4"), cursor="question_arrow")
+         self.info_process_btn = tk.Button(self.root, image = self.logo_info, bg="#80FFE6", borderwidth=0, command = lambda: helpmsg("button4"), cursor="question_arrow")
          self.my_canvas.create_window(x_btn + 3*xdelta_btn, y_btn, anchor="nw", window=self.info_process_btn)        
 
     def get_page(self):
@@ -397,16 +390,17 @@ class xnat_pic_gui(tk.Frame):
             frame_two = self.stack_frames[-1]
             
             # Update canvas
-            my_elements = master.my_canvas.find_all()
-            master.my_canvas.delete(my_elements[1])
-            master.my_canvas.delete(my_elements[2])
-            master.my_canvas.delete(my_elements[3])
-            master.my_canvas.delete(my_elements[4])
-            master.my_canvas.delete(my_elements[5])
-            master.my_canvas.delete(my_elements[6])
-            master.my_canvas.delete(my_elements[7])
-            master.my_canvas.delete(my_elements[8])
-
+            # Delete button of the previous frame
+            master.convert_btn.destroy()
+            master.info_btn.destroy()
+            master.upload_btn.destroy()
+            master.process_btn.destroy()
+            master.info_convert_btn.destroy()
+            master.info_info_btn.destroy()
+            master.info_upload_btn.destroy()
+            master.info_process_btn.destroy()
+            
+            # New Button
             xlabel_txtbox = 500
             ylabel_txtbox = 400
             ydelta_txt2btn = 70
@@ -417,14 +411,14 @@ class xnat_pic_gui(tk.Frame):
             label1.config(font=("Calibri", 26, "bold"))
             master.my_canvas.create_window(xlabel_txtbox, ylabel_txtbox, anchor=tk.NW, window=label1)
             dicom_text = tk.StringVar()
-            self.dicom_btn = tk.Button(frame_two, textvariable=dicom_text, font=("Calibri", 22, "bold"), bg="black", fg="white", height=1, width=20, borderwidth=0, command=partial(self.xnat_dcm_uploader_select_project, session, master), cursor="hand2")
+            dicom_btn = tk.Button(frame_two, textvariable=dicom_text, font=("Calibri", 22, "bold"), bg="black", fg="white", height=1, width=20, borderwidth=0, command=partial(self.xnat_dcm_uploader_select_project, session, master), cursor="hand2")
             dicom_text.set("DICOM2XNAT")
-            master.my_canvas.create_window(xlabel_btn, ylabel_txtbox+ydelta_txt2btn, anchor = "nw", window = self.dicom_btn)
+            master.my_canvas.create_window(xlabel_btn, ylabel_txtbox+ydelta_txt2btn, anchor = "nw", window = dicom_btn)
             
             # Upload files
-            label1 = tk.Label(frame_two, text='Upload other files to XNAT project', bg="#80FFE6", fg="black")
-            label1.config(font=("Calibri", 26, "bold"))
-            master.my_canvas.create_window(530, ylabel_txtbox+3*ydelta_txt2btn, anchor=tk.NW, window=label1)
+            label2 = tk.Label(frame_two, text='Upload other files to XNAT project', bg="#80FFE6", fg="black")
+            label2.config(font=("Calibri", 26, "bold"))
+            master.my_canvas.create_window(530, ylabel_txtbox+3*ydelta_txt2btn, anchor=tk.NW, window=label2)
             file_text = tk.StringVar()
             file_btn = tk.Button(frame_two, textvariable=file_text, font=("Calibri", 22, "bold"), bg="black", fg="white", height=1, width=20, borderwidth=0, command=partial(self.xnat_files_uploader, session, master), cursor="hand2")
             file_text.set("FILES2XNAT")
@@ -432,9 +426,9 @@ class xnat_pic_gui(tk.Frame):
             
             # Button to go to the previous page
             back_text = tk.StringVar()   
-            self.back_btn = tk.Button(frame_two, textvariable=back_text, font=("Calibri", 22, "bold"), bg="white", fg="black", height=1, width=10, borderwidth=0, command=lambda: (master.my_canvas.pack_forget(), xnat_pic_gui.choose_you_action(master, frame_two)), cursor="hand2")
+            back_btn = tk.Button(frame_two, textvariable=back_text, font=("Calibri", 22, "bold"), bg="white", fg="black", height=1, width=10, borderwidth=0, command=lambda: (back_btn.destroy(), dicom_btn.destroy(), file_btn.destroy(), label1.destroy(), label2.destroy(), xnat_pic_gui.choose_you_action(master)), cursor="hand2")
             back_text.set("Back")
-            master.my_canvas.create_window(20, 850, anchor = "nw", window = self.back_btn)
+            master.my_canvas.create_window(20, 850, anchor = "nw", window = back_btn)
         
         def enable_next(self, *_):
             # # EXISTING PROJECT
