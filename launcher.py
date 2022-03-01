@@ -189,13 +189,23 @@ class xnat_pic_gui(tk.Frame):
                     master.info_btn['state'] = tk.DISABLED
                     master.upload_btn['state'] = tk.DISABLED
                     master.process_btn['state'] = tk.DISABLED
-                    master.root.config(cursor="watch")               
+                    # Progress bar on the screen
+                    master.popup = tk.Toplevel()
+                    master.popup.geometry("%dx%d+%d+%d" % (500, 80, 700, 500))
+                    tk.Label(master.popup, text="Please wait until the file is converted", font=("Calibri", 14, "bold")).place(relx=0.5, rely=0.5, anchor = 's')
+                    s = ttk.Style()
+                    s.theme_use('alt')
+                    s.configure('blue.Horizontal.TProgressbar', troughcolor  = '#4d4d4d', troughrelief = 'flat', background   = '#2f92ff')
+                    progressbar = ttk.Progressbar(master.popup, value=0, style="blue.Horizontal.TProgressbar", orient=HORIZONTAL, length=400, mode='indeterminate')
+                    progressbar.pack(expand=False, fill="x", side="top")
+                    progressbar.place(relx=0.5, rely=0.5, anchor = 'n')
+                    progressbar.start()                 
                     bruker2dicom(folder_to_convert, dst, master)
-                    master.root.config(cursor="arrow")
-                    my_exeption = False
-                    
-                except Exception as e:
-                    master.root.config(cursor="arrow") 
+                    progressbar.stop()
+                    master.popup.destroy()
+                    my_exeption = False           
+
+                except Exception as e: 
                     messagebox.showerror("XNAT-PIC - Bruker2Dicom", e)
                     master.convert_btn['state'] = tk.NORMAL
                     master.info_btn['state'] = tk.NORMAL

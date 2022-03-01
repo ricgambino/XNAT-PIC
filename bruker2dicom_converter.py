@@ -8,6 +8,7 @@ Created on Dec 7 2021
 
 from glob import glob
 import os, re, time
+from typing_extensions import Self
 import numpy as np
 import datetime, shutil
 import dateutil.parser
@@ -640,7 +641,7 @@ def bruker2dicom(folder_to_convert, dst_folder, master):
             "Error!",
             "Bruker files have not been found in the chosen folder/subfolders!",
         )
-        master.root.config(cursor="arrow") 
+        master.popup.destroy()
         master.convert_btn['state'] = tk.NORMAL
         master.info_btn['state'] = tk.NORMAL
         master.upload_btn['state'] = tk.NORMAL
