@@ -29,11 +29,7 @@ from tabulate import tabulate
 import datetime
 
 DELTA_SCREEN = 200
-<<<<<<< HEAD
 PATH_IMAGE = "images\\"
-=======
-PATH_IMAGE = "Images\\"
->>>>>>> FG_metadata
 
 # Password to access to saved credentials now is stored in a local folder
 with open(os.path.join(os.path.expanduser("~"), "Documents", "XNAT_login_credentials.json")) as auth_file:
