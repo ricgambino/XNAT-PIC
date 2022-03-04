@@ -3,4 +3,5 @@ pydicom==1.2.1
 xnat==0.3.22
 pyAesCrypt==0.4.3
 python-dateutil
+pandas
 
