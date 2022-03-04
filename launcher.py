@@ -1,10 +1,12 @@
 from ast import Str
+from dataclasses import field
 from doctest import master
 from logging import raiseExceptions
 import tkinter as tk
-from tkinter import CENTER, filedialog,messagebox
+from tkinter import CENTER, MULTIPLE, NW, SINGLE, filedialog,messagebox
 from tkinter import font
 from tkinter.tix import COLUMN, Balloon
+from unittest import result
 from PIL import Image, ImageTk, ImageDraw
 from tkinter import Button, Tk, HORIZONTAL
 from tkinter import ttk
@@ -23,6 +25,8 @@ except:
     from bruker2dicom import bruker2dicom
 import xnat    
 import pyAesCrypt
+from tabulate import tabulate
+import datetime
 
 DELTA_SCREEN = 200
 PATH_IMAGE = "Images\\"
@@ -78,8 +82,8 @@ class xnat_pic_gui(tk.Frame):
         # Logo on top
         logo3 = Image.open(PATH_IMAGE + "path163.png")
         self.logo3 = ImageTk.PhotoImage(logo3)
-        label1 = tk.Label(self.root, image=self.logo3,  bg="#31C498", width=1716)
-        self.my_canvas.create_window(0.5, 20, anchor=tk.NW, window=label1)
+        label1 = tk.Label(self.root, image=self.logo3,  bg="#31C498", width=1715)
+        self.my_canvas.create_window(3, 20, anchor=tk.NW, window=label1)
 
         # Button to enter
         enter_text = tk.StringVar()
@@ -104,7 +108,7 @@ class xnat_pic_gui(tk.Frame):
          
          # Fill in the info
          info_text = tk.StringVar()
-         self.info_btn = tk.Button(self.root, textvariable=info_text, font=("Calibri", 22, "bold"), bg="#80FFE6", fg="black", height=1, width=20, borderwidth=0, cursor="hand2")
+         self.info_btn = tk.Button(self.root, textvariable=info_text, font=("Calibri", 22, "bold"), bg="#80FFE6", fg="black", height=1, width=20, borderwidth=0, command=partial(self.metadata, self), cursor="hand2")
          info_text.set("Fill in the info")
          self.my_canvas.create_window(x_btn + xdelta_btn, y_btn, anchor = "nw", window = self.info_btn)
 
@@ -221,6 +225,408 @@ class xnat_pic_gui(tk.Frame):
                     sys.exit(0)
 
              threading.Thread(target=start_conversion).start()
+    # Fill in information
+    class metadata():
+        def __init__(self, master):
+                messagebox.showinfo("Metadata","Select project directory!")
+                #master.convert_btn['state'] = tk.DISABLED
+                #master.info_btn['state'] = tk.DISABLED
+                #master.upload_btn['state'] = tk.DISABLED
+                #master.process_btn['state'] = tk.DISABLED
+               
+                # Choose your directory
+                self.information_folder = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC: Select project directory!")
+                project_name = (self.information_folder.rsplit("/",1)[1])
+                
+                all_sub = []
+                # Create the empty layout files in all the subjects
+                # if the file for the entire project does not exist, create it, otherwise open it
+                if os.path.exists(str(self.information_folder) + "\\" + str(project_name) + "_" + "Custom_Variables.txt") is False:
+
+                    for item in os.listdir(self.information_folder):
+                        path = str(self.information_folder) + "\\" + str(item)
+                        #name = str(item) + "_" + "Custom_Variables.txt"
+                        
+                        # Check if the content of the project is a folder and therefore a patient or a file not to be considered (no comment)
+                        if os.path.isdir(path):
+                        #with open(path + "\\" + name, 'w+') as meta_file:
+                                    # Create the empty layout files in all the subjects
+                                    #meta_file.write(tabulate([['Project', str(project_name)], ['Subject', str(item)], ['Acquisition_date', ""], 
+                                    #['Group', ""], ['Dose', ""], ['Timepoint', ""]], headers=['Variable', 'Value']))
+
+                                    all_sub = all_sub + ["--"] + [['Project', str(project_name)], ['Subject', str(item)], ['Acquisition_date', ""], 
+                                    ['Group', ""], ['Dose', ""], ['Timepoint', ""]]
+                                        
+                        with open(str(self.information_folder) + "\\" + project_name + '_' + 'Custom_Variables.txt', 'w+') as meta_file:
+                            meta_file.write(tabulate(all_sub, headers=['Variable', 'Value']))
+                        
+                # Get all the values ​​of the variables of all subjects
+                fields = ["Project", "Subject", "Acquisition_date", "Group", "Dose", "Timepoint"]
+                data = []   
+                with open(str(self.information_folder) + "\\" + project_name + '_' + 'Custom_Variables.txt', 'r') as meta_file:
+                            data = (meta_file.read().split('\n'))
+                            results = [i for i in data if any(i for j in fields if str(j) in i)]
+                            for word in fields:
+                                results = [x.replace(word, '', 1).strip() for x in results]
+                            
+                #################### Update the frame ####################
+                master.convert_btn.destroy()
+                master.info_btn.destroy()
+                master.upload_btn.destroy()
+                master.process_btn.destroy()
+                master.info_convert_btn.destroy()
+                master.info_info_btn.destroy()
+                master.info_upload_btn.destroy()
+                master.info_process_btn.destroy()
+                frame = master.get_page()
+                # Subject list 
+                label = tk.Label(frame, text='List of folders contained in the project: ' + project_name, bg="white", fg="black")
+                label.config(font=("Calibri", 12, "bold"))
+                master.my_canvas.create_window(150, 270, anchor=tk.NW, window=label)
+
+                my_listbox = tk.Listbox(frame, selectmode=SINGLE, bg="#80FFE6", fg="black", width=45, height=27)
+                my_listbox.config(font=("Calibri", 12, "bold"))
+                master.my_canvas.create_window(150, 300, anchor = "nw", window = my_listbox)
+                # List of subject in the project in the listbox
+                results_prj = list(map(lambda i: results[i], range(1, len(results), len(fields))))
+                my_listbox.insert(tk.END, *results_prj)
+                # Attach listbox to scrollbar
+                my_yscrollbar = tk.Scrollbar(frame, orient="vertical")
+                my_listbox.config(yscrollcommand = my_yscrollbar.set)
+                my_yscrollbar.config(command = my_listbox.yview)
+                master.my_canvas.create_window(120, 790, anchor = "nw", window = my_yscrollbar)
+
+                my_xscrollbar = tk.Scrollbar(frame, orient="horizontal")
+                my_listbox.config(xscrollcommand = my_xscrollbar.set)
+                my_xscrollbar.config(command = my_listbox.xview)
+                
+                master.my_canvas.create_window(150, 860, anchor = "nw", window = my_xscrollbar)
+                
+                #################### Subject form ####################
+                # Project label
+                x_label = 650
+                y_label = 300
+                delta_label = 80
+
+                prj_label = tk.Label(frame, text='Project: ', bg="#80FFE6", fg="black", width=10, height=1)
+                prj_label.config(font=("Calibri", 16, "bold"))
+                master.my_canvas.create_window(x_label, y_label, anchor = "nw", window = prj_label)
+                
+                sub_label = tk.Label(frame, text='Subject: ', bg="#80FFE6", fg="black", width=10, height=1)
+                sub_label.config(font=("Calibri", 16, "bold"))
+                master.my_canvas.create_window(x_label, y_label+delta_label, anchor = "nw", window = sub_label)
+
+                date_label = tk.Label(frame, text='Acq. date: ', bg="#80FFE6", fg="black", width=10, height=1)
+                date_label.config(font=("Calibri", 16, "bold"))
+                master.my_canvas.create_window(x_label, y_label+2*delta_label, anchor = "nw", window = date_label)
+
+                group_label = tk.Label(frame, text='Group: ', bg="#80FFE6", fg="black", width=10, height=1)
+                group_label.config(font=("Calibri", 16, "bold"))
+                master.my_canvas.create_window(x_label, y_label+3*delta_label, anchor = "nw", window = group_label)
+
+                dose_label = tk.Label(frame, text='Dose: ', bg="#80FFE6", fg="black", width=10, height=1)
+                dose_label.config(font=("Calibri", 16, "bold"))
+                master.my_canvas.create_window(x_label, y_label+4*delta_label, anchor = "nw", window = dose_label)
+
+                timepoint_label = tk.Label(frame, text='Timepoint: ', bg="#80FFE6", fg="black", width=10, height=1)
+                timepoint_label.config(font=("Calibri", 16, "bold"))
+                master.my_canvas.create_window(x_label, y_label+5*delta_label, anchor = "nw", window = timepoint_label)
+
+                # Project entry
+                x_label = 800
+                y_label = 300
+                delta_label = 80
+                large_font = ("Calibri", 16, "bold")
+                small_font = ("Calibri", 12)
+
+                prj_entry = tk.Entry(frame, state='disabled', font = large_font, width=35)
+                master.my_canvas.create_window(x_label, y_label, anchor = "nw", window = prj_entry)
+                
+                sub_entry = tk.Entry(frame, state='disabled', font = large_font, width=35)
+                master.my_canvas.create_window(x_label, y_label+delta_label, anchor = "nw", window = sub_entry)
+
+                date_entry = tk.Entry(frame, state='disabled', font = large_font, width=35)
+                master.my_canvas.create_window(x_label, y_label+2*delta_label, anchor = "nw", window = date_entry)
+
+                group_entry = tk.Entry(frame, state='disabled', font = large_font, width=35)
+                master.my_canvas.create_window(x_label, y_label+3*delta_label, anchor = "nw", window = group_entry)
+
+                dose_entry = tk.Entry(frame, state='disabled', font = large_font, width=35)
+                master.my_canvas.create_window(x_label, y_label+4*delta_label, anchor = "nw", window = dose_entry)
+
+                timepoint_entry = tk.Entry(frame, state='disabled', font = large_font, width=25)
+                master.my_canvas.create_window(x_label, y_label+5*delta_label, anchor = "nw", window = timepoint_entry)
+
+                # Menu
+                # Dose
+                OPTIONS = ["untreated", "treated"]
+                selected_group = tk.StringVar()
+                group_menu = ttk.Combobox(frame, textvariable=selected_group, font = small_font)
+                group_menu['values'] = OPTIONS
+                group_menu['state'] = 'disabled'
+                master.my_canvas.create_window(1200, y_label+3*delta_label, anchor = "nw", window = group_menu)
+                
+                # Timepoint
+                time_entry = tk.Entry(frame, state='disabled', font = small_font, width=10)
+                master.my_canvas.create_window(1110, y_label+5*delta_label, anchor = "nw", window = time_entry)
+
+                OPTIONS = ["seconds", "minutes", "hours", "days", "month", "years"]
+                selected_timepoint = tk.StringVar()
+                timepoint_menu = ttk.Combobox(frame, textvariable=selected_timepoint, font = small_font)
+                timepoint_menu['values'] = OPTIONS
+                timepoint_menu['state'] = 'disabled'
+                master.my_canvas.create_window(1200, y_label+5*delta_label, anchor = "nw", window = timepoint_menu)
+               
+                
+                # Load the info about the selected subject
+                def items_selected(event):
+                    # Normal entry
+                    selected_timepoint.set('')
+                    selected_group.set('')
+                    time_entry.delete(0, tk.END)
+                    prj_entry.config(state=tk.NORMAL)
+                    sub_entry.config(state=tk.NORMAL)
+                    date_entry.config(state=tk.NORMAL)
+                    group_entry.config(state=tk.NORMAL)
+                    dose_entry.config(state=tk.NORMAL)
+                    timepoint_entry.config(state=tk.NORMAL)
+
+                    """ handle item selected event
+                    """
+                    # get selected indices
+                    global selected_index 
+                    selected_index = my_listbox.curselection()[0]
+                    prj_entry.delete(0, tk.END)
+                    prj_entry.insert(0, project_name)
+                    prj_entry.config(state=tk.DISABLED)
+
+
+                    sub_entry.delete(0, tk.END)
+                    sub_entry.insert(0, str(results[selected_index*len(fields)+1]))
+                    sub_entry.config(state=tk.DISABLED)
+
+                    date_entry.delete(0, tk.END)
+                    date_entry.insert(0, str(results[selected_index*len(fields)+2]))
+                    date_entry.config(state=tk.DISABLED)
+
+                    group_entry.delete(0, tk.END)
+                    group_entry.insert(0, str(results[selected_index*len(fields)+3]))
+                    group_entry.config(state=tk.DISABLED)
+
+                    dose_entry.delete(0, tk.END)
+                    dose_entry.insert(0, str(results[selected_index*len(fields)+4]))
+                    dose_entry.config(state=tk.DISABLED)
+                    
+                    timepoint_entry.delete(0, tk.END)
+                    timepoint_entry.insert(0, str(results[selected_index*len(fields)+5]))
+                    timepoint_entry.config(state=tk.DISABLED)
+                    
+
+                my_listbox.bind("<Double-Button-1>", items_selected)
+                
+                #################### Modify the metadata ####################
+                modify_text = tk.StringVar() 
+                modify_btn = tk.Button(frame, textvariable=modify_text, font=("Calibri", 18, "bold"), bg="black", fg="white", height=1, width=15, borderwidth=0, command = lambda: modify_metadata(), cursor="hand2")
+                modify_text.set("Modify")
+                master.my_canvas.create_window(650, 790, anchor = "nw", window = modify_btn)
+                
+                # Normal entry 
+                def modify_metadata():
+                    prj_entry.config(state=tk.NORMAL)
+                    sub_entry.config(state=tk.NORMAL)
+                    date_entry.config(state=tk.NORMAL)
+                    dose_entry.config(state=tk.NORMAL)
+                
+                    # Option menu for the dose
+                    group_menu['state'] = 'readonly'
+
+                    def group_changed(event):
+                        """ handle the group changed event """
+                        group_entry.config(state=tk.NORMAL)
+                        group_entry.delete(0, tk.END)
+                        group_entry.insert(0, str(selected_group.get()))
+                        group_entry.config(state=tk.DISABLED)
+                    
+
+                    group_menu.bind("<<ComboboxSelected>>", group_changed)
+                    
+                    # Option menu for the timepoint
+                    time_entry['state'] = 'normal'
+                    timepoint_menu['state'] = 'readonly'
+
+                    def timepoint_changed(event):
+                        """ handle the timepoint changed event """
+                        timepoint_entry.config(state=tk.NORMAL)
+                        timepoint_str = str(time_entry.get()) + "-" + str(selected_timepoint.get())
+                        try:
+                          float(time_entry.get())
+                        except Exception as e: 
+                          messagebox.showerror("XNAT-PIC", "Insert a number")
+
+                        timepoint_entry.delete(0, tk.END)
+                        timepoint_entry.insert(0, timepoint_str)
+                        timepoint_entry.config(state=tk.DISABLED)
+
+                    timepoint_menu.bind("<<ComboboxSelected>>", timepoint_changed)
+                    time_entry.bind("<Return>", timepoint_changed)
+
+                #################### Confirm the metadata ####################
+                confirm_text = tk.StringVar() 
+                confirm_btn = tk.Button(frame, textvariable=confirm_text, font=("Calibri", 18, "bold"), bg="black", fg="white", height=1, width=15, borderwidth=0, command = lambda: confirm_metadata(), cursor="hand2")
+                confirm_text.set("Confirm")
+                master.my_canvas.create_window(920, 790, anchor = "nw", window = confirm_btn)
+
+                def confirm_metadata():
+                    try:
+                        selected_index
+                        pass
+                    except Exception as e:
+                         messagebox.showerror("XNAT-PIC", "Select a folder from the list box on the left")
+
+                    if not prj_entry.get():
+                       messagebox.showerror("XNAT-PIC", "Insert the name of the project")
+                    
+                    if not sub_entry.get():
+                       messagebox.showerror("XNAT-PIC", "Insert the name of the subject")
+
+                    if dose_entry.get(): 
+                        try:
+                            float(dose_entry.get())
+                        except Exception as e: 
+                            messagebox.showerror("XNAT-PIC", "Insert a number in dose")
+
+                    if date_entry.get():
+                        try:
+                           datetime.datetime.strptime(date_entry.get(), '%Y-%m-%d')
+                        except Exception as e:
+                           messagebox.showerror("XNAT-PIC", "Incorrect data format in acquisition date, should be YYYY-MM-DD")
+
+                    if timepoint_entry.get(): 
+                        input_num = str(timepoint_entry.get()).split('-')[0]
+                        try:
+                            float(input_num)
+                        except Exception as e: 
+                            messagebox.showerror("XNAT-PIC", "Insert a number in timepoint value before seconds, minutes, hours..")    
+
+                    results[selected_index*len(fields)+0] = prj_entry.get()
+                    results[selected_index*len(fields)+1] = sub_entry.get()
+                    results[selected_index*len(fields)+2] = date_entry.get()
+                    results[selected_index*len(fields)+3] = group_entry.get()
+                    results[selected_index*len(fields)+4] = dose_entry.get()
+                    results[selected_index*len(fields)+5] = timepoint_entry.get()
+                    
+                    selected_timepoint.set('')
+                    selected_group.set('')
+                    time_entry.delete(0, tk.END)
+                    prj_entry.config(state=tk.DISABLED)
+                    sub_entry.config(state=tk.DISABLED)
+                    date_entry.config(state=tk.DISABLED)
+                    dose_entry.config(state=tk.DISABLED)
+                    time_entry.config(state=tk.DISABLED)
+                    group_menu['state'] = tk.DISABLED
+                    timepoint_menu['state'] = tk.DISABLED
+                #################### Save the metadata ####################
+                save_text = tk.StringVar() 
+                save_btn = tk.Button(frame, textvariable=save_text, font=("Calibri", 18, "bold"), bg="black", fg="white", height=1, width=15, borderwidth=0, command = lambda: save_metadata(), cursor="hand2")
+                save_text.set("Save")
+                master.my_canvas.create_window(1190, 790, anchor = "nw", window = save_btn)
+                
+                def save_metadata():
+                    err = False
+                    try:
+                        selected_index
+                    except Exception as e:
+                        err = True
+                        messagebox.showerror("XNAT-PIC", "Select a folder from the list box on the left")
+                        
+                    if not err:
+                        all_sub = []
+                        
+                        for i in range(0, len(results), len(fields)):
+                            all_sub = all_sub + ["--"] + [['Project', str(results[i])], ['Subject', str(results[i+1])], ['Acquisition_date', str(results[i+2])], 
+                                        ['Group', str(results[i+3])], ['Dose', str(results[i+4])], ['Timepoint', str(results[i+5])]]
+                                        
+                        with open(str(self.information_folder) + "\\" + project_name + '_' + 'Custom_Variables.txt', 'w+') as meta_file:
+                           meta_file.write(tabulate(all_sub, headers=['Variable', 'Value']))
+                        
+                        i = 0
+                        # Create file for all the folder in the project
+                        for item in os.listdir(self.information_folder):
+                          path = str(self.information_folder) + "\\" + str(item)
+                          name = str(item) + "_" + "Custom_Variables.txt"
+                        
+                        # Check if the content of the project is a folder and therefore a patient or a file not to be considered (no comment)
+                          if os.path.isdir(path):
+                             with open(path + "\\" + name, 'w+') as meta_file:
+                                    # Create the empty layout files in all the subjects
+                                    meta_file.write(tabulate([['Project', str(results[i])], ['Subject', str(results[i+1])], ['Acquisition_date', str(results[i+2])], 
+                                    ['Group', str(results[i+3])], ['Dose', str(results[i+4])], ['Timepoint', str(results[i+5])]], headers=['Variable', 'Value']))
+                                    i += 6
+                        # Destroy of the elements of the current frame and go to the previous frame
+                        label.destroy()
+                        my_listbox.destroy()
+                        my_yscrollbar.destroy()
+                        my_xscrollbar.destroy()
+
+                        prj_label.destroy()
+                        sub_label.destroy()
+                        date_label.destroy()
+                        group_label.destroy()
+                        dose_label.destroy()
+                        timepoint_label.destroy()
+                        prj_entry.destroy()
+                        sub_entry.destroy()
+                        date_entry.destroy()
+                        group_entry.destroy()
+                        dose_entry.destroy()
+                        timepoint_entry.destroy()
+                        
+                        timepoint_menu.destroy()
+                        time_entry.destroy()
+                        group_menu.destroy()
+
+                        modify_btn.destroy()
+                        confirm_btn.destroy()
+                        save_btn.destroy()
+                        exit_btn.destroy()
+                        xnat_pic_gui.choose_you_action(master)
+                
+                #################### Exit the metadata ####################
+                exit_text = tk.StringVar() 
+                exit_btn = tk.Button(frame, textvariable=exit_text, font=("Calibri", 18, "bold"), bg="#80FFE6", fg="black", height=1, width=15, borderwidth=0, command = lambda: exit_metadata(), cursor="hand2")
+                exit_text.set("Exit")
+                master.my_canvas.create_window(1500, 850, anchor = "nw", window = exit_btn)
+
+                def exit_metadata():
+                    result = messagebox.askquestion("Exit", "You have NOT SAVED your changes. Do you want to go out anyway?", icon='warning')
+                    if result == 'yes':
+                        label.destroy()
+                        my_listbox.destroy()
+                        my_yscrollbar.destroy()
+                        my_xscrollbar.destroy()
+
+                        prj_label.destroy()
+                        sub_label.destroy()
+                        date_label.destroy()
+                        group_label.destroy()
+                        dose_label.destroy()
+                        timepoint_label.destroy()
+                        prj_entry.destroy()
+                        sub_entry.destroy()
+                        date_entry.destroy()
+                        group_entry.destroy()
+                        dose_entry.destroy()
+                        timepoint_entry.destroy()
+                        
+                        timepoint_menu.destroy()
+                        time_entry.destroy()
+                        group_menu.destroy()
+
+                        modify_btn.destroy()
+                        confirm_btn.destroy()
+                        save_btn.destroy()
+                        exit_btn.destroy()
+                        xnat_pic_gui.choose_you_action(master)
 
     # Upload files         
     class xnat_dcm_uploader():
