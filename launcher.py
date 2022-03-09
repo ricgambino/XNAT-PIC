@@ -1,7 +1,7 @@
 from ast import Str
 from dataclasses import field
 from doctest import master
-from logging import raiseExceptions
+from logging import exception, raiseExceptions
 import tkinter as tk
 from tkinter import CENTER, MULTIPLE, NW, SINGLE, filedialog,messagebox
 from tkinter import font
@@ -23,7 +23,11 @@ try:
     from bruker2dicom_converter import bruker2dicom
 except:
     from bruker2dicom import bruker2dicom
-import xnat    
+import xnat
+try:
+    from xnat_upload import xnat_uploader
+except:
+    from xnat_uploader import xnat_uploader  
 import pyAesCrypt
 from tabulate import tabulate
 import datetime
@@ -145,7 +149,7 @@ class xnat_pic_gui(tk.Frame):
          y_btn = 470
          xdelta_btn = 400
 
-         logo_info = Image.open(r"C:\Users\Sara Zullino.HARI\Desktop\FG\Image\info.png")
+         logo_info = Image.open(PATH_IMAGE + "info.png")
          self.logo_info = ImageTk.PhotoImage(logo_info)
          
          self.info_convert_btn = tk.Button(self.root, image = self.logo_info, bg="#80FFE6", borderwidth=0, command = lambda: helpmsg("button1"), cursor="question_arrow")
@@ -749,6 +753,9 @@ class xnat_pic_gui(tk.Frame):
         def check_connection(self, master, popup1):
             # LOGIN
             popup1.entry_address_complete = popup1.http.get() + popup1.entry_address.var.get()
+            self.entry_address_complete = popup1.entry_address_complete
+            self.entry_user = popup1.entry_user.var.get()
+            self.entry_psw = popup1.entry_psw.var.get()
             home = os.path.expanduser("~")
             try:
                 session = xnat.connect(
@@ -842,7 +849,7 @@ class xnat_pic_gui(tk.Frame):
             
             # Button to go to the previous page
             back_text = tk.StringVar()   
-            back_btn = tk.Button(frame_two, textvariable=back_text, font=("Calibri", 22, "bold"), bg="white", fg="black", height=1, width=10, borderwidth=0, command=lambda: (back_btn.destroy(), dicom_btn.destroy(), file_btn.destroy(), label1.destroy(), label2.destroy(), xnat_pic_gui.choose_you_action(master)), cursor="hand2")
+            back_btn = tk.Button(frame_two, textvariable=back_text, font=("Calibri", 22, "bold"), bg="white", fg="black", height=1, width=10, borderwidth=0, command=lambda: (back_btn.destroy(), dicom_btn.destroy(), file_btn.destroy(), label1.destroy(), label2.destroy(), session.disconnect(), xnat_pic_gui.choose_you_action(master)), cursor="hand2")
             back_text.set("Back")
             master.my_canvas.create_window(20, 850, anchor = "nw", window = back_btn)
         
@@ -861,15 +868,19 @@ class xnat_pic_gui(tk.Frame):
                 else:
                     self.button_next["state"] = "disabled"
 
-        def check_project_name(self,master):
-            if self.entry_prjname.var.get().lower in self.OPTIONS:
+        def check_project_name(self, master, popup):
+            if popup.entry_prjname.var.get().lower in self.OPTIONS:
                 messagebox.showerror(
                     "Error!",
                     "Project ID %s already exists! Please, enter a different project ID"
                     % self.entry_prjname.var.get(),
                 )
             else:
-                self.xnat_dcm_uploader_select_custom_vars(master)
+                try:
+                    popup.destroy()
+                    self.xnat_dcm_directory_selector(master)
+                except exception as e:
+                    messagebox.showerror("Error!", str(e))
         
         def xnat_dcm_uploader_select_project(self,session,master):
 
@@ -912,18 +923,68 @@ class xnat_pic_gui(tk.Frame):
            
             # PROJECTS LIST
             self.OPTIONS = session.projects
-            popup2.prj = tk.StringVar()
-            popup2.project_list = tk.OptionMenu(popup2, popup2.prj, *self.OPTIONS)
+            self.prj = tk.StringVar()
+            popup2.project_list = tk.OptionMenu(popup2, self.prj, *self.OPTIONS)
             popup2.project_list.grid(row=2, column=2)
             self.newprj_var = tk.IntVar()
             popup2.btn_newprj = tk.Checkbutton(popup2, variable=self.newprj_var, onvalue=1, offvalue=0, command=isChecked)
-            popup2.btn_newprj.grid(row=0, column=1)           
-            
-            session.disconnect()
+            popup2.btn_newprj.grid(row=0, column=1)
+
+            popup2.back_btn = tk.Button(
+                popup2, text="Back", command=lambda: (popup2.destroy())
+            )
+            popup2.back_btn.grid(row=4, column=0)
+            popup2.next_btn = tk.Button(
+                popup2, text="Next", command=partial(self.check_project_name, master, popup2), state="disabled"
+            )
+            popup2.next_btn.grid(row=4, column=2)
+
+            self.button_next = popup2.next_btn
+
+            self.newprj_var.trace_add("write", self.enable_next)
+            popup2.entry_prjname.var.trace_add("write", self.enable_next)
+            self.prj.trace_add("write", self.enable_next)
+
+
+        def navigate_back(self, master):
+            self.stack_frames[-1].grid_remove()
+            self.stack_frames.pop()
+            self.stack_frames[-1].grid()
+
 
         def xnat_files_uploader(self, session, master):
 
             session.disconnect()
+
+        def xnat_dcm_directory_selector(self, master):
+
+            if self.newprj_var.get() == 1:
+                self.project = self.entry_prjname.var.get()
+            else:
+                self.project = self.prj.get()
+
+            self.folder_to_upload = filedialog.askdirectory(
+                parent=master.root,
+                initialdir=self.home,
+                title="Please select project directory (DICOM only)",
+            )
+            if self.folder_to_upload==():
+                os._exit(1)
+            
+            self.dicom2xnat(master)
+
+        def dicom2xnat(self,master):
+
+            xnat_uploader(
+                self.folder_to_upload,
+                self.project,
+                # num_vars,
+                self.entry_address_complete,
+                self.entry_user,
+                self.entry_psw
+            )
+
+            os._exit(0)
 
 
 
