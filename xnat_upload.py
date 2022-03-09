@@ -31,7 +31,7 @@ def read_table(path_to_custom_var_file):
     return data_dict
 
 
-def xnat_uploader(folder_to_upload, project_id, num_cust_vars, address, user, psw, master):
+def xnat_uploader(folder_to_upload, project_id, address, user, psw):
 
     # READ FROM .TXT FILE INTO THE SUBJECT FOLDER
     subject_data = read_table('/'.join([folder_to_upload, 'Custom_Variables.txt']))
@@ -71,13 +71,13 @@ def xnat_uploader(folder_to_upload, project_id, num_cust_vars, address, user, ps
     list_dirs = os.listdir(folder_to_upload)
 
     try:
-        with xnat.connect(server=address, user=user, password=psw) as session:
+        with xnat.connect(server=address, user=user, password=psw, default_timeout=60) as session:
 
             project = session.classes.ProjectData(
                                                 name=project_id, parent=session)
             subject = session.classes.SubjectData(
                                             parent=project, label=subject_id)
-            subject.fields.clear()
+            # subject.fields.clear()
 
             # Loop over directories
             for dir in tqdm(range(len(list_dirs))):
@@ -99,13 +99,15 @@ def xnat_uploader(folder_to_upload, project_id, num_cust_vars, address, user, ps
 
                 experiment = subject.experiments[experiment_id]
                 experiment.fields.clear()
+
+                # r = session.put(experiment.fulluri + '/fields', data='prova')
                 
                 for var in subject_data.keys():
-                    if var == 'AcquisitionDate' or var == 'Timepoint':
+                    if var == 'Project' or var == 'Subject':
+                        subject.fields[var] = subject_data[var]
                         experiment.fields[var] = subject_data[var]
                     else:
                         experiment.fields[var] = subject_data[var]
-                        subject.fields[var] = subject_data[var]
                     # print(var)
                 os.remove(zip_dst)
 
@@ -115,45 +117,7 @@ def xnat_uploader(folder_to_upload, project_id, num_cust_vars, address, user, ps
                 traceback.print_tb(exc_traceback)
                 sys.exit(1)
 
-            # try:
-            #     ####################################################################################################
-            #     # XNAT connection
-            #     with xnat.connect(server=address, user=user, password=psw) as session:
-
-            #         zip_dst = shutil.make_archive(subject_id, "zip", local_path) # .zip file of the current subfolder
-            #         project = session.classes.ProjectData(name=project_id, parent=session)
-            #         subject = session.classes.SubjectData(parent=project, label=subject_id)
-            #         # Import data to XNAT
-            #         session.services.import_(zip_dst,
-            #                                 overwrite="delete", # Overwrite parameter is important!
-            #                                 project=project_id,
-            #                                 subject=subject_id,
-            #                                 experiment=experiment_id,
-            #                                 content_type='application/zip')
-            #         subject = project.subjects[subject_id]
-            #         exp = project.subjects[subject_id].experiments[experiment_id]
-
-            #         # Fill custom variables fields
-            #         for i, element in enumerate(custom_vars):
-            #             subject.fields[element] = custom_values[i]
-            #             exp.fields[element] = custom_values[i]
-            #             # print("custom values ",custom_values[i])
-            #         os.remove(zip_dst) # Remove temporary .zip file
-                    
-            #     # XNAT connection is closed automatically
-            #     ####################################################################################################
-
-            # except Exception as e:
-            #     messagebox.showerror("XNAT-PIC - Uploader", e)
-            #     exc_type, exc_value, exc_traceback = sys.exc_info()
-            #     traceback.print_tb(exc_traceback)
-            #     sys.exit(1)
-
-
-    ########
     messagebox.showinfo("XNAT-PIC - Uploader", "DICOM images have been successfully imported to XNAT!")
-
-    # master.progress.stop()
 
     return
 
