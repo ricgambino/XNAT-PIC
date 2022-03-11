@@ -25,7 +25,7 @@ except:
     from bruker2dicom import bruker2dicom
 import xnat
 try:
-    from xnat_upload import xnat_uploader
+    from xnat_upload import xnat_uploader, xnat_uploader_dir
 except:
     from xnat_uploader import xnat_uploader  
 import pyAesCrypt
@@ -868,7 +868,7 @@ class xnat_pic_gui(tk.Frame):
                 else:
                     self.button_next["state"] = "disabled"
 
-        def check_project_name(self, master, popup):
+        def check_project_name(self, session, master, popup):
             if popup.entry_prjname.var.get().lower in self.OPTIONS:
                 messagebox.showerror(
                     "Error!",
@@ -878,11 +878,11 @@ class xnat_pic_gui(tk.Frame):
             else:
                 try:
                     popup.destroy()
-                    self.xnat_dcm_directory_selector(master)
+                    self.xnat_dcm_directory_selector(session, master)
                 except exception as e:
                     messagebox.showerror("Error!", str(e))
         
-        def xnat_dcm_uploader_select_project(self,session,master):
+        def xnat_dcm_uploader_select_project(self, session, master):
 
             # Enable / Disable new / existing project
             def isChecked():
@@ -915,11 +915,13 @@ class xnat_pic_gui(tk.Frame):
             # ENTRY INSERT NEW PROJECT
             popup2.value = tk.StringVar()
             popup2.entry_prjname = tk.Entry(popup2, state="disabled")
+            self.entry_prjname = popup2.entry_prjname
             popup2.value.set("  Project ID  ")
             popup2.entry_prjname.grid(row=0, column=2)
             popup2.entry_prjname.var = tk.StringVar()
-            popup2.entry_prjname.var.set("  Project ID  ")
+            popup2.entry_prjname.var.set("Project ID")
             popup2.entry_prjname["textvariable"] = popup2.entry_prjname.var
+            self.entry_prjname.var = popup2.entry_prjname.var
            
             # PROJECTS LIST
             self.OPTIONS = session.projects
@@ -935,7 +937,7 @@ class xnat_pic_gui(tk.Frame):
             )
             popup2.back_btn.grid(row=4, column=0)
             popup2.next_btn = tk.Button(
-                popup2, text="Next", command=partial(self.check_project_name, master, popup2), state="disabled"
+                popup2, text="Next", command=partial(self.check_project_name, session, master, popup2), state="disabled"
             )
             popup2.next_btn.grid(row=4, column=2)
 
@@ -956,7 +958,7 @@ class xnat_pic_gui(tk.Frame):
 
             session.disconnect()
 
-        def xnat_dcm_directory_selector(self, master):
+        def xnat_dcm_directory_selector(self, session, master):
 
             if self.newprj_var.get() == 1:
                 self.project = self.entry_prjname.var.get()
@@ -971,17 +973,24 @@ class xnat_pic_gui(tk.Frame):
             if self.folder_to_upload==():
                 os._exit(1)
             
-            self.dicom2xnat(master)
+            self.dicom2xnat(session, master)
 
-        def dicom2xnat(self,master):
+        def dicom2xnat(self, session, master):
 
-            xnat_uploader(
+            # xnat_uploader(
+            #     self.folder_to_upload,
+            #     self.project,
+            #     # num_vars,
+            #     # self.entry_address_complete,
+            #     # self.entry_user,
+            #     # self.entry_psw
+            #     session
+            # )
+
+            xnat_uploader_dir(
                 self.folder_to_upload,
                 self.project,
-                # num_vars,
-                self.entry_address_complete,
-                self.entry_user,
-                self.entry_psw
+                session
             )
 
             os._exit(0)
