@@ -376,7 +376,7 @@ class xnat_pic_gui(tk.Frame):
 
                 OPTIONS = ["seconds", "minutes", "hours", "days", "month", "years"]
                 selected_timepoint = tk.StringVar()
-                timepoint_menu = ttk.Combobox(frame, textvariable=selected_timepoint, font = small_font)
+                timepoint_menu = ttk.Combobox(frame, textvariable=selected_timepoint, font = small_font, width=3)
                 timepoint_menu['values'] = OPTIONS
                 timepoint_menu['state'] = 'disabled'
                 master.my_canvas.create_window(1200, y_label+5*delta_label, anchor = "nw", window = timepoint_menu)
@@ -438,6 +438,7 @@ class xnat_pic_gui(tk.Frame):
                 def modify_metadata():
                     prj_entry.config(state=tk.NORMAL)
                     sub_entry.config(state=tk.NORMAL)
+                    group_entry.config(state=tk.NORMAL)
                     date_entry.config(state=tk.NORMAL)
                     dose_entry.config(state=tk.NORMAL)
                 
@@ -448,9 +449,7 @@ class xnat_pic_gui(tk.Frame):
                         """ handle the group changed event """
                         group_entry.config(state=tk.NORMAL)
                         group_entry.delete(0, tk.END)
-                        group_entry.insert(0, str(selected_group.get()))
-                        group_entry.config(state=tk.DISABLED)
-                    
+                        group_entry.insert(0, str(selected_group.get()))                    
 
                     group_menu.bind("<<ComboboxSelected>>", group_changed)
                     
@@ -526,6 +525,7 @@ class xnat_pic_gui(tk.Frame):
                     sub_entry.config(state=tk.DISABLED)
                     date_entry.config(state=tk.DISABLED)
                     dose_entry.config(state=tk.DISABLED)
+                    group_entry.config(state=tk.DISABLED)
                     time_entry.config(state=tk.DISABLED)
                     group_menu['state'] = tk.DISABLED
                     timepoint_menu['state'] = tk.DISABLED
@@ -994,10 +994,6 @@ class xnat_pic_gui(tk.Frame):
             )
 
             os._exit(0)
-
-
-
-
 
 if __name__ == "__main__":
     root = tk.Tk()
