@@ -7,7 +7,7 @@ Created on Dec 7, 2021
 """
 from base64 import encode
 from pydoc import cli
-import shutil, os
+import shutil, os, time
 from threading import local
 from urllib import request
 import xnat
@@ -31,7 +31,8 @@ def read_table(path_to_custom_var_file):
     return data_dict
 
 
-def xnat_uploader(folder_to_upload, project_id, address, user, psw):
+# def xnat_uploader(folder_to_upload, project_id, address, user, psw):
+def xnat_uploader(folder_to_upload, project_id, session):
 
     # READ FROM .TXT FILE INTO THE SUBJECT FOLDER
     subject_data = read_table('/'.join([folder_to_upload, 'Custom_Variables.txt']))
@@ -45,77 +46,79 @@ def xnat_uploader(folder_to_upload, project_id, address, user, psw):
     else:
         folder_to_upload = folder_to_upload.replace('\\', '/')
 
-    try:
-        flag = 0
-        with xnat.connect(server=address, user=user, password=psw, default_timeout=30) as session:
+    # try:
+    #     flag = 0
+    #     with xnat.connect(server=address, user=user, password=psw, default_timeout=30) as session:
 
-            project = session.classes.ProjectData(
-                                                name=project_id, parent=session)
-            subject = session.classes.SubjectData(
-                                                parent=project, label=subject_id)
-            if experiment_id in subject.experiments.key_map.keys():
-                # ALERT! That patient already exists!
-                answer = messagebox.askyesno("XNAT-PIC Uploader", "A patient with the same experiment_id already exists. Do you want to upload it anyway?")
-                if answer is False:
-                    flag = 1
-        if flag == 1:
-            return
+    project = session.classes.ProjectData(
+                                        name=project_id, parent=session)
+    subject = session.classes.SubjectData(
+                                        parent=project, label=subject_id)
+    flag = 0
 
-    except Exception as e:
-                messagebox.showerror("XNAT-PIC - Uploader", e)
-                exc_type, exc_value, exc_traceback = sys.exc_info()
-                traceback.print_tb(exc_traceback)
-                sys.exit(1)
+    if experiment_id in subject.experiments.key_map.keys():
+        # ALERT! That patient already exists!
+        answer = messagebox.askyesno("XNAT-PIC Uploader", "A patient with the same experiment_id already exists. Do you want to upload it anyway?")
+        if answer is False:
+            flag = 1
+    if flag == 1:
+        return
+
+    # except Exception as e:
+    #             messagebox.showerror("XNAT-PIC - Uploader", e)
+    #             exc_type, exc_value, exc_traceback = sys.exc_info()
+    #             traceback.print_tb(exc_traceback)
+    #             sys.exit(1)
 
     # Check for directories into folder_to_upload path
     list_dirs = os.listdir(folder_to_upload)
 
-    try:
-        with xnat.connect(server=address, user=user, password=psw, default_timeout=60) as session:
+    # try:
+    #     with xnat.connect(server=address, user=user, password=psw, default_timeout=60) as session:
 
-            project = session.classes.ProjectData(
-                                                name=project_id, parent=session)
-            subject = session.classes.SubjectData(
-                                            parent=project, label=subject_id)
+            # project = session.classes.ProjectData(
+            #                                     name=project_id, parent=session)
+            # subject = session.classes.SubjectData(
+            #                                 parent=project, label=subject_id)
             # subject.fields.clear()
 
-            # Loop over directories
-            for dir in tqdm(range(len(list_dirs))):
+    # Loop over directories
+    for dir in tqdm(range(len(list_dirs))):
 
-                # Get the complete local path of the folder
-                local_path = os.path.join(folder_to_upload, list_dirs[dir]).replace('\\', '/')
-                # if 'resources' in local_path:
-                #     subpaths = os.listdir(local_path)
-                #     local_path = os.path.join(local_path, subpaths[0]).replace('\\', '/')
-        
-                zip_dst = shutil.make_archive(local_path.split('/')[-1], "zip", local_path) # .zip file of the current subfolder
+        # Get the complete local path of the folder
+        local_path = os.path.join(folder_to_upload, list_dirs[dir]).replace('\\', '/')
+        if 'resources' in local_path:
+            subpaths = os.listdir(local_path)
+            local_path = os.path.join(local_path, subpaths[0]).replace('\\', '/')
+            print('end')
 
-                session.services.import_(zip_dst,
-                                        overwrite="delete", # Overwrite parameter is important!
-                                        project=project_id,
-                                        subject=subject_id,
-                                        experiment=experiment_id,
-                                        content_type='application/zip')
+        with xnat.connect(server=session._original_uri, jsession=session._jsession, cli=True) as connection:        
+            zip_dst = shutil.make_archive(local_path.split('/')[-1], "zip", local_path) # .zip file of the current subfolder
 
-                experiment = subject.experiments[experiment_id]
-                experiment.fields.clear()
+            connection.services.import_(zip_dst,
+                                    overwrite="delete", # Overwrite parameter is important!
+                                    project=project_id,
+                                    subject=subject_id,
+                                    experiment=experiment_id,
+                                    content_type='application/zip')
 
-                # r = session.put(experiment.fulluri + '/fields', data='prova')
-                
-                for var in subject_data.keys():
-                    if var == 'Project' or var == 'Subject':
-                        subject.fields[var] = subject_data[var]
-                        experiment.fields[var] = subject_data[var]
-                    else:
-                        experiment.fields[var] = subject_data[var]
-                    # print(var)
-                os.remove(zip_dst)
+            experiment = subject.experiments[experiment_id]
+            experiment.fields.clear()
+            
+            for var in subject_data.keys():
+                if var == 'Project' or var == 'Subject':
+                    subject.fields[var] = subject_data[var]
+                    experiment.fields[var] = subject_data[var]
+                else:
+                    experiment.fields[var] = subject_data[var]
+                # print(var)
+            os.remove(zip_dst)
 
-    except Exception as e:
-                messagebox.showerror("XNAT-PIC - Uploader", e)
-                exc_type, exc_value, exc_traceback = sys.exc_info()
-                traceback.print_tb(exc_traceback)
-                sys.exit(1)
+    # except Exception as e:
+    #             messagebox.showerror("XNAT-PIC - Uploader", e)
+    #             exc_type, exc_value, exc_traceback = sys.exc_info()
+    #             traceback.print_tb(exc_traceback)
+    #             sys.exit(1)
 
     messagebox.showinfo("XNAT-PIC - Uploader", "DICOM images have been successfully imported to XNAT!")
 
@@ -143,4 +146,59 @@ def upload_files_xnat(folder_to_upload, project_id, num_cust_vars, address, user
                 image = {"1": img}
                 answer = session.put(path=test_resources.uri + '/Results/files/Im1.jpg', files=image)
                 print('Done')
+    return
+
+
+def xnat_uploader_dir(folder_to_upload, project_id, session):
+
+    # READ FROM .TXT FILE INTO THE SUBJECT FOLDER
+    subject_data = read_table('/'.join([folder_to_upload, 'Custom_Variables.txt']))
+
+    subject_id = subject_data['Subject']
+    experiment_id = '_'.join([subject_data['Project'], subject_data['Subject'], subject_data['Group'], subject_data['Timepoint']]).replace(' ', '_')
+    
+    # Check if 'MR' folder is already into the folder_to_upload path
+    if 'MR' != os.path.basename(folder_to_upload):
+        folder_to_upload = os.path.join(folder_to_upload, 'MR').replace('\\', '/')
+    else:
+        folder_to_upload = folder_to_upload.replace('\\', '/')
+
+    project = session.classes.ProjectData(
+                                        name=project_id, parent=session)
+    subject = session.classes.SubjectData(
+                                        parent=project, label=subject_id)
+
+    if experiment_id in subject.experiments.key_map.keys():
+        # ALERT! That patient already exists!
+        answer = messagebox.askyesno("XNAT-PIC Uploader", "A patient with the same experiment_id already exists. Do you want to upload it anyway?")
+        
+        if answer is False:
+            return
+    
+    start_time = time.time()
+
+    zip_dst = shutil.make_archive(folder_to_upload.split('/')[-2], "zip", folder_to_upload) # .zip file of the current subfolder
+
+    with xnat.connect(server=session._original_uri, jsession=session._jsession, cli=True, logger=session.logger) as connection:
+        connection.services.import_(zip_dst,
+                                overwrite="delete", # Overwrite parameter is important!
+                                project=project_id,
+                                subject=subject_id,
+                                experiment=experiment_id,
+                                content_type='application/zip')
+
+        experiment = project.subjects[subject_id].experiments[experiment_id]
+        # experiment.fields.clear()
+        
+        for var in subject_data.keys():
+            if var == 'Project' or var == 'Subject':
+                subject.fields[var] = subject_data[var]
+                experiment.fields[var] = subject_data[var]
+            else:
+                experiment.fields[var] = subject_data[var]
+            # print(var)
+    os.remove(zip_dst)
+
+    end_time = time.time()
+    print('Elapsed time: ' + str(end_time - start_time) + ' seconds')
     return
