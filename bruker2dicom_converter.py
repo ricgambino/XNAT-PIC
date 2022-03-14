@@ -11,14 +11,21 @@ import os, re, time
 import numpy as np
 import datetime, shutil
 import dateutil.parser
+from pip import main
 from pydicom.dataset import Dataset, FileDataset
 import pydicom.uid
 from read_visupars import read_visupars_parameters
 from cest_dict import add_cest_dict
 from read_method import read_method_parameters
 import tkinter as tk
-from tkinter import messagebox
+import tkinter.ttk as ttk
+from tkinter import messagebox, HORIZONTAL
 import sys, traceback
+from ProgressBar import App
+
+def update_progress_bar(current_step, max_step, bar_length):
+    loc_bar = int(current_step * bar_length / max_step)
+    return loc_bar
 
 def bruker2dicom(folder_to_convert, dst_folder, master):
 
@@ -43,10 +50,9 @@ def bruker2dicom(folder_to_convert, dst_folder, master):
             flag = 0
 
     start_time = time.time()
-    # Start progress bar
-    #master._inprogress("Conversion in progress")
 
-    for path in list_path:
+    for i, path in enumerate(list_path, 1):
+
         if 'Results' not in path:
             current_path = os.path.join(folder_to_convert, path).replace('\\', '/')
             if os.path.isdir(current_path):
@@ -626,6 +632,8 @@ def bruker2dicom(folder_to_convert, dst_folder, master):
                 rel_path = os.path.relpath(res, folder_to_convert)
                 dst_path = os.path.join(dst_folder, 'MR', 'resources', rel_path).replace('\\', '/')
                 shutil.copytree(current_path, dst_path)
+        if master.flag == 1:
+            yield i, len(list_path)
 
     if parameters:
            pass
@@ -646,8 +654,6 @@ def bruker2dicom(folder_to_convert, dst_folder, master):
         master.upload_btn['state'] = tk.NORMAL
         master.process_btn['state'] = tk.NORMAL
         sys.exit(1)
-
-    #master.progress.stop()
 
     end_time = time.time()
     print('Elapsed time for conversion: ' + str(end_time - start_time) + ' s')
