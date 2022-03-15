@@ -2,6 +2,7 @@ from ast import Str
 from dataclasses import field
 from doctest import master
 from logging import exception, raiseExceptions
+from pickle import TRUE
 import tkinter as tk
 from tkinter import CENTER, MULTIPLE, NW, SINGLE, filedialog,messagebox
 from tkinter import font
@@ -29,7 +30,7 @@ import datetime
 
 
 PATH_IMAGE = "images\\"
-PERCENATGE_SCREEN = 0.9  # Defines the size of the canvas. If equal to 1 (100%) ,it takes the whole screen
+PERCENATGE_SCREEN = 1  # Defines the size of the canvas. If equal to 1 (100%) ,it takes the whole screen
 BACKGROUND_COLOR = "#31C498"
 THEME_COLOR = "black"
 TEXT_BTN_COLOR = "black"
@@ -50,8 +51,6 @@ class xnat_pic_gui(tk.Frame):
     def __init__(self, master):
 
         self.root = master
-        root.attributes('-fullscreen', True)
-        root.bind("<Escape>", lambda event: root.attributes("-fullscreen", False))
         ### GET PRIMARY SCREEN RESOLUTION
         ### MADE FOR MULTISCREEN ENVIRONMENTS
         if (platform.system()=='Linux'):
@@ -180,19 +179,19 @@ class xnat_pic_gui(tk.Frame):
                 master.results_flag = self.results_flag.get()
 
             self.conv_popup = tk.Toplevel()
-            self.conv_popup.geometry("%dx%d+%d+%d" % (500, 120, 700, 500))
+            self.conv_popup.geometry("%dx%d+%d+%d" % (500, 150, 700, 500))
             self.conv_popup.title('DICOM Converter')
-            self.btn_prj = tk.Button(self.conv_popup, text='Convert Project', font=("Calibri", 18, "bold"), 
+            self.btn_prj = tk.Button(self.conv_popup, text='Convert Project', font=BIG_FONT, 
                                     bg="grey", fg="white", height=1, width=15, borderwidth=1, 
-                                    command=lambda: (self.prj_conversion(master), self.conv_popup.destroy()))
+                                    command=lambda: (self.conv_popup.destroy(), self.prj_conversion(master)))
             self.btn_prj.grid(row=2, column=0, padx=10, pady=5)
-            self.btn_sbj = tk.Button(self.conv_popup, text='Convert Subject', font=("Calibri", 18, "bold"), 
+            self.btn_sbj = tk.Button(self.conv_popup, text='Convert Subject', font=BIG_FONT, 
                                     bg="grey", fg="white", height=1, width=15, borderwidth=1, 
-                                    command=lambda: (self.sbj_conversion(master), self.conv_popup.destroy()))
+                                    command=lambda: (self.conv_popup.destroy(), self.sbj_conversion(master)))
             self.btn_sbj.grid(row=3, column=0, padx=10, pady=5)
             self.results_flag = tk.IntVar()
             master.results_flag = self.results_flag.get()
-            self.btn_results = tk.Checkbutton(self.conv_popup, text='Upload results', variable=self.results_flag,
+            self.btn_results = tk.Checkbutton(self.conv_popup, text='Copy results', variable=self.results_flag,
                                 onvalue=1, offvalue=0, command=isChecked)
             self.btn_results.grid(row=2, column=1, padx=100, pady=10)
 
@@ -204,6 +203,9 @@ class xnat_pic_gui(tk.Frame):
             master.root.deiconify()
             master.root.update()
             self.dst = self.folder_to_convert + '_dcm'
+            
+            progressbar = App(txt_title='DICOM Converter')
+            progressbar.start_progressbar()
 
             try:
                 # Convert from bruker to DICOM and disable the buttons
@@ -213,8 +215,8 @@ class xnat_pic_gui(tk.Frame):
                 master.process_btn['state'] = tk.DISABLED
 
                 list_dirs = os.listdir(self.folder_to_convert)
-                progressbar = App(txt_title='DICOM Converter')
-                progressbar.start_progressbar()
+                #progressbar = App(txt_title='DICOM Converter')
+                #progressbar.start_progressbar()
                 for j, dir in enumerate(list_dirs, 1):
                     progressbar.update_progressbar(j, len(list_dirs))
                     current_folder = os.path.join(self.folder_to_convert, dir).replace('\\', '/')
@@ -237,9 +239,13 @@ class xnat_pic_gui(tk.Frame):
                 master.info_btn['state'] = tk.NORMAL
                 master.upload_btn['state'] = tk.NORMAL
                 master.process_btn['state'] = tk.NORMAL
+                my_exeption = True
+                progressbar.stop_progress_bar()
+                self.conv_popup.destroy()
+
 
             if my_exeption is False:
-                messagebox.showinfo("Bruker2DICOM","Done! Now you can upload your files to XNAT.")
+                messagebox.showinfo("Bruker2DICOM","The conversion is done!")
                 master.convert_btn['state'] = tk.NORMAL
                 master.info_btn['state'] = tk.NORMAL
                 master.upload_btn['state'] = tk.NORMAL
@@ -304,6 +310,7 @@ class xnat_pic_gui(tk.Frame):
                 #master.process_btn['state'] = tk.DISABLED
                
                 # Choose your directory
+                # Se clicco su annulla ho eccezione. Controlla bene cosa restituisce
                 self.information_folder = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC: Select project directory!")
                 project_name = (self.information_folder.rsplit("/",1)[1])
                 
@@ -915,7 +922,7 @@ class xnat_pic_gui(tk.Frame):
             # Button to go to the previous page
             back_text = tk.StringVar()   
             back_btn = tk.Button(frame_two, textvariable=back_text, font=("Calibri", 22, "bold"), bg="white", fg="black", height=1, width=10, borderwidth=0, command=lambda: (back_btn.destroy(), dicom_btn.destroy(), file_btn.destroy(), label1.destroy(), label2.destroy(), session.disconnect(), xnat_pic_gui.choose_you_action(master)), cursor="hand2")
-            back_text.set("Back")
+            back_text.set("Logout")
             master.my_canvas.create_window(20, 850, anchor = "nw", window = back_btn)
         
         def enable_next(self, *_):

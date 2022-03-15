@@ -644,7 +644,9 @@ def bruker2dicom(folder_to_convert, dst_folder, master):
         master.upload_btn['state'] = tk.NORMAL
         master.process_btn['state'] = tk.NORMAL
         # sys.exit(1)
+        # Inserire folder nella lista delle directory non convertite
 
+        
     end_time = time.time()
     print('Elapsed time for conversion: ' + str(end_time - start_time) + ' s')
 
