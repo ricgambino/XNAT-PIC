@@ -169,25 +169,30 @@ class xnat_pic_gui(tk.Frame):
         return self.root   
 
     class bruker2dicom_conversion():
+        
         def __init__(self, master):
 
-            # threading.Thread(target=start_conversion).start()
-            # self.start_conversion()
+            def isChecked():
+                master.results_flag = self.results_flag.get()
+
             self.conv_popup = tk.Toplevel()
-            self.conv_popup.geometry("%dx%d+%d+%d" % (500, 80, 700, 500))
+            self.conv_popup.geometry("%dx%d+%d+%d" % (500, 120, 700, 500))
             self.conv_popup.title('DICOM Converter')
             self.btn_prj = tk.Button(self.conv_popup, text='Convert Project', font=("Calibri", 18, "bold"), 
-                                    bg="black", fg="white", height=1, width=15, borderwidth=0, 
+                                    bg="grey", fg="white", height=1, width=15, borderwidth=1, 
                                     command=lambda: (self.prj_conversion(master), self.conv_popup.destroy()))
-            self.btn_prj.grid(row=2, column=0)
+            self.btn_prj.grid(row=2, column=0, padx=10, pady=5)
             self.btn_sbj = tk.Button(self.conv_popup, text='Convert Subject', font=("Calibri", 18, "bold"), 
-                                    bg="black", fg="white", height=1, width=15, borderwidth=0, 
+                                    bg="grey", fg="white", height=1, width=15, borderwidth=1, 
                                     command=lambda: (self.sbj_conversion(master), self.conv_popup.destroy()))
-            self.btn_sbj.grid(row=2, column=1)
+            self.btn_sbj.grid(row=3, column=0, padx=10, pady=5)
+            self.results_flag = tk.IntVar()
+            master.results_flag = self.results_flag.get()
+            self.btn_results = tk.Checkbutton(self.conv_popup, text='Upload results', variable=self.results_flag,
+                                onvalue=1, offvalue=0, command=isChecked)
+            self.btn_results.grid(row=2, column=1, padx=100, pady=10)
 
         def prj_conversion(self, master):
-
-            master.flag = 0
 
             self.folder_to_convert = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC: Select project directory in Bruker ParaVision format")
             if not self.folder_to_convert:
@@ -235,11 +240,9 @@ class xnat_pic_gui(tk.Frame):
                 master.info_btn['state'] = tk.NORMAL
                 master.upload_btn['state'] = tk.NORMAL
                 master.process_btn['state'] = tk.NORMAL
-                sys.exit(0)
+                # sys.exit(0)
 
         def sbj_conversion(self, master):
-
-            master.flag = 1
 
             self.folder_to_convert = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC: Select project directory in Bruker ParaVision format")
             if not self.folder_to_convert:
@@ -268,8 +271,7 @@ class xnat_pic_gui(tk.Frame):
                 progressbar.start_progressbar()
                 for i, length in bruker2dicom(self.folder_to_convert, self.dst, master):
                     progressbar.update_progressbar(i, length)
-                progressbar.stop_progress_bar
-                # Get PROJECT folder, loop over subjects into this folder and call the converter function
+                progressbar.stop_progress_bar()
                 my_exeption = False           
 
             except Exception as e: 
@@ -285,7 +287,7 @@ class xnat_pic_gui(tk.Frame):
                 master.info_btn['state'] = tk.NORMAL
                 master.upload_btn['state'] = tk.NORMAL
                 master.process_btn['state'] = tk.NORMAL
-                sys.exit(0)
+                # sys.exit(0)
 
                       
     # Fill in information
