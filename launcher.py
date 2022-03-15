@@ -19,6 +19,8 @@ import subprocess
 import platform 
 import sys
 import threading
+
+from importlib_metadata import metadata
 from ProgressBar import App
 from progressbar import progressbar
 from bruker2dicom_converter import bruker2dicom
@@ -35,7 +37,8 @@ BACKGROUND_COLOR = "#31C498"
 THEME_COLOR = "black"
 TEXT_BTN_COLOR = "black"
 BG_BTN_COLOR = "#80FFE6"
-BIG_FONT = ("Calibri", 22, "bold")
+LARGE_FONT = ("Calibri", 22, "bold")
+SMALL_FONT = ("Calibri", 14, "bold")
 CURSOR_HAND = "hand2"
 QUESTION_HAND = "question_arrow"
 
@@ -100,7 +103,7 @@ class xnat_pic_gui(tk.Frame):
 
         # Button to enter
         enter_text = tk.StringVar()
-        self.enter_btn = tk.Button(self.my_canvas, textvariable=enter_text, font=BIG_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command=lambda: (self.enter_btn.destroy(), xnat_pic_gui.choose_you_action(self)), cursor=CURSOR_HAND)
+        self.enter_btn = tk.Button(self.my_canvas, textvariable=enter_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command=lambda: (self.enter_btn.destroy(), xnat_pic_gui.choose_you_action(self)), cursor=CURSOR_HAND)
         enter_text.set("ENTER")
         self.my_canvas.create_window(int(my_width/2), int(my_height*0.7), width = int(my_width/5), anchor = tk.CENTER, window = self.enter_btn)
         
@@ -116,25 +119,25 @@ class xnat_pic_gui(tk.Frame):
 
          # Convert files Bruker2DICOM
          convert_text = tk.StringVar()
-         self.convert_btn = tk.Button(self.my_canvas, textvariable=convert_text, font=BIG_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command=partial(self.bruker2dicom_conversion, self), cursor=CURSOR_HAND)
+         self.convert_btn = tk.Button(self.my_canvas, textvariable=convert_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command=partial(self.bruker2dicom_conversion, self), cursor=CURSOR_HAND)
          convert_text.set("Bruker2DICOM")
          self.my_canvas.create_window(x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.convert_btn)
          
          # Fill in the info
          info_text = tk.StringVar()
-         self.info_btn = tk.Button(self.my_canvas, textvariable=info_text, font=BIG_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command=partial(self.metadata, self), cursor=CURSOR_HAND)
+         self.info_btn = tk.Button(self.my_canvas, textvariable=info_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command=partial(self.metadata, self), cursor=CURSOR_HAND)
          info_text.set("Fill in the info")
          self.my_canvas.create_window(2*x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.info_btn)
 
          # Upload files
          upload_text = tk.StringVar()
-         self.upload_btn = tk.Button(self.my_canvas, textvariable=upload_text, font=BIG_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command=partial(self.xnat_dcm_uploader, self), cursor=CURSOR_HAND)
+         self.upload_btn = tk.Button(self.my_canvas, textvariable=upload_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command=partial(self.xnat_dcm_uploader, self), cursor=CURSOR_HAND)
          upload_text.set("Uploader")
          self.my_canvas.create_window(3*x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.upload_btn)        
         
          # Processing your files
          process_text = tk.StringVar()
-         self.process_btn = tk.Button(self.my_canvas, textvariable=process_text, font=BIG_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, cursor=CURSOR_HAND)
+         self.process_btn = tk.Button(self.my_canvas, textvariable=process_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, cursor=CURSOR_HAND)
          process_text.set("Processing")
          self.my_canvas.create_window(4*x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.process_btn)
         
@@ -181,11 +184,11 @@ class xnat_pic_gui(tk.Frame):
             self.conv_popup = tk.Toplevel()
             self.conv_popup.geometry("%dx%d+%d+%d" % (500, 150, 700, 500))
             self.conv_popup.title('DICOM Converter')
-            self.btn_prj = tk.Button(self.conv_popup, text='Convert Project', font=BIG_FONT, 
+            self.btn_prj = tk.Button(self.conv_popup, text='Convert Project', font=LARGE_FONT, 
                                     bg="grey", fg="white", height=1, width=15, borderwidth=1, 
                                     command=lambda: (self.conv_popup.destroy(), self.prj_conversion(master)))
             self.btn_prj.grid(row=2, column=0, padx=10, pady=5)
-            self.btn_sbj = tk.Button(self.conv_popup, text='Convert Subject', font=BIG_FONT, 
+            self.btn_sbj = tk.Button(self.conv_popup, text='Convert Subject', font=LARGE_FONT, 
                                     bg="grey", fg="white", height=1, width=15, borderwidth=1, 
                                     command=lambda: (self.conv_popup.destroy(), self.sbj_conversion(master)))
             self.btn_sbj.grid(row=3, column=0, padx=10, pady=5)
@@ -303,35 +306,40 @@ class xnat_pic_gui(tk.Frame):
     # Fill in information
     class metadata():
         def __init__(self, master):
+
                 messagebox.showinfo("Metadata","Select project directory!")
-                #master.convert_btn['state'] = tk.DISABLED
-                #master.info_btn['state'] = tk.DISABLED
-                #master.upload_btn['state'] = tk.DISABLED
-                #master.process_btn['state'] = tk.DISABLED
+
+                # Disable all buttons
+                master.convert_btn['state'] = tk.DISABLED
+                master.info_btn['state'] = tk.DISABLED
+                master.upload_btn['state'] = tk.DISABLED
+                master.process_btn['state'] = tk.DISABLED
                
                 # Choose your directory
-                # Se clicco su annulla ho eccezione. Controlla bene cosa restituisce
                 self.information_folder = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC: Select project directory!")
+                
+                # If there is no folder selected, re-enable the buttons and return
+                if not self.information_folder:
+                    master.convert_btn['state'] = tk.NORMAL
+                    master.info_btn['state'] = tk.NORMAL
+                    master.upload_btn['state'] = tk.NORMAL
+                    master.process_btn['state'] = tk.NORMAL
+                    return
+             
+
                 project_name = (self.information_folder.rsplit("/",1)[1])
                 
                 all_sub = []
-                # Create the empty layout files in all the subjects
-                # if the file for the entire project does not exist, create it, otherwise open it
+                # If the file for the entire project does not exist, create it, otherwise open it
                 if os.path.exists(str(self.information_folder) + "\\" + str(project_name) + "_" + "Custom_Variables.txt") is False:
 
                     for item in os.listdir(self.information_folder):
                         path = str(self.information_folder) + "\\" + str(item)
-                        #name = str(item) + "_" + "Custom_Variables.txt"
                         
-                        # Check if the content of the project is a folder and therefore a patient or a file not to be considered (no comment)
+                        # Check if the content of the project is a folder and therefore a patient or a file not to be considered 
                         if os.path.isdir(path):
-                        #with open(path + "\\" + name, 'w+') as meta_file:
-                                    # Create the empty layout files in all the subjects
-                                    #meta_file.write(tabulate([['Project', str(project_name)], ['Subject', str(item)], ['Acquisition_date', ""], 
-                                    #['Group', ""], ['Dose', ""], ['Timepoint', ""]], headers=['Variable', 'Value']))
-
-                                    all_sub = all_sub + ["--"] + [['Project', str(project_name)], ['Subject', str(item)], ['Acquisition_date', ""], 
-                                    ['Group', ""], ['Dose', ""], ['Timepoint', ""]]
+                                all_sub = all_sub + ["--"] + [['Project', str(project_name)], ['Subject', str(item)], ['Acquisition_date', ""], 
+                                ['Group', ""], ['Dose', ""], ['Timepoint', ""]]
                                         
                         with open(str(self.information_folder) + "\\" + project_name + '_' + 'Custom_Variables.txt', 'w+') as meta_file:
                             meta_file.write(tabulate(all_sub, headers=['Variable', 'Value']))
@@ -355,14 +363,16 @@ class xnat_pic_gui(tk.Frame):
                 master.info_upload_btn.destroy()
                 master.info_process_btn.destroy()
                 frame = master.get_page()
-                # Subject list 
-                label = tk.Label(frame, text='List of folders contained in the project: ' + project_name, bg="white", fg="black")
-                label.config(font=("Calibri", 12, "bold"))
-                master.my_canvas.create_window(150, 270, anchor=tk.NW, window=label)
 
-                my_listbox = tk.Listbox(frame, selectmode=SINGLE, bg="#80FFE6", fg="black", width=45, height=27)
-                my_listbox.config(font=("Calibri", 12, "bold"))
-                master.my_canvas.create_window(150, 300, anchor = "nw", window = my_listbox)
+                #################### Folder list #################### 
+                x_folder_list = int(my_width*20/100)
+                y_folder_list = int(my_height*25/100)
+                label = tk.Label(master.my_canvas, text='List of folders contained in the project: ' + project_name, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, font = SMALL_FONT)
+                master.my_canvas.create_window(x_folder_list, y_folder_list, width = int(my_width*25/100), anchor=tk.CENTER, window=label)
+                
+                y_folder_list1 = int(my_height*35/100)
+                my_listbox = tk.Listbox(master.my_canvas, selectmode=SINGLE, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, font=SMALL_FONT)
+                master.my_canvas.create_window(x_folder_list, y_folder_list1, width = int(my_width*25/100), anchor = tk.CENTER, window = my_listbox)
                 # List of subject in the project in the listbox
                 results_prj = list(map(lambda i: results[i], range(1, len(results), len(fields))))
                 my_listbox.insert(tk.END, *results_prj)
@@ -412,43 +422,43 @@ class xnat_pic_gui(tk.Frame):
                 x_label = 800
                 y_label = 300
                 delta_label = 80
-                large_font = ("Calibri", 16, "bold")
-                small_font = ("Calibri", 12)
+                #large_font = ("Calibri", 16, "bold")
+                #small_font = ("Calibri", 12)
 
-                prj_entry = tk.Entry(frame, state='disabled', font = large_font, width=35)
+                prj_entry = tk.Entry(frame, state='disabled', font = LARGE_FONT, width=35)
                 master.my_canvas.create_window(x_label, y_label, anchor = "nw", window = prj_entry)
                 
-                sub_entry = tk.Entry(frame, state='disabled', font = large_font, width=35)
+                sub_entry = tk.Entry(frame, state='disabled', font = LARGE_FONT, width=35)
                 master.my_canvas.create_window(x_label, y_label+delta_label, anchor = "nw", window = sub_entry)
 
-                date_entry = tk.Entry(frame, state='disabled', font = large_font, width=35)
+                date_entry = tk.Entry(frame, state='disabled', font = LARGE_FONT, width=35)
                 master.my_canvas.create_window(x_label, y_label+2*delta_label, anchor = "nw", window = date_entry)
 
-                group_entry = tk.Entry(frame, state='disabled', font = large_font, width=35)
+                group_entry = tk.Entry(frame, state='disabled', font = LARGE_FONT, width=35)
                 master.my_canvas.create_window(x_label, y_label+3*delta_label, anchor = "nw", window = group_entry)
 
-                dose_entry = tk.Entry(frame, state='disabled', font = large_font, width=35)
+                dose_entry = tk.Entry(frame, state='disabled', font = LARGE_FONT, width=35)
                 master.my_canvas.create_window(x_label, y_label+4*delta_label, anchor = "nw", window = dose_entry)
 
-                timepoint_entry = tk.Entry(frame, state='disabled', font = large_font, width=25)
+                timepoint_entry = tk.Entry(frame, state='disabled', font = LARGE_FONT, width=25)
                 master.my_canvas.create_window(x_label, y_label+5*delta_label, anchor = "nw", window = timepoint_entry)
 
                 # Menu
                 # Dose
                 OPTIONS = ["untreated", "treated"]
                 selected_group = tk.StringVar()
-                group_menu = ttk.Combobox(frame, textvariable=selected_group, font = small_font)
+                group_menu = ttk.Combobox(frame, textvariable=selected_group, font = SMALL_FONT)
                 group_menu['values'] = OPTIONS
                 group_menu['state'] = 'disabled'
                 master.my_canvas.create_window(1200, y_label+3*delta_label, anchor = "nw", window = group_menu)
                 
                 # Timepoint
-                time_entry = tk.Entry(frame, state='disabled', font = small_font, width=10)
+                time_entry = tk.Entry(frame, state='disabled', font = SMALL_FONT, width=10)
                 master.my_canvas.create_window(1110, y_label+5*delta_label, anchor = "nw", window = time_entry)
 
                 OPTIONS = ["seconds", "minutes", "hours", "days", "month", "years"]
                 selected_timepoint = tk.StringVar()
-                timepoint_menu = ttk.Combobox(frame, textvariable=selected_timepoint, font = small_font, width=3)
+                timepoint_menu = ttk.Combobox(frame, textvariable=selected_timepoint, font = SMALL_FONT, width=3)
                 timepoint_menu['values'] = OPTIONS
                 timepoint_menu['state'] = 'disabled'
                 master.my_canvas.create_window(1200, y_label+5*delta_label, anchor = "nw", window = timepoint_menu)
