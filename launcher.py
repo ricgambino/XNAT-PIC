@@ -27,8 +27,16 @@ import pyAesCrypt
 from tabulate import tabulate
 import datetime
 
-DELTA_SCREEN = 200
+
 PATH_IMAGE = "images\\"
+PERCENATGE_SCREEN = 0.9  # Defines the size of the canvas. If equal to 1 (100%) ,it takes the whole screen
+BACKGROUND_COLOR = "#31C498"
+THEME_COLOR = "black"
+TEXT_BTN_COLOR = "black"
+BG_BTN_COLOR = "#80FFE6"
+BIG_FONT = ("Calibri", 22, "bold")
+CURSOR_HAND = "hand2"
+QUESTION_HAND = "question_arrow"
 
 # Password to access to saved credentials now is stored in a local folder
 with open(os.path.join(os.path.expanduser("~"), "Documents", "XNAT_login_credentials.json")) as auth_file:
@@ -62,70 +70,78 @@ class xnat_pic_gui(tk.Frame):
         h = self.root.screenheight
         self.root.geometry(str(w) + "x" + str(h))
         self.root.title("   XNAT-PIC   ~   Molecular Imaging Center   ~   University of Torino   ")
-        self.root.configure(background='black')
+        self.root.configure(background=THEME_COLOR)
         # If you want the logo 
         #self.root.iconbitmap(r"logo3.ico")
 
         # Define Canvas and logo in background
-        mywidth = self.root.screenwidth-DELTA_SCREEN
+        global my_width
+        my_width = int(w*PERCENATGE_SCREEN)
         logo = Image.open(PATH_IMAGE + "logo41.png")
-        wpercent = (mywidth/float(logo.size[0]))
-        hsize = int((float(logo.size[1])*float(wpercent)))
-        self.my_canvas = tk.Canvas(self.root, width=mywidth, height=hsize, bg="#31C498", highlightthickness=3, highlightbackground="black")
-        self.my_canvas.pack(padx=40, pady=40)
-      
-        logo = logo.resize((mywidth,hsize), Image.ANTIALIAS)  
-        self.logo = ImageTk.PhotoImage(logo)
-        self.my_canvas.create_image(-0.5, 0, anchor=tk.NW, image=self.logo)
+        wpercent = (my_width/float(logo.size[0]))
+        global my_height
+        my_height = int((float(logo.size[1])*float(wpercent))*PERCENATGE_SCREEN)
+        self.my_canvas = tk.Canvas(self.root, width=my_width, height=my_height, bg=BACKGROUND_COLOR, highlightthickness=3, highlightbackground=THEME_COLOR)
+        self.my_canvas.place(x=int((w-my_width)/2), y=int((h-my_height)/2), anchor=tk.NW)
         
+        # Adapt the size of the logo to the size of the canvas
+        logo = logo.resize((my_width, my_height), Image.ANTIALIAS)  
+        self.logo = ImageTk.PhotoImage(logo)
+        self.my_canvas.create_image(0, 0, anchor=tk.NW, image=self.logo)
+        
+        # Open the image for the logo
+        logo_info = Image.open(PATH_IMAGE + "info.png")
+        self.logo_info = ImageTk.PhotoImage(logo_info)
+
         # Logo on top
-        logo3 = Image.open(PATH_IMAGE + "path163.png")
-        self.logo3 = ImageTk.PhotoImage(logo3)
-        label1 = tk.Label(self.root, image=self.logo3,  bg="#31C498", width=1715)
-        self.my_canvas.create_window(3, 20, anchor=tk.NW, window=label1)
+        #logo3 = Image.open(PATH_IMAGE + "path163.png")
+        #self.logo3 = ImageTk.PhotoImage(logo3)
+        #label1 = tk.Label(self.root, image=self.logo3,  bg="#31C498", width=1715)
+        #self.my_canvas.create_window(3, 20, anchor=tk.NW, window=label1)
 
         # Button to enter
         enter_text = tk.StringVar()
-        self.enter_btn = tk.Button(self.root, textvariable=enter_text, font=("Calibri", 22, "bold"), bg="#80FFE6", fg="black", height=1, width=18, borderwidth=0, command=lambda: (self.enter_btn.destroy(), xnat_pic_gui.choose_you_action(self)), cursor="hand2")
+        self.enter_btn = tk.Button(self.my_canvas, textvariable=enter_text, font=BIG_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command=lambda: (self.enter_btn.destroy(), xnat_pic_gui.choose_you_action(self)), cursor=CURSOR_HAND)
         enter_text.set("ENTER")
-        self.my_canvas.create_window(680, 650, anchor = "nw", window = self.enter_btn)
+        self.my_canvas.create_window(int(my_width/2), int(my_height*0.7), width = int(my_width/5), anchor = tk.CENTER, window = self.enter_btn)
         
         
-        # Choose to upload files, fill in the info, convert files, process images
+    # Choose to upload files, fill in the info, convert files, process images
     def choose_you_action(self):
-        # Canvas           
-         # Positions for button
-         x_btn = 100
-         y_btn = 400
-         xdelta_btn = 400
-        
+         ##########################################
+         # Action buttons           
+         # Positions for action button parametric with respect to the size of the canvas
+         x_btn = int(my_width/5) # 
+         y_btn = int(my_height*60/100)
+         width_btn = int(my_width/7)
+
          # Convert files Bruker2DICOM
          convert_text = tk.StringVar()
-         self.convert_btn = tk.Button(self.root, textvariable=convert_text, font=("Calibri", 22, "bold"), bg="#80FFE6", fg="black", height=1, width=20, borderwidth=0, command=partial(self.bruker2dicom_conversion, self), cursor="hand2")
+         self.convert_btn = tk.Button(self.my_canvas, textvariable=convert_text, font=BIG_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command=partial(self.bruker2dicom_conversion, self), cursor=CURSOR_HAND)
          convert_text.set("Bruker2DICOM")
-         self.my_canvas.create_window(x_btn, y_btn, anchor = "nw", window = self.convert_btn)
+         self.my_canvas.create_window(x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.convert_btn)
          
          # Fill in the info
          info_text = tk.StringVar()
-         self.info_btn = tk.Button(self.root, textvariable=info_text, font=("Calibri", 22, "bold"), bg="#80FFE6", fg="black", height=1, width=20, borderwidth=0, command=partial(self.metadata, self), cursor="hand2")
+         self.info_btn = tk.Button(self.my_canvas, textvariable=info_text, font=BIG_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command=partial(self.metadata, self), cursor=CURSOR_HAND)
          info_text.set("Fill in the info")
-         self.my_canvas.create_window(x_btn + xdelta_btn, y_btn, anchor = "nw", window = self.info_btn)
+         self.my_canvas.create_window(2*x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.info_btn)
 
          # Upload files
          upload_text = tk.StringVar()
-         self.upload_btn = tk.Button(self.root, textvariable=upload_text, font=("Calibri", 22, "bold"), bg="#80FFE6", fg="black", height=1, width=20, borderwidth=0, command=partial(self.xnat_dcm_uploader, self), cursor="hand2")
+         self.upload_btn = tk.Button(self.my_canvas, textvariable=upload_text, font=BIG_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command=partial(self.xnat_dcm_uploader, self), cursor=CURSOR_HAND)
          upload_text.set("Uploader")
-         self.my_canvas.create_window(x_btn + 2*xdelta_btn, y_btn, anchor = "nw", window = self.upload_btn)        
+         self.my_canvas.create_window(3*x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.upload_btn)        
         
          # Processing your files
          process_text = tk.StringVar()
-         self.process_btn = tk.Button(self.root, textvariable=process_text, font=("Calibri", 22, "bold"), bg="#80FFE6", fg="black", height=1, width=20, borderwidth=0, cursor="hand2")
+         self.process_btn = tk.Button(self.my_canvas, textvariable=process_text, font=BIG_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, cursor=CURSOR_HAND)
          process_text.set("Processing")
-         self.my_canvas.create_window(x_btn + 3*xdelta_btn, y_btn, anchor = "nw", window = self.process_btn)
+         self.my_canvas.create_window(4*x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.process_btn)
         
-
-         # Info 
-         # Info msg
+         ##########################################
+         # Info buttons
+         # Messages displayed when the button is clicked
          def helpmsg(text):  
              if text == "button1":
                  msg="Convert images from Bruker ParaVision format to DICOM standard" 
@@ -138,26 +154,20 @@ class xnat_pic_gui(tk.Frame):
 
              messagebox.showinfo("XNAT-PIC",msg)
                  
-         # Button for info 
-         # Positions for button
-         x_btn = 245
-         y_btn = 470
-         xdelta_btn = 400
-
-         logo_info = Image.open(PATH_IMAGE + "info.png")
-         self.logo_info = ImageTk.PhotoImage(logo_info)
+         # Positions for info button parametric with respect to the size of the canvas
+         y_btn1 = int(my_height*65/100)
          
-         self.info_convert_btn = tk.Button(self.root, image = self.logo_info, bg="#80FFE6", borderwidth=0, command = lambda: helpmsg("button1"), cursor="question_arrow")
-         self.my_canvas.create_window(x_btn, y_btn, anchor="nw", window=self.info_convert_btn)
+         self.info_convert_btn = tk.Button(self.my_canvas, image = self.logo_info, bg=BG_BTN_COLOR, borderwidth=0, command = lambda: helpmsg("button1"), cursor=QUESTION_HAND)
+         self.my_canvas.create_window(x_btn, y_btn1, anchor=tk.CENTER, window=self.info_convert_btn)
 
-         self.info_info_btn = tk.Button(self.root, image = self.logo_info, bg="#80FFE6", borderwidth=0, command = lambda: helpmsg("button2"), cursor="question_arrow")
-         self.my_canvas.create_window(x_btn + xdelta_btn, y_btn, anchor="nw", window=self.info_info_btn)
+         self.info_info_btn = tk.Button(self.my_canvas, image = self.logo_info, bg=BG_BTN_COLOR, borderwidth=0, command = lambda: helpmsg("button2"), cursor=QUESTION_HAND)
+         self.my_canvas.create_window(2*x_btn, y_btn1, anchor=tk.CENTER, window=self.info_info_btn)
 
-         self.info_upload_btn = tk.Button(self.root, image = self.logo_info, bg="#80FFE6", borderwidth=0, command = lambda: helpmsg("button3"), cursor="question_arrow")
-         self.my_canvas.create_window(x_btn + 2*xdelta_btn, y_btn, anchor="nw", window=self.info_upload_btn)
+         self.info_upload_btn = tk.Button(self.my_canvas, image = self.logo_info, bg=BG_BTN_COLOR, borderwidth=0, command = lambda: helpmsg("button3"), cursor=QUESTION_HAND)
+         self.my_canvas.create_window(3*x_btn, y_btn1, anchor=tk.CENTER, window=self.info_upload_btn)
 
-         self.info_process_btn = tk.Button(self.root, image = self.logo_info, bg="#80FFE6", borderwidth=0, command = lambda: helpmsg("button4"), cursor="question_arrow")
-         self.my_canvas.create_window(x_btn + 3*xdelta_btn, y_btn, anchor="nw", window=self.info_process_btn)        
+         self.info_process_btn = tk.Button(self.my_canvas, image = self.logo_info, bg=BG_BTN_COLOR, borderwidth=0, command = lambda: helpmsg("button4"), cursor=QUESTION_HAND)
+         self.my_canvas.create_window(4*x_btn, y_btn1, anchor=tk.CENTER, window=self.info_process_btn)        
 
     def get_page(self):
         return self.root   
