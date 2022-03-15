@@ -20,15 +20,9 @@ import sys
 import threading
 from ProgressBar import App
 from progressbar import progressbar
-try:
-    from bruker2dicom_converter import bruker2dicom
-except:
-    from bruker2dicom import bruker2dicom
+from bruker2dicom_converter import bruker2dicom
 import xnat
-try:
-    from xnat_upload import xnat_uploader, xnat_uploader_dir
-except:
-    from xnat_uploader import xnat_uploader  
+from xnat_upload import xnat_uploader, xnat_uploader_dir
 import pyAesCrypt
 from tabulate import tabulate
 import datetime
