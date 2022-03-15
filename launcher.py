@@ -3,6 +3,7 @@ from dataclasses import field
 from doctest import master
 from logging import exception, raiseExceptions
 from pickle import TRUE
+import shutil
 import tkinter as tk
 from tkinter import CENTER, MULTIPLE, NW, SINGLE, filedialog,messagebox
 from tkinter import font
@@ -177,6 +178,9 @@ class xnat_pic_gui(tk.Frame):
 
             def isChecked():
                 master.results_flag = self.results_flag.get()
+            
+            def checkOverwrite():
+                master.overwrite_flag = self.overwrite_flag.get()
 
             self.conv_popup = tk.Toplevel()
             self.conv_popup.geometry("%dx%d+%d+%d" % (500, 150, 700, 500))
@@ -193,17 +197,25 @@ class xnat_pic_gui(tk.Frame):
             master.results_flag = self.results_flag.get()
             self.btn_results = tk.Checkbutton(self.conv_popup, text='Copy results', variable=self.results_flag,
                                 onvalue=1, offvalue=0, command=isChecked)
-            self.btn_results.grid(row=2, column=1, padx=100, pady=10)
+            self.btn_results.grid(row=2, column=1, sticky='W')
+            self.overwrite_flag = tk.IntVar()
+            master.overwrite_flag = self.overwrite_flag.get()
+            self.btn_overwrite = tk.Checkbutton(self.conv_popup, text="Overwrite existing folders", variable=self.overwrite_flag,
+                                onvalue=1, offvalue=0, command=checkOverwrite)
+            self.btn_overwrite.grid(row=3, column=1, sticky='W')
 
         def prj_conversion(self, master):
+            # Entire project conversion
 
             self.folder_to_convert = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC: Select project directory in Bruker ParaVision format")
             if not self.folder_to_convert:
-                    sys.exit(0)
+                messagebox.showerror("Dicom Converter", "You have not chosen a directory")
+                return
             master.root.deiconify()
             master.root.update()
             self.dst = self.folder_to_convert + '_dcm'
             
+            # Start the progress bar
             progressbar = App(txt_title='DICOM Converter')
             progressbar.start_progressbar()
 
@@ -214,20 +226,37 @@ class xnat_pic_gui(tk.Frame):
                 master.upload_btn['state'] = tk.DISABLED
                 master.process_btn['state'] = tk.DISABLED
 
+                # Check for subjects within the given project
                 list_dirs = os.listdir(self.folder_to_convert)
-                #progressbar = App(txt_title='DICOM Converter')
-                #progressbar.start_progressbar()
+                conversion_err = []
                 for j, dir in enumerate(list_dirs, 1):
+                    dir_dcm = dir + '_dcm'
                     progressbar.update_progressbar(j, len(list_dirs))
                     current_folder = os.path.join(self.folder_to_convert, dir).replace('\\', '/')
                     if os.path.isdir(current_folder):
-                        current_dst = os.path.join(self.dst, dir).replace('\\', '/')
-                        # If the destination folder already exists throw exception, otherwise create the new folder
+                        current_dst = os.path.join(self.dst, dir_dcm).replace('\\', '/')
+                        # Check if the current destination folder already exists
                         if os.path.isdir(current_dst):
-                            raise Exception("Destination folder %s already exists" % current_dst)
+                            # Case 1 --> The directory already exists
+                            if master.overwrite_flag == 1:
+                                # Existent folder with overwrite flag set to 1 --> remove folder and generate new one
+                                os.remove(current_dst)
+                                os.makedirs(current_dst)
+                            else:
+                                # Existent folder without overwriting flag set to 0 --> ignore folder
+                                conversion_err.append(current_folder.split('/')[-1])
+                                continue
                         else:
-                            os.makedirs(current_dst)
+                            # Case 2 --> The directory does not exist
+                            if current_dst.split('/')[-1].count('_dcm') > 1:
+                                # Check to avoid already converted folders
+                                conversion_err.append(current_folder.split('/')[-1])
+                                continue
+                            else:
+                                # Create the new destination folder
+                                os.makedirs(current_dst)
 
+                        # Perform DICOM conversion
                         conv = [(i,l) for i, l in bruker2dicom(current_folder, current_dst, master)]
 
                 progressbar.stop_progress_bar()
@@ -243,9 +272,10 @@ class xnat_pic_gui(tk.Frame):
                 progressbar.stop_progress_bar()
                 self.conv_popup.destroy()
 
-
             if my_exeption is False:
-                messagebox.showinfo("Bruker2DICOM","The conversion is done!")
+                messagebox.showinfo("Bruker2DICOM","The conversion is done!\n\n\n\n"
+                "Exceptions:\n\n" +
+                str([str(x) for x in conversion_err])[1:-1])
                 master.convert_btn['state'] = tk.NORMAL
                 master.info_btn['state'] = tk.NORMAL
                 master.upload_btn['state'] = tk.NORMAL
@@ -256,7 +286,8 @@ class xnat_pic_gui(tk.Frame):
 
             self.folder_to_convert = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC: Select project directory in Bruker ParaVision format")
             if not self.folder_to_convert:
-                    sys.exit(0)
+                messagebox.showerror("Dicom Converter", "You have not chosen a directory")
+                return
             master.root.deiconify()
             master.root.update()
             head, tail = os.path.split(self.folder_to_convert)
@@ -266,7 +297,14 @@ class xnat_pic_gui(tk.Frame):
 
             # If the destination folder already exists throw exception, otherwise create the new folder
             if os.path.isdir(self.dst):
-                raise Exception("Destination folder %s already exists" % self.dst)
+                if master.overwrite_flag == 1:
+                    shutil.rmtree(self.dst)
+                    os.makedirs(self.dst)
+                else:
+                    messagebox.showerror("Dicom Converter", "Destination folder %s already exists" % self.dst)
+                    return
+                    # raise Exception("Destination folder %s already exists" % self.dst)
+                    # continue
             else:
                 os.makedirs(self.dst)
 
