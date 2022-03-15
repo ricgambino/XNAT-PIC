@@ -37,17 +37,10 @@ def bruker2dicom(folder_to_convert, dst_folder, master):
 
     list_path = sorted(os.listdir(folder_to_convert))
     # Check for 'results' folder into list_path
-    flag = 0
-    results_path = [path for path in list_path if "Results" in path]
-    if len(results_path) != 0:
-        results_ans = messagebox.askyesno(
-            "Results",
-            "Results folder found. Would you like to copy processed images to destination folder?"
-        )
-        if results_ans == True:
-            flag = 1
-        else:
-            flag = 0
+    if hasattr(master, 'results_flag') is False:
+        master.results_flag = 0
+    if not os.path.isdir(dst_folder):
+        os.makedirs(dst_folder)
 
     start_time = time.time()
 
@@ -122,7 +115,7 @@ def bruker2dicom(folder_to_convert, dst_folder, master):
                     raw_data.close()
 
                     res = current_path
-                    head2, _ = os.path.split(res)
+                    # head2, _ = os.path.split(res)
                     rel_path = os.path.relpath(res, folder_to_convert)
                     # parent_folder = os.path.basename(head2)
                     dst_path = os.path.join(dst_folder, 'MR', rel_path).replace('\\', '/')
@@ -625,25 +618,22 @@ def bruker2dicom(folder_to_convert, dst_folder, master):
                         ds_temp.is_little_endian = True
                         ds_temp.is_implicit_VR = False
                         ds_temp.save_as(outfile) 
+            elif os.path.isfile(current_path):
+                if 'Custom' in current_path:
+                    shutil.copy(current_path, dst_folder)
         else:
-            if flag == 1:
+            if master.results_flag == 1:
                 current_path = os.path.join(folder_to_convert, path).replace('\\', '/')
                 res = current_path
                 rel_path = os.path.relpath(res, folder_to_convert)
                 dst_path = os.path.join(dst_folder, 'MR', 'resources', rel_path).replace('\\', '/')
                 shutil.copytree(current_path, dst_path)
-        if master.flag == 1:
-            yield i, len(list_path)
+        # if master.conv_flag == 1:
+        yield i, len(list_path)
 
     if parameters:
            pass
-        # if "parameters" in globals() or "parameters" in locals():
-        #master.progress.stop()
-        #master.root.withdraw()
-        #messagebox.showinfo("Success!", "DICOM files have been successfully created!")
     else:
-        #master.progress.stop()
-        #master.root.withdraw()
         messagebox.showerror(
             "Error!",
             "Bruker files have not been found in the chosen folder/subfolders!",
@@ -653,7 +643,7 @@ def bruker2dicom(folder_to_convert, dst_folder, master):
         master.info_btn['state'] = tk.NORMAL
         master.upload_btn['state'] = tk.NORMAL
         master.process_btn['state'] = tk.NORMAL
-        sys.exit(1)
+        # sys.exit(1)
 
     end_time = time.time()
     print('Elapsed time for conversion: ' + str(end_time - start_time) + ' s')
