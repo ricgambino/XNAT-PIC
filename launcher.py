@@ -117,8 +117,8 @@ class xnat_pic_gui(tk.Frame):
          ##########################################
          # Action buttons           
          # Positions for action button parametric with respect to the size of the canvas
-         x_btn = int(my_width/5)
-         y_btn = int(my_height*30/50)
+         x_btn = int(my_width/5) # 
+         y_btn = int(my_height*60/100)
          width_btn = int(my_width/7)
 
          # Convert files Bruker2DICOM
@@ -161,7 +161,7 @@ class xnat_pic_gui(tk.Frame):
              messagebox.showinfo("XNAT-PIC",msg)
                  
          # Positions for info button parametric with respect to the size of the canvas
-         y_btn1 = int(my_height*34/50)
+         y_btn1 = int(my_height*65/100)
          
          self.info_convert_btn = tk.Button(self.my_canvas, image = self.logo_info, bg=BG_BTN_COLOR, borderwidth=0, command = lambda: helpmsg("button1"), cursor=QUESTION_HAND)
          self.my_canvas.create_window(x_btn, y_btn1, anchor=tk.CENTER, window=self.info_convert_btn)
