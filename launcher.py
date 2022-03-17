@@ -19,13 +19,13 @@ import os, re
 from functools import partial
 import subprocess
 import platform 
-import sys
-import threading
-
+# import sys
+# import threading
 from importlib_metadata import metadata
-from ProgressBar import App
-from progressbar import progressbar
+from progress_bar import ProgressBar
+# from progressbar import progressbar
 from bruker2dicom_converter import bruker2dicom
+from dicom_converter import Bruker2DicomConverter
 import xnat
 from xnat_upload import xnat_uploader, xnat_uploader_dir
 import pyAesCrypt
@@ -210,6 +210,9 @@ class xnat_pic_gui(tk.Frame):
             self.btn_overwrite = tk.Checkbutton(self.conv_popup, text="Overwrite existing folders", variable=self.overwrite_flag,
                                 onvalue=1, offvalue=0, command=checkOverwrite)
             self.btn_overwrite.grid(row=3, column=1, sticky='W')
+            self.params = {'results_flag': master.results_flag,
+                            'overwrite_flag': master.overwrite_flag
+                            }
 
         def prj_conversion(self, master):
             # Entire project conversion
@@ -222,11 +225,11 @@ class xnat_pic_gui(tk.Frame):
             master.root.update()
             self.dst = self.folder_to_convert + '_dcm'
             
-            # Start the progress bar
-            progressbar = App(txt_title='DICOM Converter')
-            progressbar.start_progressbar()
-
             try:
+                # Start the progress bar
+                progressbar = ProgressBar(txt_title='DICOM Project Converter')
+                progressbar.start_determinate_bar()
+                start_time = time.time()
                 # Convert from bruker to DICOM and disable the buttons
                 master.convert_btn['state'] = tk.DISABLED
                 master.info_btn['state'] = tk.DISABLED
@@ -236,7 +239,7 @@ class xnat_pic_gui(tk.Frame):
                 # Check for subjects within the given project
                 list_dirs = os.listdir(self.folder_to_convert)
                 conversion_err = []
-                for j, dir in enumerate(list_dirs, 1):
+                for j, dir in enumerate(list_dirs, 0):
                     dir_dcm = dir + '_dcm'
                     progressbar.update_progressbar(j, len(list_dirs))
                     current_folder = os.path.join(self.folder_to_convert, dir).replace('\\', '/')
@@ -264,9 +267,13 @@ class xnat_pic_gui(tk.Frame):
                                 os.makedirs(current_dst)
 
                         # Perform DICOM conversion
-                        conv = [(i,l) for i, l in bruker2dicom(current_folder, current_dst, master)]
+                        converter = Bruker2DicomConverter(current_folder, current_dst)
+                        # converter.start_conversion()
+                        converter.multi_processes_conversion(self.params)
 
                 progressbar.stop_progress_bar()
+                end_time = time.time()
+                print('Total elapsed time: ' + str(end_time - start_time) + ' s')
                 my_exeption = False           
 
             except Exception as e: 
@@ -287,7 +294,6 @@ class xnat_pic_gui(tk.Frame):
                 master.info_btn['state'] = tk.NORMAL
                 master.upload_btn['state'] = tk.NORMAL
                 master.process_btn['state'] = tk.NORMAL
-                # sys.exit(0)
 
         def sbj_conversion(self, master):
 
@@ -310,8 +316,6 @@ class xnat_pic_gui(tk.Frame):
                 else:
                     messagebox.showerror("Dicom Converter", "Destination folder %s already exists" % self.dst)
                     return
-                    # raise Exception("Destination folder %s already exists" % self.dst)
-                    # continue
             else:
                 os.makedirs(self.dst)
 
@@ -322,10 +326,14 @@ class xnat_pic_gui(tk.Frame):
                 master.upload_btn['state'] = tk.DISABLED
                 master.process_btn['state'] = tk.DISABLED
 
-                progressbar = App(txt_title='DICOM Converter')
-                progressbar.start_progressbar()
-                for i, length in bruker2dicom(self.folder_to_convert, self.dst, master):
-                    progressbar.update_progressbar(i, length)
+                # Start the progress bar
+                progressbar = ProgressBar(txt_title='DICOM Subject Converter')
+                progressbar.start_indeterminate_bar()
+
+                converter = Bruker2DicomConverter(self.folder_to_convert, self.dst)
+                # converter.start_conversion()
+                converter.multi_processes_conversion(self.params)
+
                 progressbar.stop_progress_bar()
                 my_exeption = False           
 
