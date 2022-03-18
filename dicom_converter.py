@@ -25,18 +25,19 @@ def check_and_create(directory):
 
 class Bruker2DicomConverter():
 
-    def __init__(self, folder_to_convert, dst_folder):
+    def __init__(self, folder_to_convert, dst_folder, params):
 
-        self.n_processes = int(cpu_count() - 1)
+        self.n_processes = int(cpu_count()/2)
         self.folder_to_convert = folder_to_convert
         self.dst_folder = dst_folder
         
-        self.list_dirs = self.get_list_of_folders()
         add_cest_dict()
-        # if 'results_flag' in params:
-        #     self.results_flag = params['results_flag']
-        # else:
-        #     self.results_flag = 0
+        if 'results_flag' in params:
+            self.results_flag = params['results_flag']
+        else:
+            self.results_flag = 0
+
+        self.list_dirs = self.get_list_of_folders()
 
     def get_list_of_folders(self):
         
@@ -47,7 +48,7 @@ class Bruker2DicomConverter():
             current_path = os.path.join(self.folder_to_convert, dir).replace('\\', '/')
             current_dst = os.path.join(self.dst_folder, dir).replace('\\', '/')
             if os.path.isdir(current_path):
-                if 'Results' in dir:
+                if 'Results' in dir and self.results_flag == 1:
                     new_list_dirs.append((current_path, current_dst))
                 else:
                     dseq_file = glob(current_path + '/**/2dseq', recursive=True)
@@ -58,7 +59,7 @@ class Bruker2DicomConverter():
 
         return new_list_dirs
             
-    def multi_processes_conversion(self, params):
+    def multi_processes_conversion(self):
 
         start_time = time.time()
 
@@ -70,7 +71,7 @@ class Bruker2DicomConverter():
         print('Elapsed time for conversion: ' + str(end_time - start_time) + ' s')
         
 
-    def start_conversion(self, params):
+    def start_conversion(self):
 
         start_time = time.time()
 
@@ -90,8 +91,6 @@ class Bruker2DicomConverter():
         dst_path = dirs[1]
 
         if 'Results' in dirs[0].split('/')[-1]:
-            rel_path = os.path.relpath(convert_path, self.folder_to_convert)
-            dst_path = os.path.join(dst_path, 'MR', 'resources', rel_path).replace('\\', '/')
             shutil.copytree(convert_path, dst_path)
 
         elif 'Custom' in dirs[0].split('/')[-1]:
