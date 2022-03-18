@@ -2,8 +2,9 @@ from ast import Str
 from dataclasses import field
 from doctest import master
 from logging import exception, raiseExceptions
+from msilib import type_binary
 from pickle import TRUE
-import shutil
+import shutil, stat
 import tkinter as tk
 from tkinter import CENTER, MULTIPLE, NW, SINGLE, filedialog,messagebox
 from tkinter import font
@@ -19,18 +20,15 @@ import os, re
 from functools import partial
 import subprocess
 import platform 
-# import sys
-# import threading
 from importlib_metadata import metadata
 from progress_bar import ProgressBar
-# from progressbar import progressbar
-from bruker2dicom_converter import bruker2dicom
 from dicom_converter import Bruker2DicomConverter
 import xnat
 from xnat_upload import xnat_uploader, xnat_uploader_dir
 import pyAesCrypt
 from tabulate import tabulate
 import datetime
+import threading
 
 
 PATH_IMAGE = "images\\"
@@ -183,8 +181,10 @@ class xnat_pic_gui(tk.Frame):
         
         def __init__(self, master):
 
+            self.params = {}
+
             def isChecked():
-                master.results_flag = self.results_flag.get()
+                self.params['results_flag'] = self.results_flag.get()
             
             def checkOverwrite():
                 master.overwrite_flag = self.overwrite_flag.get()
@@ -201,7 +201,7 @@ class xnat_pic_gui(tk.Frame):
                                     command=lambda: (self.conv_popup.destroy(), self.sbj_conversion(master)))
             self.btn_sbj.grid(row=3, column=0, padx=10, pady=5)
             self.results_flag = tk.IntVar()
-            master.results_flag = self.results_flag.get()
+            # master.results_flag = self.results_flag.get()
             self.btn_results = tk.Checkbutton(self.conv_popup, text='Copy results', variable=self.results_flag,
                                 onvalue=1, offvalue=0, command=isChecked)
             self.btn_results.grid(row=2, column=1, sticky='W')
@@ -210,9 +210,9 @@ class xnat_pic_gui(tk.Frame):
             self.btn_overwrite = tk.Checkbutton(self.conv_popup, text="Overwrite existing folders", variable=self.overwrite_flag,
                                 onvalue=1, offvalue=0, command=checkOverwrite)
             self.btn_overwrite.grid(row=3, column=1, sticky='W')
-            self.params = {'results_flag': master.results_flag,
-                            'overwrite_flag': master.overwrite_flag
-                            }
+            # self.params = {'results_flag': master.results_flag,
+            #                 'overwrite_flag': master.overwrite_flag
+            #                 }
 
         def prj_conversion(self, master):
             # Entire project conversion
@@ -228,6 +228,8 @@ class xnat_pic_gui(tk.Frame):
             try:
                 # Start the progress bar
                 progressbar = ProgressBar(txt_title='DICOM Project Converter')
+                # tp = threading.Thread(target=progressbar.start_determinate_bar, args=())
+                # tp.start()
                 progressbar.start_determinate_bar()
                 start_time = time.time()
                 # Convert from bruker to DICOM and disable the buttons
@@ -250,7 +252,9 @@ class xnat_pic_gui(tk.Frame):
                             # Case 1 --> The directory already exists
                             if master.overwrite_flag == 1:
                                 # Existent folder with overwrite flag set to 1 --> remove folder and generate new one
-                                os.remove(current_dst)
+                                # os.chmod(self.dst, stat.S_IWUSR)
+                                shutil.rmtree(current_dst)
+                                # os.remove(current_dst)
                                 os.makedirs(current_dst)
                             else:
                                 # Existent folder without overwriting flag set to 0 --> ignore folder
@@ -267,11 +271,15 @@ class xnat_pic_gui(tk.Frame):
                                 os.makedirs(current_dst)
 
                         # Perform DICOM conversion
-                        converter = Bruker2DicomConverter(current_folder, current_dst)
+                        converter = Bruker2DicomConverter(current_folder, current_dst, self.params)
                         # converter.start_conversion()
-                        converter.multi_processes_conversion(self.params)
+                        converter.multi_processes_conversion()
+                        tp = threading.Thread(target=converter.multi_processes_conversion, args=())
+                        tp.start()
+                        tp.join()
 
                 progressbar.stop_progress_bar()
+                # tp.join()
                 end_time = time.time()
                 print('Total elapsed time: ' + str(end_time - start_time) + ' s')
                 my_exeption = False           
@@ -311,6 +319,7 @@ class xnat_pic_gui(tk.Frame):
             # If the destination folder already exists throw exception, otherwise create the new folder
             if os.path.isdir(self.dst):
                 if master.overwrite_flag == 1:
+                    # os.chmod(self.dst, stat.S_IWUSR)
                     shutil.rmtree(self.dst)
                     os.makedirs(self.dst)
                 else:
@@ -329,12 +338,20 @@ class xnat_pic_gui(tk.Frame):
                 # Start the progress bar
                 progressbar = ProgressBar(txt_title='DICOM Subject Converter')
                 progressbar.start_indeterminate_bar()
+                # tb_bar = threading.Thread(target=progressbar.start_indeterminate_bar, args=())
+                # tb_bar.setDaemon(True)
+                # tb_bar.start()
 
-                converter = Bruker2DicomConverter(self.folder_to_convert, self.dst)
+                converter = Bruker2DicomConverter(self.folder_to_convert, self.dst, self.params)
                 # converter.start_conversion()
-                converter.multi_processes_conversion(self.params)
-
+                # converter.multi_processes_conversion()
+                tp = threading.Thread(target=converter.multi_processes_conversion, args=())
+                tp.start()
+                # tp.join()
+                while tp.is_alive() == True:
+                    progressbar.update_bar()
                 progressbar.stop_progress_bar()
+                # tb_bar.join()
                 my_exeption = False           
 
             except Exception as e: 
