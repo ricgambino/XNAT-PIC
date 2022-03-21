@@ -1,5 +1,15 @@
-# Bruker2Dicom converter with multiprocessing
-from lib2to3.pytree import convert
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Mar 21 2022
+
+@author: Riccardo Gambino
+"""
+
+"""
+Bruker To Dicom file converter with both 
+traditional and multicore processing.
+"""
+# from lib2to3.pytree import convert
 from multiprocessing import Pool, cpu_count
 import os, sys, traceback, re, time
 # from threading import Thread
@@ -27,11 +37,12 @@ class Bruker2DicomConverter():
 
     def __init__(self, folder_to_convert, dst_folder, params):
 
-        self.n_processes = int(cpu_count()/2)
+        self.n_processes = int(cpu_count() - 1)
         self.folder_to_convert = folder_to_convert
         self.dst_folder = dst_folder
         
         add_cest_dict()
+
         if 'results_flag' in params:
             self.results_flag = params['results_flag']
         else:
@@ -59,7 +70,7 @@ class Bruker2DicomConverter():
 
         return new_list_dirs
             
-    def multi_processes_conversion(self):
+    def multi_core_conversion(self):
 
         start_time = time.time()
 
