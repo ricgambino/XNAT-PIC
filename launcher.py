@@ -21,6 +21,7 @@ from functools import partial
 import subprocess
 import platform 
 from importlib_metadata import metadata
+from numpy import empty
 from progress_bar import ProgressBar
 from dicom_converter import Bruker2DicomConverter
 import xnat
@@ -29,6 +30,7 @@ import pyAesCrypt
 from tabulate import tabulate
 import datetime
 import threading
+from dotenv import load_dotenv
 
 
 PATH_IMAGE = "images\\"
@@ -44,13 +46,11 @@ SMALL_FONT = ("Calibri", 16, "bold")
 CURSOR_HAND = "hand2"
 QUESTION_HAND = "question_arrow"
 
-# Password to access to saved credentials now is stored in a local folder
-with open(os.path.join(os.path.expanduser("~"), "Documents", "XNAT_login_credentials.json")) as auth_file:
-    data = json.load(auth_file)
-    password = data['password']
-    bufferSize = int(data['bufferSize_1']) * int(data['bufferSize_2'])
 
-       
+load_dotenv()
+password = os.environ.get('secretKey')
+bufferSize = int(os.environ.get('bufferSize1')) * int(os.environ.get('bufferSize2'))
+      
 class xnat_pic_gui(tk.Frame):
 
     def __init__(self, master):
@@ -215,10 +215,12 @@ class xnat_pic_gui(tk.Frame):
             #                 }
 
         def prj_conversion(self, master):
-            # Entire project conversion
 
+            ############### Whole project conversion ################
+            # Ask for project directory
             self.folder_to_convert = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC: Select project directory in Bruker ParaVision format")
             if not self.folder_to_convert:
+                # Check for the chosen directory
                 messagebox.showerror("Dicom Converter", "You have not chosen a directory")
                 return
             master.root.deiconify()
@@ -226,24 +228,30 @@ class xnat_pic_gui(tk.Frame):
             self.dst = self.folder_to_convert + '_dcm'
             
             try:
-                # Start the progress bar
-                progressbar = ProgressBar(txt_title='DICOM Project Converter')
-                # tp = threading.Thread(target=progressbar.start_determinate_bar, args=())
-                # tp.start()
-                progressbar.start_determinate_bar()
-                start_time = time.time()
-                # Convert from bruker to DICOM and disable the buttons
+                # Disable the buttons
                 master.convert_btn['state'] = tk.DISABLED
                 master.info_btn['state'] = tk.DISABLED
                 master.upload_btn['state'] = tk.DISABLED
                 master.process_btn['state'] = tk.DISABLED
 
+                start_time = time.time()
+
+                # Start the progress bar
+                progressbar = ProgressBar(bar_title='DICOM Project Converter')
+                progressbar.start_determinate_bar()
+                # progressbar.start_indeterminate_bar()
+
                 # Check for subjects within the given project
                 list_dirs = os.listdir(self.folder_to_convert)
+                # Initialize the list of conversion errors
                 conversion_err = []
                 for j, dir in enumerate(list_dirs, 0):
+        
+                    # Update the current step of the progress bar
+                    # progressbar.update_progressbar(j, len(list_dirs))
+                    progressbar.set_caption(j + 1, len(list_dirs))
+                    # Define the current subject path
                     dir_dcm = dir + '_dcm'
-                    progressbar.update_progressbar(j, len(list_dirs))
                     current_folder = os.path.join(self.folder_to_convert, dir).replace('\\', '/')
                     if os.path.isdir(current_folder):
                         current_dst = os.path.join(self.dst, dir_dcm).replace('\\', '/')
@@ -252,9 +260,7 @@ class xnat_pic_gui(tk.Frame):
                             # Case 1 --> The directory already exists
                             if master.overwrite_flag == 1:
                                 # Existent folder with overwrite flag set to 1 --> remove folder and generate new one
-                                # os.chmod(self.dst, stat.S_IWUSR)
                                 shutil.rmtree(current_dst)
-                                # os.remove(current_dst)
                                 os.makedirs(current_dst)
                             else:
                                 # Existent folder without overwriting flag set to 0 --> ignore folder
@@ -273,16 +279,29 @@ class xnat_pic_gui(tk.Frame):
                         # Perform DICOM conversion
                         converter = Bruker2DicomConverter(current_folder, current_dst, self.params)
                         # converter.start_conversion()
-                        converter.multi_processes_conversion()
-                        tp = threading.Thread(target=converter.multi_processes_conversion, args=())
+                        # converter.multi_processes_conversion()
+                        tp = threading.Thread(target=converter.multi_core_conversion, args=())
                         tp.start()
-                        tp.join()
+                        while tp.is_alive() == True:
+                            # progressbar.update_bar()
+                            progressbar.update_bar(0.36)
+                            time.sleep(0.5)
+                        else:
+                            progressbar.update_progressbar(j + 1, len(list_dirs))
 
+                # Stop the progress bar and close the popup
                 progressbar.stop_progress_bar()
-                # tp.join()
+
                 end_time = time.time()
                 print('Total elapsed time: ' + str(end_time - start_time) + ' s')
-                my_exeption = False           
+
+                messagebox.showinfo("Bruker2DICOM","The conversion is done!\n\n\n\n"
+                                    "Exceptions:\n\n" +
+                                    str([str(x) for x in conversion_err])[1:-1])
+                master.convert_btn['state'] = tk.NORMAL
+                master.info_btn['state'] = tk.NORMAL
+                master.upload_btn['state'] = tk.NORMAL
+                master.process_btn['state'] = tk.NORMAL          
 
             except Exception as e: 
                 messagebox.showerror("XNAT-PIC - Bruker2Dicom", e)
@@ -290,23 +309,15 @@ class xnat_pic_gui(tk.Frame):
                 master.info_btn['state'] = tk.NORMAL
                 master.upload_btn['state'] = tk.NORMAL
                 master.process_btn['state'] = tk.NORMAL
-                my_exeption = True
-                progressbar.stop_progress_bar()
                 self.conv_popup.destroy()
-
-            if my_exeption is False:
-                messagebox.showinfo("Bruker2DICOM","The conversion is done!\n\n\n\n"
-                "Exceptions:\n\n" +
-                str([str(x) for x in conversion_err])[1:-1])
-                master.convert_btn['state'] = tk.NORMAL
-                master.info_btn['state'] = tk.NORMAL
-                master.upload_btn['state'] = tk.NORMAL
-                master.process_btn['state'] = tk.NORMAL
-
+                
         def sbj_conversion(self, master):
 
-            self.folder_to_convert = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC: Select project directory in Bruker ParaVision format")
+            ############### Single subject conversion ################
+            # Ask for subject directory
+            self.folder_to_convert = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC: Select subject directory in Bruker ParaVision format")
             if not self.folder_to_convert:
+                # Check for chosen directory
                 messagebox.showerror("Dicom Converter", "You have not chosen a directory")
                 return
             master.root.deiconify()
@@ -318,15 +329,24 @@ class xnat_pic_gui(tk.Frame):
 
             # If the destination folder already exists throw exception, otherwise create the new folder
             if os.path.isdir(self.dst):
+                # Case 1 --> The directory already exists
                 if master.overwrite_flag == 1:
-                    # os.chmod(self.dst, stat.S_IWUSR)
+                    # Existent folder with overwrite flag set to 1 --> remove folder and generate new one
                     shutil.rmtree(self.dst)
                     os.makedirs(self.dst)
                 else:
+                    # Existent folder without overwriting flag set to 0 --> ignore folder
                     messagebox.showerror("Dicom Converter", "Destination folder %s already exists" % self.dst)
                     return
             else:
-                os.makedirs(self.dst)
+                # Case 2 --> The directory does not exist
+                if self.dst.split('/')[-1].count('_dcm') > 1:
+                    # Check to avoid already converted folders
+                    messagebox.showerror("Dicom Converter", "Chosen folder %s already converted" % self.dst)
+                    return
+                else:
+                    # Create the new destination folder
+                    os.makedirs(self.dst)
 
             try:
                 # Convert from bruker to DICOM and disable the buttons
@@ -335,24 +355,30 @@ class xnat_pic_gui(tk.Frame):
                 master.upload_btn['state'] = tk.DISABLED
                 master.process_btn['state'] = tk.DISABLED
 
-                # Start the progress bar
-                progressbar = ProgressBar(txt_title='DICOM Subject Converter')
-                progressbar.start_indeterminate_bar()
-                # tb_bar = threading.Thread(target=progressbar.start_indeterminate_bar, args=())
-                # tb_bar.setDaemon(True)
-                # tb_bar.start()
+                start_time = time.time()
 
+                # Start the progress bar
+                progressbar = ProgressBar(bar_title='DICOM Subject Converter')
+                progressbar.start_indeterminate_bar()
+
+                # Start converter
                 converter = Bruker2DicomConverter(self.folder_to_convert, self.dst, self.params)
-                # converter.start_conversion()
-                # converter.multi_processes_conversion()
-                tp = threading.Thread(target=converter.multi_processes_conversion, args=())
+                # Initialize conversion thread
+                tp = threading.Thread(target=converter.multi_core_conversion, args=())
                 tp.start()
-                # tp.join()
                 while tp.is_alive() == True:
+                    # As long as the thread is working, update the progress bar
                     progressbar.update_bar()
                 progressbar.stop_progress_bar()
-                # tb_bar.join()
-                my_exeption = False           
+
+                end_time = time.time()
+                print('Total elapsed time: ' + str(end_time - start_time) + ' s')
+
+                messagebox.showinfo("Bruker2DICOM","Done! Now you can upload your files to XNAT.")
+                master.convert_btn['state'] = tk.NORMAL
+                master.info_btn['state'] = tk.NORMAL
+                master.upload_btn['state'] = tk.NORMAL
+                master.process_btn['state'] = tk.NORMAL          
 
             except Exception as e: 
                 messagebox.showerror("XNAT-PIC - Bruker2Dicom", e)
@@ -360,16 +386,7 @@ class xnat_pic_gui(tk.Frame):
                 master.info_btn['state'] = tk.NORMAL
                 master.upload_btn['state'] = tk.NORMAL
                 master.process_btn['state'] = tk.NORMAL
-
-            if my_exeption is False:
-                messagebox.showinfo("Bruker2DICOM","Done! Now you can upload your files to XNAT.")
-                master.convert_btn['state'] = tk.NORMAL
-                master.info_btn['state'] = tk.NORMAL
-                master.upload_btn['state'] = tk.NORMAL
-                master.process_btn['state'] = tk.NORMAL
-                # sys.exit(0)
-
-                      
+                 
     # Fill in information
     class metadata():
         def __init__(self, master):
