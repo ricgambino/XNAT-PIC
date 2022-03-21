@@ -1,27 +1,14 @@
-from ast import Str
-from dataclasses import field
-from doctest import master
-from logging import exception, raiseExceptions
-from msilib import type_binary
-from pickle import TRUE
-import shutil, stat
+from logging import exception
+import shutil
 import tkinter as tk
-from tkinter import CENTER, MULTIPLE, NW, SINGLE, filedialog,messagebox
-from tkinter import font
-from tkinter.tix import COLUMN, Balloon
-from turtle import width
-from unittest import result
-from PIL import Image, ImageTk, ImageDraw
-from tkinter import Button, Tk, HORIZONTAL
+from tkinter import MULTIPLE, SINGLE, filedialog, messagebox
+from PIL import Image, ImageTk
 from tkinter import ttk
-import json
 import time
 import os, re
 from functools import partial
 import subprocess
 import platform 
-from importlib_metadata import metadata
-from numpy import empty
 from progress_bar import ProgressBar
 from dicom_converter import Bruker2DicomConverter
 import xnat
@@ -390,8 +377,6 @@ class xnat_pic_gui(tk.Frame):
     # Fill in information
     class metadata():
         def __init__(self, master):
-
-                messagebox.showinfo("Metadata","Select project directory!")
 
                 # Disable all buttons
                 master.convert_btn['state'] = tk.DISABLED
