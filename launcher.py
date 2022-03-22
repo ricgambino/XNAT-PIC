@@ -1,3 +1,4 @@
+from doctest import master
 from logging import exception
 import shutil
 import tkinter as tk
@@ -8,7 +9,9 @@ import time
 import os, re
 from functools import partial
 import subprocess
-import platform 
+import platform
+
+from numpy import empty 
 from progress_bar import ProgressBar
 from dicom_converter import Bruker2DicomConverter
 import xnat
@@ -19,9 +22,11 @@ import datetime
 import threading
 from dotenv import load_dotenv
 
+from xnat_uploader import Dicom2XnatUploader
+
 
 PATH_IMAGE = "images\\"
-PERCENATGE_SCREEN = 1  # Defines the size of the canvas. If equal to 1 (100%) ,it takes the whole screen
+PERCENTAGE_SCREEN = 1  # Defines the size of the canvas. If equal to 1 (100%) ,it takes the whole screen
 BACKGROUND_COLOR = "#31C498"
 THEME_COLOR = "black"
 TEXT_BTN_COLOR = "black"
@@ -68,11 +73,11 @@ class xnat_pic_gui(tk.Frame):
 
         # Define Canvas and logo in background
         global my_width
-        my_width = int(w*PERCENATGE_SCREEN)
+        my_width = int(w*PERCENTAGE_SCREEN)
         logo = Image.open(PATH_IMAGE + "logo41.png")
         wpercent = (my_width/float(logo.size[0]))
         global my_height
-        my_height = int((float(logo.size[1])*float(wpercent))*PERCENATGE_SCREEN)
+        my_height = int((float(logo.size[1])*float(wpercent))*PERCENTAGE_SCREEN)
         self.my_canvas = tk.Canvas(self.root, width=my_width, height=my_height, bg=BACKGROUND_COLOR, highlightthickness=3, highlightbackground=THEME_COLOR)
         self.my_canvas.place(x=int((w-my_width)/2), y=int((h-my_height)/2), anchor=tk.NW)
         
@@ -121,7 +126,7 @@ class xnat_pic_gui(tk.Frame):
 
          # Upload files
          upload_text = tk.StringVar()
-         self.upload_btn = tk.Button(self.my_canvas, textvariable=upload_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command=partial(self.xnat_dcm_uploader, self), cursor=CURSOR_HAND)
+         self.upload_btn = tk.Button(self.my_canvas, textvariable=upload_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command=partial(self.XNATUploader, self), cursor=CURSOR_HAND)
          upload_text.set("Uploader")
          self.my_canvas.create_window(3*x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.upload_btn)        
         
@@ -787,116 +792,101 @@ class xnat_pic_gui(tk.Frame):
                     multiple_confirm_btn.destroy()
                     xnat_pic_gui.choose_you_action(master)
 
-    # Upload files         
-    class xnat_dcm_uploader():
+    class XNATUploader():
 
-        def __init__(self, master):    
-            
-            self.home = os.path.expanduser("~")
-            self.stack_frames = []
-            self.stack_frames.append(master.get_page())
-            
-            # Disable all buttons
-            master.convert_btn['state'] = tk.DISABLED
-            master.info_btn['state'] = tk.DISABLED
-            master.upload_btn['state'] = tk.DISABLED
-            master.process_btn['state'] = tk.DISABLED
+        def __init__(self, master):
 
-            # Log into XNAT
-            popup1 = tk.Toplevel()
-            popup1.title("XNAT-PIC  ~  Login")
-            master.x = my_width * 3 / 8
-            master.y = my_height / 3
-            popup_font = ("Calibri", 10, "bold")
-            popup1.geometry("%dx%d+%d+%d" % (my_width*0.2, my_height*0.1, master.x, master.y))           
-            
-            def normal_btn(event):
-                master.convert_btn['state'] = tk.NORMAL
-                master.info_btn['state'] = tk.NORMAL
-                master.upload_btn['state'] = tk.NORMAL
-                master.process_btn['state'] = tk.NORMAL
+            def disable_buttons():
+                # Disable all buttons
+                master.convert_btn['state'] = tk.DISABLED
+                master.info_btn['state'] = tk.DISABLED
+                master.upload_btn['state'] = tk.DISABLED
+                master.process_btn['state'] = tk.DISABLED
                 return
-                
-            popup1.bind("<Destroy> ", normal_btn)
+            
+            disable_buttons()
+
+            # def normal_btn(event):
+            #     
+            #     return
+
+            login_popup = tk.Toplevel()
+            login_popup.title("XNAT-PIC  ~  Login")
+            login_popup.geometry("%dx%d+%d+%d" % (my_width*0.3, my_height*0.15, my_width * 3 / 8, my_height / 3))
+
+            # login_popup.bind("<Destroy> ", normal_btn)
+
             # XNAT ADDRESS      
-            popup1.label_address = tk.Label(popup1, text="  XNAT web address  ", font=popup_font)   
-            popup1.label_address.grid(row=0, column=0, padx=1, ipadx=1)
-            popup1.entry_address = tk.Entry(popup1)
-            popup1.entry_address.var = tk.StringVar()
-            popup1.entry_address["textvariable"] = popup1.entry_address.var
-            popup1.entry_address.grid(row=0, column=1, padx=1, ipadx=1)
+            login_popup.label_address = tk.Label(login_popup, text="  XNAT web address  ", font=SMALL_FONT)   
+            login_popup.label_address.grid(row=0, column=0, padx=1, ipadx=1)
+            login_popup.entry_address = tk.Entry(login_popup)
+            login_popup.entry_address.var = tk.StringVar()
+            login_popup.entry_address["textvariable"] = login_popup.entry_address.var
+            login_popup.entry_address.grid(row=0, column=1, padx=1, ipadx=1)
            
             # XNAT USER 
-            popup1.label_user = tk.Label(popup1, text="Username", font=popup_font)
-            popup1.label_user.grid(row=1, column=0, padx=1, ipadx=1)
-            popup1.entry_user = tk.Entry(popup1)
-            popup1.entry_user.var = tk.StringVar()
-            popup1.entry_user["textvariable"] = popup1.entry_user.var
-            popup1.entry_user.grid(row=1, column=1, padx=1, ipadx=1)
+            login_popup.label_user = tk.Label(login_popup, text="Username", font=SMALL_FONT)
+            login_popup.label_user.grid(row=1, column=0, padx=1, ipadx=1)
+            login_popup.entry_user = tk.Entry(login_popup)
+            login_popup.entry_user.var = tk.StringVar()
+            login_popup.entry_user["textvariable"] = login_popup.entry_user.var
+            login_popup.entry_user.grid(row=1, column=1, padx=1, ipadx=1)
 
             # XNAT PASSWORD 
-            popup1.label_psw = tk.Label(popup1, text="Password", font=popup_font)
-            popup1.label_psw.grid(row=2, column=0, padx=1, ipadx=1)           
-            
+            login_popup.label_psw = tk.Label(login_popup, text="Password", font=SMALL_FONT)
+            login_popup.label_psw.grid(row=2, column=0, padx=1, ipadx=1)
+
             # Show/Hide the password
             def toggle_password():
-                if popup1.entry_psw.cget('show') == '':
-                    popup1.entry_psw.config(show='*')
-                    popup1.toggle_btn.config(text='Show Password')
+                if login_popup.entry_psw.cget('show') == '':
+                    login_popup.entry_psw.config(show='*')
+                    login_popup.toggle_btn.config(text='Show Password')
                 else:
-                    popup1.entry_psw.config(show='')
-                    popup1.toggle_btn.config(text='Hide Password')
+                    login_popup.entry_psw.config(show='')
+                    login_popup.toggle_btn.config(text='Hide Password')
             
 
-            popup1.entry_psw = tk.Entry(popup1, show="*")
-            popup1.entry_psw.var = tk.StringVar()
-            popup1.entry_psw["textvariable"] = popup1.entry_psw.var
-            popup1.entry_psw.grid(row=2, column=1, padx=1, ipadx=1)
-            popup1.toggle_btn = tk.Button(popup1, text='Show Password',  command=toggle_password)
-            popup1.toggle_btn.grid(row=2, column=2)
+            login_popup.entry_psw = tk.Entry(login_popup, show="*")
+            login_popup.entry_psw.var = tk.StringVar()
+            login_popup.entry_psw["textvariable"] = login_popup.entry_psw.var
+            login_popup.entry_psw.grid(row=2, column=1, padx=1, ipadx=1)
+            login_popup.toggle_btn = tk.Button(login_popup, text='Show Password',  command=toggle_password)
+            login_popup.toggle_btn.grid(row=2, column=2)
 
-
-            # XNAT HTTP/HTTPS 
-            popup1.http = tk.StringVar()
+            # HTTP/HTTPS 
+            login_popup.http = tk.StringVar()
+            login_popup.button_http = tk.Radiobutton(
+                login_popup,
+                text=" http:// ",
+                variable=login_popup.http,
+                value="http://")
+            login_popup.button_http.grid(row=4, column=0)
+            login_popup.button_http.select()
+            login_popup.button_https = tk.Radiobutton(
+                login_popup,
+                text=" https:// ",
+                variable=login_popup.http,
+                value="https://")
+            login_popup.button_https.grid(row=4, column=1)
 
             # SAVE CREDENTIALS CHECKBOX
-            popup1.remember = tk.IntVar()
+            login_popup.remember = tk.IntVar()
+            login_popup.btn_remember = tk.Checkbutton(
+                login_popup, text="Remember me", variable=login_popup.remember
+            )
+            login_popup.btn_remember.grid(row=4, column=2, padx=1, ipadx=1)
 
-            # SHOW THE PASSWORD
-            popup1.show_psw = tk.BooleanVar()
-            
-            # BUTTONS
-            popup1.button_connect = tk.Button(
-                popup1,
-                text="Login", font=popup_font, 
+            # CONNECTION
+            login_popup.button_connect = tk.Button(
+                login_popup,
+                text="Login", font=SMALL_FONT, 
                 width=15,
-                command=partial(self.check_connection,master, popup1)
+                command=partial(self.login, login_popup, master)
             )
-            popup1.button_connect.grid(row=5, column=1)
-            popup1.button_http = tk.Radiobutton(
-                popup1,
-                text=" http:// ",
-                variable=popup1.http,
-                value="http://",
-            )
-            popup1.button_http.grid(row=4, column=0)
-            popup1.button_http.select()
-            popup1.button_https = tk.Radiobutton(
-                popup1,
-                text=" https:// ",
-                variable=popup1.http,
-                value="https://",
-            )
-            popup1.button_https.grid(row=4, column=1)
+            login_popup.button_connect.grid(row=5, column=1)
+            self.load_saved_credentials(login_popup)
 
-            popup1.btn_remember = tk.Checkbutton(
-                popup1, text="Remember me", variable=popup1.remember
-            )
-            popup1.btn_remember.grid(row=4, column=2, padx=1, ipadx=1)
-            self.load_saved_credentials(popup1)
-            
-           
-        def load_saved_credentials(self, popup1):
+        def load_saved_credentials(self, popup):
             # REMEMBER CREDENTIALS
             try:
                 home = os.path.expanduser("~")
@@ -907,32 +897,37 @@ class xnat_pic_gui(tk.Frame):
                 pyAesCrypt.decryptFile(encrypted_file, decrypted_file, password, bufferSize)
                 login_file = open(decrypted_file, "r")
                 line = login_file.readline()
-                popup1.entry_address.var.set(line[8:-1])
+                popup.entry_address.var.set(line[8:-1])
                 line = login_file.readline()
-                popup1.entry_user.var.set(line[9:-1])
+                popup.entry_user.var.set(line[9:-1])
                 line = login_file.readline()
-                popup1.entry_psw.var.set(line[9:-1])
+                popup.entry_psw.var.set(line[9:-1])
                 login_file.close()
                 os.remove(decrypted_file)
-                popup1.btn_remember.select()
+                popup.btn_remember.select()
             except Exception as error:
                 pass
 
-        def check_connection(self, master, popup1):
+        def login(self, popup, master):
+            # Return to login method
             # LOGIN
-            popup1.entry_address_complete = popup1.http.get() + popup1.entry_address.var.get()
-            self.entry_address_complete = popup1.entry_address_complete
-            self.entry_user = popup1.entry_user.var.get()
-            self.entry_psw = popup1.entry_psw.var.get()
+            popup.entry_address_complete = popup.http.get() + popup.entry_address.var.get()
+            self.entry_address_complete = popup.entry_address_complete
+            self.entry_user = popup.entry_user.var.get()
+            self.entry_psw = popup.entry_psw.var.get()
+
+            # Method to check if there is an existent session!
+
+
             home = os.path.expanduser("~")
             try:
                 session = xnat.connect(
-                    popup1.entry_address_complete,
-                    popup1.entry_user.var.get(),
-                    popup1.entry_psw.var.get(),
+                    popup.entry_address_complete,
+                    popup.entry_user.var.get(),
+                    popup.entry_psw.var.get(),
                 )
-                if popup1.remember.get() == True:
-                    self.save_credentials(popup1)
+                if popup.remember.get() == True:
+                    self.save_credentials(popup)
                 else:
                     try:
                         os.remove(
@@ -940,14 +935,15 @@ class xnat_pic_gui(tk.Frame):
                         )
                     except FileNotFoundError:
                         pass
-                popup1.destroy()
-                self.xnat_common_uploader(session, master)
+                popup.destroy()
+                # self.overall_uploader(session, master)
+                self.project_selection(session, master)
             except xnat.exceptions.XNATLoginFailedError as err:
                 messagebox.showerror("Error!", err)
             except Exception as error:
                 messagebox.showerror("Error!", error)
 
-        def save_credentials(self, popup1):
+        def save_credentials(self, popup):
 
             home = os.path.expanduser("~")
 
@@ -956,72 +952,24 @@ class xnat_pic_gui(tk.Frame):
                 login_file = open(file, "w+")
                 login_file.write(
                     "Address:"
-                    + popup1.entry_address.var.get()
+                    + popup.entry_address.var.get()
                     + "\n"
                     + "Username:"
-                    + popup1.entry_user.var.get()
+                    + popup.entry_user.var.get()
                     + "\n"
                     + "Password:"
-                    + popup1.entry_psw.var.get()
+                    + popup.entry_psw.var.get()
                     + "\n"
                     + "HTTP:"
-                    + popup1.http.get()
+                    + popup.http.get()
                 )
                 login_file.close()
                 # encrypt
                 encrypted_file = os.path.join(home, "Documents", ".XNAT_login_file.txt.aes")
                 pyAesCrypt.encryptFile(file, encrypted_file, password, bufferSize)
                 # decrypt
-                os.remove(file)   
-        
+                os.remove(file)
 
-        def xnat_common_uploader(self, session, master):
-            # Frame
-            self.stack_frames[-1].update()
-            frame_two = self.stack_frames[-1]
-            
-            # Update canvas
-            # Delete button of the previous frame
-            master.convert_btn.destroy()
-            master.info_btn.destroy()
-            master.upload_btn.destroy()
-            master.process_btn.destroy()
-            master.info_convert_btn.destroy()
-            master.info_info_btn.destroy()
-            master.info_upload_btn.destroy()
-            master.info_process_btn.destroy()            
-            
-            # Upload DICOM files
-            x_lbl = int(my_width*20/100)
-            y_lbl = int(my_height*35/100)
-            x_btn = int(my_width*30/100)
-            y_btn = int(my_height*39/100)
-            width_lbl = int(my_width*30/100)
-            width_btn = int(my_width*10/100)
-
-            label1 = tk.Label(master.my_canvas, text='Upload new DICOM images to XNAT project', font = LARGE_FONT, bg=BG_LBL_COLOR, fg=TEXT_LBL_COLOR)
-            master.my_canvas.create_window(x_lbl, y_lbl, anchor=tk.NW, width=width_lbl, window=label1)
-            dicom_text = tk.StringVar()
-            dicom_btn = tk.Button(master.my_canvas, textvariable=dicom_text, font = LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command=partial(self.xnat_dcm_uploader_select_project, session, master), cursor=CURSOR_HAND)
-            dicom_text.set("DICOM2XNAT")
-            master.my_canvas.create_window(x_btn, y_btn, anchor = tk.NW, width=width_btn, window = dicom_btn)
-            
-            # Upload files
-            y_lbl1 = int(my_height*50/100)
-            y_btn1 = int(my_height*54/100)
-            label2 = tk.Label(master.my_canvas, text='Upload other files to XNAT project', font = LARGE_FONT, bg=BG_LBL_COLOR, fg=TEXT_LBL_COLOR)
-            master.my_canvas.create_window(x_lbl, y_lbl1, anchor=tk.NW, width=width_lbl, window=label2)
-            file_text = tk.StringVar()
-            file_btn = tk.Button(master.my_canvas, textvariable=file_text, font = LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command=partial(self.xnat_files_uploader, session, master), cursor=CURSOR_HAND)
-            file_text.set("FILES2XNAT")
-            master.my_canvas.create_window(x_btn, y_btn1, anchor = tk.NW, width=width_btn, window = file_btn)
-            
-            # Button to go to the previous page
-            back_text = tk.StringVar()   
-            back_btn = tk.Button(master.my_canvas, textvariable=back_text, font = LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command=lambda: (back_btn.destroy(), dicom_btn.destroy(), file_btn.destroy(), label1.destroy(), label2.destroy(), session.disconnect(), xnat_pic_gui.choose_you_action(master)), cursor=CURSOR_HAND)
-            back_text.set("Logout")
-            master.my_canvas.create_window(int(my_width*5/100), int(my_height*80/100), anchor = tk.NW, width=width_btn, window = back_btn)
-        
         def enable_next(self, *_):
             # # EXISTING PROJECT
             if self.newprj_var.get() == 0:
@@ -1037,23 +985,9 @@ class xnat_pic_gui(tk.Frame):
                 else:
                     self.button_next["state"] = "disabled"
 
-        def check_project_name(self, session, master, popup):
-            if popup.entry_prjname.var.get().lower in self.OPTIONS:
-                messagebox.showerror(
-                    "Error!",
-                    "Project ID %s already exists! Please, enter a different project ID"
-                    % self.entry_prjname.var.get(),
-                )
-            else:
-                try:
-                    popup.destroy()
-                    self.xnat_dcm_directory_selector(session, master)
-                except exception as e:
-                    messagebox.showerror("Error!", str(e))
-        
-        def xnat_dcm_uploader_select_project(self, session, master):
-
-            # Enable / Disable new / existing project
+        def project_selection(self, session, master):
+            # Call for folder_selection
+            # Return to parent method
             def isChecked():
                  if self.newprj_var.get() == 1:
                     popup2.label_prjname['state'] = tk.NORMAL
@@ -1106,7 +1040,7 @@ class xnat_pic_gui(tk.Frame):
             )
             popup2.back_btn.grid(row=4, column=0)
             popup2.next_btn = tk.Button(
-                popup2, text="Next", command=partial(self.check_project_name, session, master, popup2), state="disabled"
+                popup2, text="Next", command=partial(self.check_project_name, session, popup2, master), state="disabled"
             )
             popup2.next_btn.grid(row=4, column=2)
 
@@ -1116,53 +1050,491 @@ class xnat_pic_gui(tk.Frame):
             popup2.entry_prjname.var.trace_add("write", self.enable_next)
             self.prj.trace_add("write", self.enable_next)
 
+        def check_project_name(self, session, popup, master):
 
-        def navigate_back(self, master):
-            self.stack_frames[-1].grid_remove()
-            self.stack_frames.pop()
-            self.stack_frames[-1].grid()
+            # Method to check about project name
+            if popup.entry_prjname.var.get().lower in self.OPTIONS:
+                # Case 1 --> The project already exists
+                messagebox.showerror(
+                    "Error!",
+                    "Project ID %s already exists! Please, enter a different project ID"
+                    % self.entry_prjname.var.get(),
+                )
+            else:
+                # Case 2 --> The project does not exist yet
+                try:
+                    popup.destroy()
+                    self.overall_uploader(session, master)
+                except exception as e:
+                    messagebox.showerror("Error!", str(e))
+
+        def overall_uploader(self, session, master):
+            # Called from check_connection
+            # Call for file_uploader/subject_uploader/project_uploader
+            self.uploader = Dicom2XnatUploader(session)
+
+            up_popup = tk.Toplevel()
+            up_popup.geometry("%dx%d+%d+%d" % (500, 300, 700, 500))
+            up_popup.title('XNAT Uploader')
+            up_popup.btn_prj = tk.Button(up_popup, text='Upload Project', font=LARGE_FONT, 
+                                    bg="grey", fg="white", height=1, width=15, borderwidth=1, 
+                                    command=lambda: (up_popup.destroy(), self.project_uploader(master)))
+            up_popup.btn_prj.grid(row=2, column=0, padx=10, pady=5)
+            up_popup.btn_sbj = tk.Button(up_popup, text='Upload Subject', font=LARGE_FONT, 
+                                    bg="grey", fg="white", height=1, width=15, borderwidth=1, 
+                                    command=lambda: (up_popup.destroy(), self.subject_uploader(master)))
+            up_popup.btn_sbj.grid(row=3, column=0, padx=10, pady=5)
+            up_popup.btn_exp = tk.Button(up_popup, text='Upload Experiment', font=LARGE_FONT, 
+                                    bg="grey", fg="white", height=1, width=15, borderwidth=1, 
+                                    command=lambda: (up_popup.destroy(), self.experiment_uploader(master)))
+            up_popup.btn_exp.grid(row=4, column=0, padx=10, pady=5)
+            up_popup.btn_file = tk.Button(up_popup, text='Upload File', font=LARGE_FONT, 
+                                    bg="grey", fg="white", height=1, width=15, borderwidth=1, 
+                                    command=lambda: (up_popup.destroy(), self.file_uploader(master)))
+            up_popup.btn_file.grid(row=5, column=0, padx=10, pady=5)
 
 
-        def xnat_files_uploader(self, session, master):
+        def project_uploader(self, session, master):
+            # Call for check_project_name
+            # Call for upload() method from Dicom2XnatUploader class
+            pass
 
-            session.disconnect()
-
-        def xnat_dcm_directory_selector(self, session, master):
-
+        def subject_uploader(self, master):
+            # Call for check_project_name
+            # Call for upload() method from Dicom2XnatUploader class
             if self.newprj_var.get() == 1:
                 self.project = self.entry_prjname.var.get()
             else:
                 self.project = self.prj.get()
 
-            self.folder_to_upload = filedialog.askdirectory(
-                parent=master.root,
-                initialdir=self.home,
-                title="Please select project directory (DICOM only)",
-            )
-            if self.folder_to_upload==():
-                os._exit(1)
+            subject_to_upload = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC Subject Uploader: Select subject directory in DICOM format to upload")
+
+            progressbar = ProgressBar(bar_title='XNAT Uploader')
+            progressbar.start_indeterminate_bar()
+            upload_thread = threading.Thread(target=self.uploader.upload, args=(subject_to_upload, self.project, ))
+            upload_thread.start()
+            while upload_thread.is_alive() == True:
+                progressbar.update_bar()
+            progressbar.stop_progress_bar()
+
+            messagebox.showinfo("XNAT Uploader","Done! Your subject is uploaded on XNAT platform.")
+            master.convert_btn['state'] = tk.NORMAL
+            master.info_btn['state'] = tk.NORMAL
+            master.upload_btn['state'] = tk.NORMAL
+            master.process_btn['state'] = tk.NORMAL
+
+
+        def experiment_uploader(self, session, master):
+            # Call for check_project_name
+            # Call for upload() method from Dicom2XnatUploader class
+            pass
+
+        def file_uploader(self, session, master):
+            # Call for check_project_name
+            # Call for upload() method from Dicom2XnatUploader class
+            pass
+
+        
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    # # Upload files         
+    # class xnat_dcm_uploader():
+
+    #     def __init__(self, master):    
             
-            self.dicom2xnat(session, master)
+    #         self.home = os.path.expanduser("~")
+    #         self.stack_frames = []
+    #         self.stack_frames.append(master.get_page())
+            
+    #         # Disable all buttons
+    #         master.convert_btn['state'] = tk.DISABLED
+    #         master.info_btn['state'] = tk.DISABLED
+    #         master.upload_btn['state'] = tk.DISABLED
+    #         master.process_btn['state'] = tk.DISABLED
 
-        def dicom2xnat(self, session, master):
+    #         # Log into XNAT
+    #         popup1 = tk.Toplevel()
+    #         popup1.title("XNAT-PIC  ~  Login")
+    #         master.x = my_width * 3 / 8
+    #         master.y = my_height / 3
+    #         popup_font = ("Calibri", 10, "bold")
+    #         popup1.geometry("%dx%d+%d+%d" % (my_width*0.2, my_height*0.1, master.x, master.y))           
+            
+    #         def normal_btn(event):
+    #             master.convert_btn['state'] = tk.NORMAL
+    #             master.info_btn['state'] = tk.NORMAL
+    #             master.upload_btn['state'] = tk.NORMAL
+    #             master.process_btn['state'] = tk.NORMAL
+    #             return
+                
+    #         popup1.bind("<Destroy> ", normal_btn)
+    #         # XNAT ADDRESS      
+    #         popup1.label_address = tk.Label(popup1, text="  XNAT web address  ", font=popup_font)   
+    #         popup1.label_address.grid(row=0, column=0, padx=1, ipadx=1)
+    #         popup1.entry_address = tk.Entry(popup1)
+    #         popup1.entry_address.var = tk.StringVar()
+    #         popup1.entry_address["textvariable"] = popup1.entry_address.var
+    #         popup1.entry_address.grid(row=0, column=1, padx=1, ipadx=1)
+           
+    #         # XNAT USER 
+    #         popup1.label_user = tk.Label(popup1, text="Username", font=popup_font)
+    #         popup1.label_user.grid(row=1, column=0, padx=1, ipadx=1)
+    #         popup1.entry_user = tk.Entry(popup1)
+    #         popup1.entry_user.var = tk.StringVar()
+    #         popup1.entry_user["textvariable"] = popup1.entry_user.var
+    #         popup1.entry_user.grid(row=1, column=1, padx=1, ipadx=1)
 
-            # xnat_uploader(
-            #     self.folder_to_upload,
-            #     self.project,
-            #     # num_vars,
-            #     # self.entry_address_complete,
-            #     # self.entry_user,
-            #     # self.entry_psw
-            #     session
-            # )
+    #         # XNAT PASSWORD 
+    #         popup1.label_psw = tk.Label(popup1, text="Password", font=popup_font)
+    #         popup1.label_psw.grid(row=2, column=0, padx=1, ipadx=1)           
+            
+    #         # Show/Hide the password
+    #         def toggle_password():
+    #             if popup1.entry_psw.cget('show') == '':
+    #                 popup1.entry_psw.config(show='*')
+    #                 popup1.toggle_btn.config(text='Show Password')
+    #             else:
+    #                 popup1.entry_psw.config(show='')
+    #                 popup1.toggle_btn.config(text='Hide Password')
+            
 
-            xnat_uploader_dir(
-                self.folder_to_upload,
-                self.project,
-                session
-            )
+    #         popup1.entry_psw = tk.Entry(popup1, show="*")
+    #         popup1.entry_psw.var = tk.StringVar()
+    #         popup1.entry_psw["textvariable"] = popup1.entry_psw.var
+    #         popup1.entry_psw.grid(row=2, column=1, padx=1, ipadx=1)
+    #         popup1.toggle_btn = tk.Button(popup1, text='Show Password',  command=toggle_password)
+    #         popup1.toggle_btn.grid(row=2, column=2)
 
-            os._exit(0)
+
+    #         # XNAT HTTP/HTTPS 
+    #         popup1.http = tk.StringVar()
+
+    #         # SAVE CREDENTIALS CHECKBOX
+    #         popup1.remember = tk.IntVar()
+
+    #         # SHOW THE PASSWORD
+    #         popup1.show_psw = tk.BooleanVar()
+            
+    #         # BUTTONS
+    #         popup1.button_connect = tk.Button(
+    #             popup1,
+    #             text="Login", font=popup_font, 
+    #             width=15,
+    #             command=partial(self.check_connection,master, popup1)
+    #         )
+    #         popup1.button_connect.grid(row=5, column=1)
+    #         popup1.button_http = tk.Radiobutton(
+    #             popup1,
+    #             text=" http:// ",
+    #             variable=popup1.http,
+    #             value="http://",
+    #         )
+    #         popup1.button_http.grid(row=4, column=0)
+    #         popup1.button_http.select()
+    #         popup1.button_https = tk.Radiobutton(
+    #             popup1,
+    #             text=" https:// ",
+    #             variable=popup1.http,
+    #             value="https://",
+    #         )
+    #         popup1.button_https.grid(row=4, column=1)
+
+    #         popup1.btn_remember = tk.Checkbutton(
+    #             popup1, text="Remember me", variable=popup1.remember
+    #         )
+    #         popup1.btn_remember.grid(row=4, column=2, padx=1, ipadx=1)
+    #         self.load_saved_credentials(popup1)
+            
+           
+    #     def load_saved_credentials(self, popup1):
+    #         # REMEMBER CREDENTIALS
+    #         try:
+    #             home = os.path.expanduser("~")
+    #             encrypted_file = os.path.join(home, "Documents", ".XNAT_login_file.txt.aes")
+    #             decrypted_file = os.path.join(
+    #                 home, "Documents", ".XNAT_login_file00000.txt"
+    #             )
+    #             pyAesCrypt.decryptFile(encrypted_file, decrypted_file, password, bufferSize)
+    #             login_file = open(decrypted_file, "r")
+    #             line = login_file.readline()
+    #             popup1.entry_address.var.set(line[8:-1])
+    #             line = login_file.readline()
+    #             popup1.entry_user.var.set(line[9:-1])
+    #             line = login_file.readline()
+    #             popup1.entry_psw.var.set(line[9:-1])
+    #             login_file.close()
+    #             os.remove(decrypted_file)
+    #             popup1.btn_remember.select()
+    #         except Exception as error:
+    #             pass
+
+    #     def check_connection(self, master, popup1):
+    #         # LOGIN
+    #         popup1.entry_address_complete = popup1.http.get() + popup1.entry_address.var.get()
+    #         self.entry_address_complete = popup1.entry_address_complete
+    #         self.entry_user = popup1.entry_user.var.get()
+    #         self.entry_psw = popup1.entry_psw.var.get()
+    #         home = os.path.expanduser("~")
+    #         try:
+    #             session = xnat.connect(
+    #                 popup1.entry_address_complete,
+    #                 popup1.entry_user.var.get(),
+    #                 popup1.entry_psw.var.get(),
+    #             )
+    #             if popup1.remember.get() == True:
+    #                 self.save_credentials(popup1)
+    #             else:
+    #                 try:
+    #                     os.remove(
+    #                         os.path.join(home, "Documents", ".XNAT_login_file.txt.aes")
+    #                     )
+    #                 except FileNotFoundError:
+    #                     pass
+    #             popup1.destroy()
+    #             self.xnat_common_uploader(session, master)
+    #         except xnat.exceptions.XNATLoginFailedError as err:
+    #             messagebox.showerror("Error!", err)
+    #         except Exception as error:
+    #             messagebox.showerror("Error!", error)
+
+    #     def save_credentials(self, popup1):
+
+    #         home = os.path.expanduser("~")
+
+    #         if os.path.exists(os.path.join(home, "Documents")):
+    #             file = os.path.join(home, "Documents", ".XNAT_login_file.txt")
+    #             login_file = open(file, "w+")
+    #             login_file.write(
+    #                 "Address:"
+    #                 + popup1.entry_address.var.get()
+    #                 + "\n"
+    #                 + "Username:"
+    #                 + popup1.entry_user.var.get()
+    #                 + "\n"
+    #                 + "Password:"
+    #                 + popup1.entry_psw.var.get()
+    #                 + "\n"
+    #                 + "HTTP:"
+    #                 + popup1.http.get()
+    #             )
+    #             login_file.close()
+    #             # encrypt
+    #             encrypted_file = os.path.join(home, "Documents", ".XNAT_login_file.txt.aes")
+    #             pyAesCrypt.encryptFile(file, encrypted_file, password, bufferSize)
+    #             # decrypt
+    #             os.remove(file)   
+        
+
+    #     def xnat_common_uploader(self, session, master):
+    #         # Frame
+    #         self.stack_frames[-1].update()
+    #         frame_two = self.stack_frames[-1]
+            
+    #         # Update canvas
+    #         # Delete button of the previous frame
+    #         master.convert_btn.destroy()
+    #         master.info_btn.destroy()
+    #         master.upload_btn.destroy()
+    #         master.process_btn.destroy()
+    #         master.info_convert_btn.destroy()
+    #         master.info_info_btn.destroy()
+    #         master.info_upload_btn.destroy()
+    #         master.info_process_btn.destroy()            
+            
+    #         # Upload DICOM files
+    #         x_lbl = int(my_width*20/100)
+    #         y_lbl = int(my_height*35/100)
+    #         x_btn = int(my_width*30/100)
+    #         y_btn = int(my_height*39/100)
+    #         width_lbl = int(my_width*30/100)
+    #         width_btn = int(my_width*10/100)
+
+    #         label1 = tk.Label(master.my_canvas, text='Upload new DICOM images to XNAT project', font = LARGE_FONT, bg=BG_LBL_COLOR, fg=TEXT_LBL_COLOR)
+    #         master.my_canvas.create_window(x_lbl, y_lbl, anchor=tk.NW, width=width_lbl, window=label1)
+    #         dicom_text = tk.StringVar()
+    #         dicom_btn = tk.Button(master.my_canvas, textvariable=dicom_text, font = LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command=partial(self.project_selection, session, master), cursor=CURSOR_HAND)
+    #         dicom_text.set("DICOM2XNAT")
+    #         master.my_canvas.create_window(x_btn, y_btn, anchor = tk.NW, width=width_btn, window = dicom_btn)
+            
+    #         # Upload files
+    #         y_lbl1 = int(my_height*50/100)
+    #         y_btn1 = int(my_height*54/100)
+    #         label2 = tk.Label(master.my_canvas, text='Upload other files to XNAT project', font = LARGE_FONT, bg=BG_LBL_COLOR, fg=TEXT_LBL_COLOR)
+    #         master.my_canvas.create_window(x_lbl, y_lbl1, anchor=tk.NW, width=width_lbl, window=label2)
+    #         file_text = tk.StringVar()
+    #         file_btn = tk.Button(master.my_canvas, textvariable=file_text, font = LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command=partial(self.xnat_files_uploader, session, master), cursor=CURSOR_HAND)
+    #         file_text.set("FILES2XNAT")
+    #         master.my_canvas.create_window(x_btn, y_btn1, anchor = tk.NW, width=width_btn, window = file_btn)
+            
+    #         # Button to go to the previous page
+    #         back_text = tk.StringVar()   
+    #         back_btn = tk.Button(master.my_canvas, textvariable=back_text, font = LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command=lambda: (back_btn.destroy(), dicom_btn.destroy(), file_btn.destroy(), label1.destroy(), label2.destroy(), session.disconnect(), xnat_pic_gui.choose_you_action(master)), cursor=CURSOR_HAND)
+    #         back_text.set("Logout")
+    #         master.my_canvas.create_window(int(my_width*5/100), int(my_height*80/100), anchor = tk.NW, width=width_btn, window = back_btn)
+        
+    #     def enable_next(self, *_):
+    #         # # EXISTING PROJECT
+    #         if self.newprj_var.get() == 0:
+    #             if self.prj.get() in self.OPTIONS:
+    #                 self.button_next["state"] = "normal"
+    #             else:
+    #                 self.button_next["state"] = "disabled"
+
+    #         # # NEW PROJECT
+    #         else:
+    #             if self.entry_prjname.var.get():
+    #                 self.button_next["state"] = "normal"
+    #             else:
+    #                 self.button_next["state"] = "disabled"
+
+    #     def check_project_name(self, session, popup):
+
+    #         # Method to check about project name
+    #         if popup.entry_prjname.var.get().lower in self.OPTIONS:
+    #             # Case 1 --> The project already exists
+    #             messagebox.showerror(
+    #                 "Error!",
+    #                 "Project ID %s already exists! Please, enter a different project ID"
+    #                 % self.entry_prjname.var.get(),
+    #             )
+    #         else:
+    #             # Case 2 --> The project does not exist yet
+    #             try:
+    #                 popup.destroy()
+    #                 self.xnat_dcm_directory_selector(session)
+    #             except exception as e:
+    #                 messagebox.showerror("Error!", str(e))
+        
+    #     def project_selection(self, session, master):
+
+    #         # Enable / Disable new / existing project
+    #         def isChecked():
+    #              if self.newprj_var.get() == 1:
+    #                 popup2.label_prjname['state'] = tk.NORMAL
+    #                 popup2.label_choose_prj['state'] = tk.DISABLED
+    #                 popup2.entry_prjname['state'] = tk.NORMAL
+    #                 popup2.project_list['state'] = tk.DISABLED
+    #              elif self.newprj_var.get() == 0:
+    #                 popup2.label_prjname['state'] = tk.DISABLED
+    #                 popup2.label_choose_prj['state'] = tk.NORMAL
+    #                 popup2.entry_prjname['state'] = tk.DISABLED
+    #                 popup2.project_list['state'] = tk.NORMAL
+
+    #         # POPUP 
+    #         popup2 = tk.Toplevel()
+    #         popup2.title("XNAT-PIC")
+    #         master.root.width = 350
+    #         master.root.height = 100
+    #         master.x = (int(master.root.screenwidth) - master.root.width) / 2
+    #         master.y = (int(master.root.screenheight)- master.root.height) / 3
+    #         popup2.geometry("%dx%d+%d+%d" % (master.root.width, master.root.height, master.x, master.y))
+
+    #         # LABEL
+    #         popup2.label_prjname = tk.Label(popup2, text="  New project    ", anchor="w", state="disabled")
+    #         popup2.label_choose_prj = tk.Label(popup2, text="  Select project in XNAT:  ", anchor="w")
+    #         popup2.label_choose_prj.grid(row=2, column=0)
+    #         popup2.label_prjname.grid(row=0, column=0)
+
+    #         # ENTRY INSERT NEW PROJECT
+    #         popup2.value = tk.StringVar()
+    #         popup2.entry_prjname = tk.Entry(popup2, state="disabled")
+    #         self.entry_prjname = popup2.entry_prjname
+    #         popup2.value.set("  Project ID  ")
+    #         popup2.entry_prjname.grid(row=0, column=2)
+    #         popup2.entry_prjname.var = tk.StringVar()
+    #         popup2.entry_prjname.var.set("Project ID")
+    #         popup2.entry_prjname["textvariable"] = popup2.entry_prjname.var
+    #         self.entry_prjname.var = popup2.entry_prjname.var
+           
+    #         # PROJECTS LIST
+    #         self.OPTIONS = session.projects
+    #         self.prj = tk.StringVar()
+    #         popup2.project_list = tk.OptionMenu(popup2, self.prj, *self.OPTIONS)
+    #         popup2.project_list.grid(row=2, column=2)
+    #         self.newprj_var = tk.IntVar()
+    #         popup2.btn_newprj = tk.Checkbutton(popup2, variable=self.newprj_var, onvalue=1, offvalue=0, command=isChecked)
+    #         popup2.btn_newprj.grid(row=0, column=1)
+
+    #         popup2.back_btn = tk.Button(
+    #             popup2, text="Back", command=lambda: (popup2.destroy())
+    #         )
+    #         popup2.back_btn.grid(row=4, column=0)
+    #         popup2.next_btn = tk.Button(
+    #             popup2, text="Next", command=partial(self.check_project_name, session, popup2), state="disabled"
+    #         )
+    #         popup2.next_btn.grid(row=4, column=2)
+
+    #         self.button_next = popup2.next_btn
+
+    #         self.newprj_var.trace_add("write", self.enable_next)
+    #         popup2.entry_prjname.var.trace_add("write", self.enable_next)
+    #         self.prj.trace_add("write", self.enable_next)
+
+
+    #     def navigate_back(self, master):
+    #         self.stack_frames[-1].grid_remove()
+    #         self.stack_frames.pop()
+    #         self.stack_frames[-1].grid()
+
+
+    #     def xnat_files_uploader(self, session, master):
+
+    #         session.disconnect()
+
+    #     def xnat_dcm_directory_selector(self, session, master):
+
+    #         if self.newprj_var.get() == 1:
+    #             self.project = self.entry_prjname.var.get()
+    #         else:
+    #             self.project = self.prj.get()
+
+    #         folder_to_upload = filedialog.askdirectory(
+    #             parent=master.root,
+    #             initialdir=self.home,
+    #             title="Please select project directory (DICOM only)",
+    #         )
+    #         if folder_to_upload==():
+    #             os._exit(1)
+            
+    #         self.dicom2xnat(folder_to_upload, session, master)
+
+    #     def dicom2xnat(self, folder_to_upload, session, master):
+
+    #         # xnat_uploader(
+    #         #     self.folder_to_upload,
+    #         #     self.project,
+    #         #     # num_vars,
+    #         #     # self.entry_address_complete,
+    #         #     # self.entry_user,
+    #         #     # self.entry_psw
+    #         #     session
+    #         # )
+
+    #         xnat_uploader_dir(
+    #             folder_to_upload,
+    #             self.project,
+    #             session
+    #         )
+
+    #         os._exit(0)
 
 if __name__ == "__main__":
     root = tk.Tk()
