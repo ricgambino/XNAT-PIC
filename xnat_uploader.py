@@ -28,16 +28,16 @@ class Dicom2XnatUploader():
 
     def upload(self, folder_to_upload, project_id):
 
-        subject_data = read_table('/'.join([folder_to_upload, 'Custom_Variables.txt']))
-
-        subject_id = subject_data['Subject']
-        experiment_id = '_'.join([subject_data['Project'], subject_data['Subject'], subject_data['Group'], subject_data['Timepoint']]).replace(' ', '_')
-
         # Check if 'MR' folder is already into the folder_to_upload path
         if 'MR' != os.path.basename(folder_to_upload):
             folder_to_upload = os.path.join(folder_to_upload, 'MR').replace('\\', '/')
         else:
             folder_to_upload = folder_to_upload.replace('\\', '/')
+
+        subject_data = read_table('/'.join([folder_to_upload, 'Custom_Variables.txt']))
+
+        subject_id = subject_data['Subject']
+        experiment_id = '_'.join([subject_data['Project'], subject_data['Subject'], subject_data['Group'], subject_data['Timepoint']]).replace(' ', '_')
 
         project = self.session.classes.ProjectData(
                                         name=project_id, parent=self.session)
@@ -76,4 +76,3 @@ class Dicom2XnatUploader():
 
         end_time = time.time()
         print('Elapsed time: ' + str(end_time - start_time) + ' seconds')
-        return
