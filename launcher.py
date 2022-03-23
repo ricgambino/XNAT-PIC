@@ -849,15 +849,20 @@ class xnat_pic_gui(tk.Frame):
             
             disable_buttons()
 
-            # def normal_btn(event):
-            #     
-            #     return
+            def normal_btn():
+                login_popup.destroy()
+                #Enable all buttons
+                master.convert_btn['state'] = tk.NORMAL
+                master.info_btn['state'] = tk.NORMAL
+                master.upload_btn['state'] = tk.NORMAL
+                master.process_btn['state'] = tk.NORMAL
 
             login_popup = tk.Toplevel()
             login_popup.title("XNAT-PIC  ~  Login")
             login_popup.geometry("%dx%d+%d+%d" % (my_width*0.3, my_height*0.15, my_width * 3 / 8, my_height / 3))
 
             # login_popup.bind("<Destroy> ", normal_btn)
+            login_popup.protocol("WM_DELETE_WINDOW", normal_btn)
 
             # XNAT ADDRESS      
             login_popup.label_address = tk.Label(login_popup, text="  XNAT web address  ", font=SMALL_FONT)   
@@ -926,7 +931,15 @@ class xnat_pic_gui(tk.Frame):
                 width=15,
                 command=partial(self.login, login_popup, master)
             )
-            login_popup.button_connect.grid(row=5, column=1)
+            login_popup.button_connect.grid(row=5, column=0)
+
+            login_popup.button_quit = tk.Button(
+                login_popup,
+                text='Quit', font=SMALL_FONT,
+                width=15,
+                command=lambda: (login_popup.destroy(), normal_btn),
+            )
+            login_popup.button_quit.grid(row=5, column=2)
             self.load_saved_credentials(login_popup)
 
         def load_saved_credentials(self, popup):
@@ -968,7 +981,7 @@ class xnat_pic_gui(tk.Frame):
                     popup.entry_address_complete,
                     popup.entry_user.var.get(),
                     popup.entry_psw.var.get(),
-                    default_timeout=600,
+                    # default_timeout=600,
                 )
                 if popup.remember.get() == True:
                     self.save_credentials(popup)
@@ -1030,8 +1043,7 @@ class xnat_pic_gui(tk.Frame):
                     self.button_next["state"] = "disabled"
 
         def project_selection(self, session, master):
-            # Call for folder_selection
-            # Return to parent method
+
             def isChecked():
                  if self.newprj_var.get() == 1:
                     popup2.label_prjname['state'] = tk.NORMAL
@@ -1142,7 +1154,7 @@ class xnat_pic_gui(tk.Frame):
             # Upload file
             up_popup.btn_file = tk.Button(up_popup, text='Upload File', font=LARGE_FONT, 
                                     bg="grey", fg="white", height=1, width=15, borderwidth=1, 
-                                    command=lambda: (up_popup.destroy(), self.file_uploader(master)))
+                                    command=lambda: (up_popup.destroy(), self.file_uploader(master, session)))
             up_popup.btn_file.grid(row=5, column=0, padx=10, pady=5)
 
 
@@ -1165,12 +1177,18 @@ class xnat_pic_gui(tk.Frame):
                 t = threading.Thread(target=self.uploader.multi_core_upload, args=(project_to_upload, self.project, ))
                 t.start()
                 
- 
                 while t.is_alive() == True:
                     progressbar.update_bar()
                 
                 # Stop the progress bar and close the popup
                 progressbar.stop_progress_bar()
+
+                # Restore main frame buttons
+                messagebox.showinfo("XNAT Uploader","Done! Your subject is uploaded on XNAT platform.")
+                master.convert_btn['state'] = tk.NORMAL
+                master.info_btn['state'] = tk.NORMAL
+                master.upload_btn['state'] = tk.NORMAL
+                master.process_btn['state'] = tk.NORMAL
                     
             except Exception as e: 
                 messagebox.showerror("XNAT-PIC - Uploader", e)
@@ -1214,10 +1232,29 @@ class xnat_pic_gui(tk.Frame):
             # Call for upload() method from Dicom2XnatUploader class
             pass
 
-        def file_uploader(self, session, master):
+        def check_experiment(self, session, master):
+            pass
+
+        def file_uploader(self, master, session):
             # Call for check_project_name
             # Call for upload() method from Dicom2XnatUploader class
-            pass
+            file_to_upload = filedialog.askopenfilenames(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC File Uploader: Select file to upload")
+            for file in file_to_upload:
+                if os.path.isfile(file):
+                    self.uploader.file_uploader(file, session,
+                                    params={
+                                        'project_id': 'Project_X',
+                                        'subject_id': 'da_PyMT_5',
+                                        'experiment_id': 'Project_2_da_PyMT_5_Treated_Post_2_months',
+                                    })
+
+            # Restore main frame buttons
+            messagebox.showinfo("XNAT Uploader","Done! Your file is uploaded on XNAT platform.")
+            master.convert_btn['state'] = tk.NORMAL
+            master.info_btn['state'] = tk.NORMAL
+            master.upload_btn['state'] = tk.NORMAL
+            master.process_btn['state'] = tk.NORMAL
+
 
 
 if __name__ == "__main__":
