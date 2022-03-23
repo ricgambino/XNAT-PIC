@@ -960,7 +960,7 @@ class xnat_pic_gui(tk.Frame):
             self.entry_user = popup.entry_user.var.get()
             self.entry_psw = popup.entry_psw.var.get()
 
-            # Method to check if there is an existent session!
+            # Method to check if there is an existent session!!!!
 
 
             home = os.path.expanduser("~")
@@ -969,6 +969,7 @@ class xnat_pic_gui(tk.Frame):
                     popup.entry_address_complete,
                     popup.entry_user.var.get(),
                     popup.entry_psw.var.get(),
+                    default_timeout=600,
                 )
                 if popup.remember.get() == True:
                     self.save_credentials(popup)
@@ -1113,25 +1114,29 @@ class xnat_pic_gui(tk.Frame):
                     messagebox.showerror("Error!", str(e))
 
         def overall_uploader(self, session, master):
-            # Called from check_connection
-            # Call for file_uploader/subject_uploader/project_uploader
+
+            # Initialize the uploader class with the current session
             self.uploader = Dicom2XnatUploader(session)
 
             up_popup = tk.Toplevel()
             up_popup.geometry("%dx%d+%d+%d" % (500, 300, 700, 500))
             up_popup.title('XNAT Uploader')
+            # Upload project
             up_popup.btn_prj = tk.Button(up_popup, text='Upload Project', font=LARGE_FONT, 
                                     bg="grey", fg="white", height=1, width=15, borderwidth=1, 
                                     command=lambda: (up_popup.destroy(), self.project_uploader(master)))
             up_popup.btn_prj.grid(row=2, column=0, padx=10, pady=5)
+            # Upload subject
             up_popup.btn_sbj = tk.Button(up_popup, text='Upload Subject', font=LARGE_FONT, 
                                     bg="grey", fg="white", height=1, width=15, borderwidth=1, 
                                     command=lambda: (up_popup.destroy(), self.subject_uploader(master)))
             up_popup.btn_sbj.grid(row=3, column=0, padx=10, pady=5)
+            # Upload experiment
             up_popup.btn_exp = tk.Button(up_popup, text='Upload Experiment', font=LARGE_FONT, 
                                     bg="grey", fg="white", height=1, width=15, borderwidth=1, 
                                     command=lambda: (up_popup.destroy(), self.experiment_uploader(master)))
             up_popup.btn_exp.grid(row=4, column=0, padx=10, pady=5)
+            # Upload file
             up_popup.btn_file = tk.Button(up_popup, text='Upload File', font=LARGE_FONT, 
                                     bg="grey", fg="white", height=1, width=15, borderwidth=1, 
                                     command=lambda: (up_popup.destroy(), self.file_uploader(master)))
@@ -1152,15 +1157,19 @@ class xnat_pic_gui(tk.Frame):
                 self.project = self.prj.get()
 
             subject_to_upload = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC Subject Uploader: Select subject directory in DICOM format to upload")
+            # Check for empty selected folder
 
+            # Start progress bar
             progressbar = ProgressBar(bar_title='XNAT Uploader')
             progressbar.start_indeterminate_bar()
+            # Start thread for uploading
             upload_thread = threading.Thread(target=self.uploader.upload, args=(subject_to_upload, self.project, ))
             upload_thread.start()
             while upload_thread.is_alive() == True:
                 progressbar.update_bar()
             progressbar.stop_progress_bar()
 
+            # Restore main frame buttons
             messagebox.showinfo("XNAT Uploader","Done! Your subject is uploaded on XNAT platform.")
             master.convert_btn['state'] = tk.NORMAL
             master.info_btn['state'] = tk.NORMAL
