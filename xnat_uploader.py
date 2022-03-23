@@ -10,8 +10,7 @@ import pandas as pd
 import os
 from tkinter import messagebox
 import xnat, shutil, time
-from multiprocessing import Pool, cpu_count
-from itertools import repeat
+# from multiprocessing import Pool, cpu_count
 
 def read_table(path_to_read):
 
@@ -28,7 +27,7 @@ class Dicom2XnatUploader():
     def __init__(self, session):
 
         self.session = session
-        self.n_processes = int(cpu_count() - 1)
+        # self.n_processes = int(cpu_count() - 1)
 
     def multi_core_upload(self, folder_to_upload, project_id):
 
@@ -68,8 +67,8 @@ class Dicom2XnatUploader():
         except Exception as error:
             # messagebox.showinfo("DICOM Uploader", "Custom Variables are not available in this folder " + str(folder_to_upload))
             # Define the subject_id and the experiment_id   
-            subject_id = folder_to_upload.split('/')[-1]
-            experiment_id = '_'.join([folder_to_upload.split('/')[-3], folder_to_upload.split('/')[-2]]).replace(' ', '_')
+            subject_id = folder_to_upload.split('/')[-2].replace('_dcm', '')
+            experiment_id = '_'.join([folder_to_upload.split('/')[-3].replace('_dcm', ''), folder_to_upload.split('/')[-2].replace('_dcm', '')]).replace(' ', '_')
             flag = 0
 
         project = self.session.classes.ProjectData(
@@ -112,8 +111,35 @@ class Dicom2XnatUploader():
 
         except Exception as e: 
             messagebox.showerror("XNAT-PIC - Uploader", e)
+            os.remove(zip_dst)
             
         end_time = time.time()
         print('Elapsed time: ' + str(end_time - start_time) + ' seconds')
+
+    def multi_file_uploader(self, folder_to_upload, session, params):
+
+        files = os.scandir(folder_to_upload)
+
+        for file in enumerate(files, 1):
+            if file.is_file():
+                current_path_file = os.path.join(folder_to_upload, file).replace('\\', '/')
+                self.file_uploader(current_path_file, session, params)
+
+    def file_uploader(self, file_to_upload, session, params):
+
+        test_project = session.projects[params['project_id']]
+        test_subjects = test_project.subjects[params['subject_id']]
+        test_exp = test_subjects.experiments[params['experiment_id']]
+        test_resources = test_exp.resources
+
+        file_to_upload = file_to_upload.replace('\\', '/')
+        with open(file_to_upload, 'rb') as f:
+            img = f.read()
+        image = {"1": img}
+        try:
+            session.put(path=test_resources.uri + '/Results/files/' + str(file_to_upload.split('/')[-1]), files=image)
+        except Exception as e:
+            messagebox.showerror("XNAT-PIC - Uploader", e)
+
 
     
