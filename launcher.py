@@ -1102,7 +1102,8 @@ class xnat_pic_gui(tk.Frame):
             # PROJECTS LIST
             self.OPTIONS = session.projects
             self.prj = tk.StringVar()
-            popup2.project_list = tk.OptionMenu(popup2, self.prj, *self.OPTIONS)
+            default_value = "Select prj"
+            popup2.project_list = ttk.OptionMenu(popup2, self.prj, default_value, *self.OPTIONS)
             popup2.project_list.grid(row=2, column=2)
             self.newprj_var = tk.IntVar()
             popup2.btn_newprj = tk.Checkbutton(popup2, variable=self.newprj_var, onvalue=1, offvalue=0, command=isChecked)
