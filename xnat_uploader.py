@@ -34,6 +34,7 @@ class Dicom2XnatUploader():
         else:
             folder_to_upload = folder_to_upload.replace('\\', '/')
 
+        # Check for existing file!!!
         subject_data = read_table('/'.join([folder_to_upload, 'Custom_Variables.txt']))
 
         subject_id = subject_data['Subject']
@@ -66,6 +67,7 @@ class Dicom2XnatUploader():
             experiment = project.subjects[subject_id].experiments[experiment_id]
             
             for var in subject_data.keys():
+                # Check for empty custom variables!!!
                 if var == 'Project' or var == 'Subject':
                     subject.fields[var] = subject_data[var]
                     experiment.fields[var] = subject_data[var]
