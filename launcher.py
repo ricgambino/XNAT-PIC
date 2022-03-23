@@ -423,9 +423,9 @@ class xnat_pic_gui(tk.Frame):
                              else:
                                 # If the txt file do not exist, create an empty layout
                                 tmp_result = [str(project_name), str(item), '','','', '']
-                                with open(path + "\\" + name, 'w+') as meta_file:
-                                    meta_file.write(tabulate([['Project', str(tmp_result[0])], ['Subject', str(tmp_result[1])], ['Acquisition_date', str(tmp_result[2])], 
-                                    ['Group', str(tmp_result[3])], ['Dose', str(tmp_result[4])], ['Timepoint', str(tmp_result[5])]], headers=['Variable', 'Value']))
+                             #  with open(path + "\\" + name, 'w+') as meta_file:
+                             #       meta_file.write(tabulate([['Project', str(tmp_result[0])], ['Subject', str(tmp_result[1])], ['Acquisition_date', str(tmp_result[2])], 
+                             #       ['Group', str(tmp_result[3])], ['Dose', str(tmp_result[4])], ['Timepoint', str(tmp_result[5])]], headers=['Variable', 'Value']))
                              
                              results.extend(tmp_result)           # Save all the info of the project
                              path_list.append(path + "\\" + name) # Save all the path
@@ -448,7 +448,7 @@ class xnat_pic_gui(tk.Frame):
                 master.my_canvas.create_window(x_folder_list, y_folder_list, width = int(my_width*25/100), height = int(my_height*5/100), anchor=tk.NW, window=label)
                 
                 y_folder_list1 = int(my_height*25/100)
-                my_listbox = tk.Listbox(master.my_canvas, selectmode=SINGLE, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, font=SMALL_FONT)
+                my_listbox = tk.Listbox(master.my_canvas, selectmode=SINGLE, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, font=SMALL_FONT, takefocus = 0)
                 master.my_canvas.create_window(x_folder_list, y_folder_list1, width = int(my_width*25/100), height = int(my_height*40/100) ,anchor = tk.NW, window = my_listbox)
 
                 # List of subject in the project in the listbox
@@ -475,12 +475,15 @@ class xnat_pic_gui(tk.Frame):
                 x_lbl = int(my_width*40/100)
                 y_lbl_perc = 25
                 y_lbl_delta = 7.5
+                y_folder_lbl = y_folder_list
                 for key in keys:
                     y_lbl = int(my_height*y_lbl_perc/100)
                     labels.append(tk.Label(master.my_canvas, text=key, font=SMALL_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR))
                     master.my_canvas.create_window(x_lbl, y_lbl, width = int(my_width*8/100), anchor = tk.NW, window = labels[count])
                     y_lbl_perc += y_lbl_delta
                     count += 1
+                folder_lbl = tk.Label(master.my_canvas, text="Selected folder", font=SMALL_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR)
+                master.my_canvas.create_window(x_lbl, y_folder_lbl, width = int(my_width*8/100), anchor = tk.NW, window = folder_lbl)
 
                 # Project entry               
                 count = 0
@@ -490,16 +493,18 @@ class xnat_pic_gui(tk.Frame):
                 y_entry_delta = 7.5
                 for key in keys:
                     y_entry = int(my_height*y_entry_perc/100)
-                    entries.append(tk.Entry(master.my_canvas, state='disabled', font=SMALL_FONT))
+                    entries.append(tk.Entry(master.my_canvas, state='disabled', font=SMALL_FONT, takefocus = 0))
                     master.my_canvas.create_window(x_entry, y_entry, width = int(my_width*20/100), anchor = tk.NW, window = entries[count])
                     y_entry_perc += y_entry_delta
                     count += 1
-
+                folder_entry = tk.Entry(master.my_canvas, state='disabled', font=SMALL_FONT, takefocus = 0)
+                width_folder_entry = int(my_width*31.4/100)
+                master.my_canvas.create_window(x_entry, y_folder_lbl, width = width_folder_entry, anchor = tk.NW, window = folder_entry)
                 # Menu
                 # Group
                 OPTIONS = ["untreated", "treated"]
                 selected_group = tk.StringVar()
-                group_menu = ttk.Combobox(master.my_canvas, textvariable=selected_group, font = SMALL_FONT)
+                group_menu = ttk.Combobox(master.my_canvas, textvariable=selected_group, font = SMALL_FONT, takefocus = 0)
                 group_menu['values'] = OPTIONS
                 group_menu['state'] = 'disabled'
                 x_group_menu = int(my_width*72/100)
@@ -511,20 +516,20 @@ class xnat_pic_gui(tk.Frame):
                 # Timepoint
                 OPTIONS = ["pre", "post"]
                 selected_timepoint = tk.StringVar()
-                timepoint_menu = ttk.Combobox(master.my_canvas, textvariable=selected_timepoint, font = SMALL_FONT)
+                timepoint_menu = ttk.Combobox(master.my_canvas, textvariable=selected_timepoint, font = SMALL_FONT, takefocus = 0)
                 timepoint_menu['values'] = OPTIONS
                 timepoint_menu['state'] = 'disabled'
                 x_timepoint_menu = int(my_width*72/100)
                 y_timepiont_menu = int(my_height*(y_group_perc+5*y_group_delta)/100)
                 master.my_canvas.create_window(x_timepoint_menu, y_timepiont_menu, anchor = tk.NW, width = int(my_width*5/100), window = timepoint_menu)
 
-                time_entry = tk.Entry(master.my_canvas, state='disabled', font = SMALL_FONT)
+                time_entry = tk.Entry(master.my_canvas, state='disabled', font = SMALL_FONT, takefocus = 0)
                 x_timepoint_menu1 = int(my_width*78/100)
                 master.my_canvas.create_window(x_timepoint_menu1, y_timepiont_menu, anchor = tk.NW, width = int(my_width*5/100), window = time_entry)
 
                 OPTIONS1 = ["seconds", "minutes", "hours", "days", "month", "years"]
                 selected_timepoint1 = tk.StringVar()
-                timepoint_menu1 = ttk.Combobox(master.my_canvas, textvariable=selected_timepoint1, font = SMALL_FONT)
+                timepoint_menu1 = ttk.Combobox(master.my_canvas, textvariable=selected_timepoint1, font = SMALL_FONT, takefocus = 0)
                 timepoint_menu1['values'] = OPTIONS1
                 timepoint_menu1['state'] = 'disabled'
                 x_timepoint_menu2 = int(my_width*84/100)
@@ -542,23 +547,29 @@ class xnat_pic_gui(tk.Frame):
                     # Get selected indices
                     global selected_index 
                     selected_index = my_listbox.curselection()[0]
-                   
+                    
                     max_lim = len(fields)
+                    # load the info of the selected folder
+                    folder_entry.config(state=tk.NORMAL)
+                    folder_entry.delete(0, tk.END)
+                    folder_entry.insert(0, str(item_list[selected_index]))
+                    folder_entry.config(state=tk.DISABLED)
+
                     for i in range(0, max_lim):
                         entries[i].config(state=tk.NORMAL)
                         entries[i].delete(0, tk.END)
                         entries[i].insert(0, str(results[selected_index*max_lim+i]))
                         entries[i].config(state=tk.DISABLED)
-
+                   
                 my_listbox.bind('<Tab>', items_selected)
                 
                 #################### Clear the metadata ####################
                 clear_text = tk.StringVar() 
-                clear_btn = tk.Button(master.my_canvas, textvariable=clear_text, font=SMALL_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command = lambda: clear_metadata(), cursor=CURSOR_HAND)
+                clear_btn = tk.Button(master.my_canvas, textvariable=clear_text, font=SMALL_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command = lambda: clear_metadata(), cursor=CURSOR_HAND, takefocus = 0)
                 clear_text.set("Clear")
+                width_clear_btn = int(my_width*9.4/100)
                 x_clear_btn = int(my_width*72/100)
-                y_clear_btn = int(my_height*(y_group_perc+1*y_group_delta)/100)
-                width_clear_btn = int(my_width*8/100)
+                y_clear_btn = int(my_height*(y_group_perc+0*y_group_delta)/100)
                 master.my_canvas.create_window(x_clear_btn, y_clear_btn, anchor = tk.NW, width = width_clear_btn, window = clear_btn)
                 
                 def clear_metadata():
@@ -573,9 +584,10 @@ class xnat_pic_gui(tk.Frame):
                             entries[i]['state'] = tk.NORMAL
                             entries[i].delete(0, tk.END)
                             entries[i]['state'] = state
+
                 #################### Modify the metadata ####################
                 modify_text = tk.StringVar() 
-                modify_btn = tk.Button(master.my_canvas, textvariable=modify_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command = lambda: modify_metadata(), cursor=CURSOR_HAND)
+                modify_btn = tk.Button(master.my_canvas, textvariable=modify_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command = lambda: modify_metadata(), cursor=CURSOR_HAND, takefocus = 0)
                 modify_text.set("Modify")
                 y_btn = int(my_height*69/100)
                 width_btn = int(my_width*14/100)
@@ -593,6 +605,7 @@ class xnat_pic_gui(tk.Frame):
                         """ handle the group changed event """
                         entries[fields.index("Group")].delete(0, tk.END)
                         entries[fields.index("Group")].insert(0, str(selected_group.get()))                    
+                        my_listbox.selection_set(selected_index)
 
                     group_menu.bind("<<ComboboxSelected>>", group_changed)
                     
@@ -605,7 +618,8 @@ class xnat_pic_gui(tk.Frame):
                         entries[fields.index("Timepoint")].config(state=tk.NORMAL)
                         """ handle the timepoint changed event """
                         timepoint_str = str(selected_timepoint.get()) + "-" + str(time_entry.get()) + "-" + str(selected_timepoint1.get())
-                        
+                        my_listbox.selection_set(selected_index)
+
                         if time_entry.get():
                             try:
                              float(time_entry.get())
@@ -627,7 +641,7 @@ class xnat_pic_gui(tk.Frame):
                         selected_index
                         pass
                     except Exception as e:
-                         messagebox.showerror("XNAT-PIC", "Double click to select a folder from the list box on the left")
+                         messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
                          raise 
 
                     if not entries[fields.index("Project")].get():
@@ -668,7 +682,7 @@ class xnat_pic_gui(tk.Frame):
                             raise
 
                 confirm_text = tk.StringVar() 
-                confirm_btn = tk.Button(master.my_canvas, textvariable=confirm_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command = lambda: confirm_metadata(), cursor=CURSOR_HAND)
+                confirm_btn = tk.Button(master.my_canvas, textvariable=confirm_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command = lambda: confirm_metadata(), cursor=CURSOR_HAND, takefocus = 0)
                 confirm_text.set("Confirm")
                 x_conf_btn = int(my_width*59/100)
                 master.my_canvas.create_window(x_conf_btn, y_btn, anchor = tk.NW, width = width_btn, window = confirm_btn)
@@ -698,7 +712,7 @@ class xnat_pic_gui(tk.Frame):
 
                 #################### Confirm multiple metadata ####################
                 multiple_confirm_text = tk.StringVar() 
-                multiple_confirm_btn = tk.Button(master.my_canvas, textvariable=multiple_confirm_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command = lambda: confirm_multiple_metadata(), cursor=CURSOR_HAND)
+                multiple_confirm_btn = tk.Button(master.my_canvas, textvariable=multiple_confirm_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command = lambda: confirm_multiple_metadata(), cursor=CURSOR_HAND, takefocus = 0)
                 multiple_confirm_text.set("Multiple Confirm")
                 x_multiple_conf_btn = int(my_width*78/100)
                 master.my_canvas.create_window(x_multiple_conf_btn, y_btn, anchor = tk.NW, width = width_btn, window = multiple_confirm_btn)
@@ -723,7 +737,7 @@ class xnat_pic_gui(tk.Frame):
                         pass
                     except Exception as e:
                          normal_button()
-                         messagebox.showerror("XNAT-PIC", "Double click to select a folder from the list box on the left")
+                         messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
                          raise 
                     my_listbox.selection_set(selected_index)    
                     my_listbox['selectmode'] = MULTIPLE
@@ -774,7 +788,7 @@ class xnat_pic_gui(tk.Frame):
 
                 #################### Save the metadata ####################
                 save_text = tk.StringVar() 
-                save_btn = tk.Button(master.my_canvas, textvariable=save_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command = lambda: save_metadata(), cursor=CURSOR_HAND)
+                save_btn = tk.Button(master.my_canvas, textvariable=save_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command = lambda: save_metadata(), cursor=CURSOR_HAND, takefocus = 0)
                 save_text.set("Save")
                 y_btn1 = int(my_height*77/100)
                 master.my_canvas.create_window(x_multiple_conf_btn, y_btn1, anchor = tk.NW, width = width_btn, window = save_btn)
@@ -803,7 +817,7 @@ class xnat_pic_gui(tk.Frame):
                 
                 #################### Exit the metadata ####################
                 exit_text = tk.StringVar() 
-                exit_btn = tk.Button(master.my_canvas, textvariable=exit_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command = lambda: exit_metadata(), cursor=CURSOR_HAND)
+                exit_btn = tk.Button(master.my_canvas, textvariable=exit_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command = lambda: exit_metadata(), cursor=CURSOR_HAND, takefocus = 0)
                 exit_text.set("Exit")
                 x_exit_btn = int(my_width*10/100)
                 master.my_canvas.create_window(x_exit_btn, y_btn1, anchor = tk.NW,width = width_btn, window = exit_btn)
@@ -823,11 +837,14 @@ class xnat_pic_gui(tk.Frame):
                         labels[i].destroy()   
                         entries[i].destroy()
                     
+                    folder_lbl.destroy()
+                    folder_entry.destroy()
                     timepoint_menu.destroy()
                     timepoint_menu1.destroy()
                     time_entry.destroy()
                     group_menu.destroy()
-
+                    
+                    clear_btn.destroy()
                     modify_btn.destroy()
                     confirm_btn.destroy()
                     save_btn.destroy()
