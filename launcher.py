@@ -41,7 +41,7 @@ QUESTION_HAND = "question_arrow"
 load_dotenv()
 password = os.environ.get('secretKey')
 bufferSize = int(os.environ.get('bufferSize1')) * int(os.environ.get('bufferSize2'))
-      
+
 class xnat_pic_gui(tk.Frame):
 
     def __init__(self, master):
@@ -173,6 +173,20 @@ class xnat_pic_gui(tk.Frame):
         def __init__(self, master):
 
             self.params = {}
+            
+            # Disable the buttons
+            master.convert_btn['state'] = tk.DISABLED
+            master.info_btn['state'] = tk.DISABLED
+            master.upload_btn['state'] = tk.DISABLED
+            master.process_btn['state'] = tk.DISABLED
+            
+            def normal_btn():
+                self.conv_popup.destroy()
+                #Enable all buttons
+                master.convert_btn['state'] = tk.NORMAL
+                master.info_btn['state'] = tk.NORMAL
+                master.upload_btn['state'] = tk.NORMAL
+                master.process_btn['state'] = tk.NORMAL
 
             def isChecked():
                 self.params['results_flag'] = self.results_flag.get()
@@ -181,8 +195,10 @@ class xnat_pic_gui(tk.Frame):
                 master.overwrite_flag = self.overwrite_flag.get()
 
             self.conv_popup = tk.Toplevel()
-            self.conv_popup.geometry("%dx%d+%d+%d" % (500, 150, 700, 500))
+            self.conv_popup.geometry("%dx%d+%d+%d" % (500, 150, my_width/3, my_height/3))
             self.conv_popup.title('DICOM Converter')
+            self.conv_popup.protocol("WM_DELETE_WINDOW", normal_btn)
+
             self.btn_prj = tk.Button(self.conv_popup, text='Convert Project', font=LARGE_FONT, 
                                     bg="grey", fg="white", height=1, width=15, borderwidth=1, 
                                     command=lambda: (self.conv_popup.destroy(), self.prj_conversion(master)))
@@ -216,6 +232,10 @@ class xnat_pic_gui(tk.Frame):
             self.folder_to_convert = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC: Select project directory in Bruker ParaVision format")
             if not self.folder_to_convert:
                 # Check for the chosen directory
+                master.convert_btn['state'] = tk.NORMAL
+                master.info_btn['state'] = tk.NORMAL
+                master.upload_btn['state'] = tk.NORMAL
+                master.process_btn['state'] = tk.NORMAL
                 messagebox.showerror("Dicom Converter", "You have not chosen a directory")
                 return
             master.root.deiconify()
@@ -315,6 +335,10 @@ class xnat_pic_gui(tk.Frame):
             self.folder_to_convert = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC: Select subject directory in Bruker ParaVision format")
             if not self.folder_to_convert:
                 # Check for chosen directory
+                master.convert_btn['state'] = tk.NORMAL
+                master.info_btn['state'] = tk.NORMAL
+                master.upload_btn['state'] = tk.NORMAL
+                master.process_btn['state'] = tk.NORMAL
                 messagebox.showerror("Dicom Converter", "You have not chosen a directory")
                 return
             master.root.deiconify()
@@ -482,7 +506,7 @@ class xnat_pic_gui(tk.Frame):
                     master.my_canvas.create_window(x_lbl, y_lbl, width = int(my_width*8/100), anchor = tk.NW, window = labels[count])
                     y_lbl_perc += y_lbl_delta
                     count += 1
-                folder_lbl = tk.Label(master.my_canvas, text="Selected folder", font=SMALL_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR)
+                folder_lbl = tk.Label(master.my_canvas, text="Folder", font=SMALL_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR)
                 master.my_canvas.create_window(x_lbl, y_folder_lbl, width = int(my_width*8/100), anchor = tk.NW, window = folder_lbl)
 
                 # Project entry               
@@ -594,6 +618,14 @@ class xnat_pic_gui(tk.Frame):
                 master.my_canvas.create_window(x_lbl, y_btn, anchor = tk.NW, width = width_btn, window = modify_btn)
                  
                 def modify_metadata():
+                     # Check before confirming the data
+                    try:
+                        selected_index
+                        pass
+                    except Exception as e:
+                         messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
+                         raise 
+
                     # Normal entry
                     for i in range(0, len(fields)-1):
                         entries[i].config(state=tk.NORMAL)
@@ -730,15 +762,17 @@ class xnat_pic_gui(tk.Frame):
                     confirm_btn["state"] = tk.DISABLED
                     multiple_confirm_btn["state"] = tk.DISABLED
                     save_btn["state"] = tk.DISABLED
- 
-                    messagebox.showinfo("Metadata","1. Select the folders from the box on the left for which to copy the info entered!\n 2. Always remaining in the box on the left, press ENTER to confirm or ESC to cancel!")
+                    
                     try:
                         selected_index
                         pass
                     except Exception as e:
                          normal_button()
                          messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
-                         raise 
+                         raise
+
+                    messagebox.showinfo("Metadata","1. Select the folders from the box on the left for which to copy the info entered!\n 2. Always remaining in the box on the left, press ENTER to confirm or ESC to cancel!")
+ 
                     my_listbox.selection_set(selected_index)    
                     my_listbox['selectmode'] = MULTIPLE
                     
@@ -876,7 +910,7 @@ class xnat_pic_gui(tk.Frame):
 
             login_popup = tk.Toplevel()
             login_popup.title("XNAT-PIC  ~  Login")
-            login_popup.geometry("%dx%d+%d+%d" % (my_width*0.3, my_height*0.15, my_width * 3 / 8, my_height / 3))
+            login_popup.geometry("%dx%d+%d+%d" % (550, 200, my_width/3, my_height/4))
 
             # login_popup.bind("<Destroy> ", normal_btn)
             login_popup.protocol("WM_DELETE_WINDOW", normal_btn)
@@ -1147,12 +1181,11 @@ class xnat_pic_gui(tk.Frame):
                     messagebox.showerror("Error!", str(e))
 
         def overall_uploader(self, session, master):
-
             # Initialize the uploader class with the current session
             self.uploader = Dicom2XnatUploader(session)
 
             up_popup = tk.Toplevel()
-            up_popup.geometry("%dx%d+%d+%d" % (500, 300, 700, 500))
+            up_popup.geometry("%dx%d+%d+%d" % (500, 300,  my_width/3, my_height/6))
             up_popup.title('XNAT Uploader')
             # Upload project
             up_popup.btn_prj = tk.Button(up_popup, text='Upload Project', font=LARGE_FONT, 
