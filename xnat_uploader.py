@@ -24,12 +24,13 @@ def read_table(path_to_read):
 
 class Dicom2XnatUploader():
 
-    def __init__(self, session):
+    def __init__(self):
+        pass
 
-        self.session = session
+        # self.session = session
         # self.n_processes = int(cpu_count() - 1)
 
-    def multi_core_upload(self, folder_to_upload, project_id):
+    def multi_core_upload(self, folder_to_upload, project_id, session):
 
         list_dirs = os.listdir(folder_to_upload)
         list_of_subjects = [(os.path.join(folder_to_upload, sub).replace('\\', '/'), project_id) for sub in list_dirs]
@@ -39,12 +40,12 @@ class Dicom2XnatUploader():
         # with Pool(processes = self.n_processes) as pool:
         #     pool.map(self.uploader, list_of_subjects)
         for sub in list_of_subjects:
-            self.uploader(sub)
+            self.uploader(sub, session)
 
         end_time = time.time()
         print('Elapsed time for conversion: ' + str(end_time - start_time) + ' s')
 
-    def uploader(self, args):
+    def uploader(self, args, session):
 
         folder_to_upload = args[0]
         project_id = args[1]
@@ -87,7 +88,7 @@ class Dicom2XnatUploader():
 
         try:
             zip_dst = shutil.make_archive(folder_to_upload.split('/')[-2], "zip", folder_to_upload) # .zip file of the current subfolder
-            with xnat.connect(server=self.session._original_uri, jsession=self.session._jsession, cli=True, logger=self.session.logger) as connection:
+            with xnat.connect(server=session._original_uri, jsession=session._jsession, cli=True, logger=session.logger) as connection:
                 connection.services.import_(zip_dst,
                                         overwrite="delete", # Overwrite parameter is important!
                                         project=project_id,
