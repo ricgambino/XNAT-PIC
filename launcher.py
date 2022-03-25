@@ -551,7 +551,7 @@ class xnat_pic_gui(tk.Frame):
                 x_timepoint_menu1 = int(my_width*78/100)
                 master.my_canvas.create_window(x_timepoint_menu1, y_timepiont_menu, anchor = tk.NW, width = int(my_width*5/100), window = time_entry)
 
-                OPTIONS1 = ["seconds", "minutes", "hours", "days", "month", "years"]
+                OPTIONS1 = ["seconds", "minutes", "hours", "days", "weeks", "months", "years"]
                 selected_timepoint1 = tk.StringVar()
                 timepoint_menu1 = ttk.Combobox(master.my_canvas, textvariable=selected_timepoint1, font = SMALL_FONT, takefocus = 0)
                 timepoint_menu1['values'] = OPTIONS1
@@ -703,7 +703,7 @@ class xnat_pic_gui(tk.Frame):
                            messagebox.showerror("XNAT-PIC", "Select pre/post in timepoint")
                            raise
                         if not str(entries[fields.index("Timepoint")].get()).split('-')[2] in OPTIONS1:
-                           messagebox.showerror("XNAT-PIC", "Select seconds, minutes, hours, days, month, years in timepoint")
+                           messagebox.showerror("XNAT-PIC", "Select seconds, minutes, hours, days, weeks, months, years in timepoint")
                            raise
 
                         input_num = str(entries[fields.index("Timepoint")].get()).split('-')[1]
@@ -900,7 +900,6 @@ class xnat_pic_gui(tk.Frame):
             disable_buttons()
 
             def enable_btn():
-                self.session.disconnect()
                 login_popup.destroy()
                 #Enable all buttons
                 master.convert_btn['state'] = tk.NORMAL
@@ -1169,7 +1168,7 @@ class xnat_pic_gui(tk.Frame):
             popup2.btn_newprj.grid(row=0, column=1)
 
             popup2.back_btn = tk.Button(
-                popup2, text="Back", command=lambda: (popup2.destroy())
+                popup2, text="Back", command=lambda: self.normal_btn(master, popup=popup2, disconnect=True, close_popup=True)
             )
             popup2.back_btn.grid(row=4, column=0)
             popup2.next_btn = tk.Button(

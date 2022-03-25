@@ -71,12 +71,17 @@ class Dicom2XnatUploader():
             subject_id = folder_to_upload.split('/')[-2].replace('_dcm', '')
             experiment_id = '_'.join([folder_to_upload.split('/')[-3].replace('_dcm', ''), folder_to_upload.split('/')[-2].replace('_dcm', '')]).replace(' ', '_')
             flag = 0
-
+        
+        project = session.classes.ProjectData(
+                                        name=project_id, parent=session)
+        subject = session.classes.SubjectData(
+                                        parent=project, label=subject_id) 
+        '''
         project = self.session.classes.ProjectData(
                                         name=project_id, parent=self.session)
         subject = self.session.classes.SubjectData(
                                         parent=project, label=subject_id)
-
+        '''
         if experiment_id in subject.experiments.key_map.keys():
             # ALERT! That patient already exists!
             answer = messagebox.askyesno("XNAT-PIC - Uploader", "A patient with the same experiment_id already exists. Do you want to upload it anyway?")
