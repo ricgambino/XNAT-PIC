@@ -1217,8 +1217,11 @@ class xnat_pic_gui(tk.Frame):
                 master.upload_btn['state'] = tk.NORMAL
                 master.process_btn['state'] = tk.NORMAL
 
+            def isChecked():
+                master.add_file_flag = self.add_file_flag.get()
+
             # Initialize the uploader class with the current session
-            self.uploader = Dicom2XnatUploader()
+            self.uploader = Dicom2XnatUploader(self.session)
 
             up_popup = tk.Toplevel()
             up_popup.geometry("%dx%d+%d+%d" % (500, 300,  my_width/3, my_height/6))
@@ -1243,6 +1246,12 @@ class xnat_pic_gui(tk.Frame):
                                     bg="grey", fg="white", height=1, width=15, borderwidth=1, 
                                     command=lambda: (up_popup.destroy(), self.file_uploader(master)))
             up_popup.btn_file.grid(row=5, column=0, padx=10, pady=5)
+            # Check Button for upload additional files
+            self.add_file_flag = tk.IntVar()
+            master.add_file_flag = self.add_file_flag.get()
+            up_popup.add_file_btn = tk.Checkbutton(up_popup, text='Additional files', variable=self.add_file_flag,
+                                onvalue=1, offvalue=0, command=isChecked)
+            up_popup.add_file_btn.grid(row=2, column=1, sticky='W')
 
             up_popup.protocol("WM_DELETE_WINDOW", enable_btn)
 
@@ -1264,7 +1273,7 @@ class xnat_pic_gui(tk.Frame):
                 progressbar = ProgressBar(bar_title='XNAT Uploader')
                 progressbar.start_indeterminate_bar()
 
-                t = threading.Thread(target=self.uploader.multi_core_upload, args=(project_to_upload, self.project, self.session ))
+                t = threading.Thread(target=self.uploader.single_core_upload, args=(project_to_upload, self.project, master, ))
                 t.start()
                 
                 while t.is_alive() == True:
@@ -1277,12 +1286,11 @@ class xnat_pic_gui(tk.Frame):
                 messagebox.showerror("XNAT-PIC - Uploader", e)
 
             # Restore main frame buttons
-                messagebox.showinfo("XNAT Uploader","Done! Your subject is uploaded on XNAT platform.")
+            messagebox.showinfo("XNAT Uploader","Done! Your subject is uploaded on XNAT platform.")
             master.convert_btn['state'] = tk.NORMAL
             master.info_btn['state'] = tk.NORMAL
             master.upload_btn['state'] = tk.NORMAL
             master.process_btn['state'] = tk.NORMAL
-
 
         def subject_uploader(self, master):
 
@@ -1302,7 +1310,7 @@ class xnat_pic_gui(tk.Frame):
                 progressbar = ProgressBar(bar_title='XNAT Uploader')
                 progressbar.start_indeterminate_bar()
                 # Start thread for uploading
-                upload_thread = threading.Thread(target=self.uploader.uploader, args=((subject_to_upload, self.project), self.session))
+                upload_thread = threading.Thread(target=self.uploader.uploader, args=((subject_to_upload, self.project), master,  ))
                 upload_thread.start()
                 while upload_thread.is_alive() == True:
                     progressbar.update_bar()
