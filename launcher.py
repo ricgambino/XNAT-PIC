@@ -3,6 +3,7 @@ from logging import exception
 import shutil
 import tkinter as tk
 from tkinter import MULTIPLE, SINGLE, filedialog, messagebox
+from unicodedata import name
 from PIL import Image, ImageTk
 from tkinter import ttk
 import time
@@ -10,7 +11,8 @@ import os, re
 from functools import partial
 import subprocess
 import platform
-from numpy import empty 
+from numpy import empty
+from pip import main 
 from progress_bar import ProgressBar
 from dicom_converter import Bruker2DicomConverter
 import xnat
@@ -41,6 +43,62 @@ QUESTION_HAND = "question_arrow"
 load_dotenv()
 password = os.environ.get('secretKey')
 bufferSize = int(os.environ.get('bufferSize1')) * int(os.environ.get('bufferSize2'))
+
+class SplashScreen(tk.Toplevel):
+     def __init__(self, master, timeout=1000):
+         """(master, image, timeout=1000) -> create a splash screen
+         from specified image file.  Keep splashscreen up for timeout
+         milliseconds"""
+         tk.Toplevel.__init__(self, master, relief=tk.RAISED, borderwidth=0, background=BACKGROUND_COLOR)
+         self.main = master
+         self.main.withdraw()
+         self.overrideredirect(1)
+         im = Image.open(PATH_IMAGE + "logo-xnat-pic.png")
+         self.image = ImageTk.PhotoImage(im)
+         self.after_idle(self.centerOnScreen)
+
+         self.update()
+         self.after(timeout, self.destroy)
+
+     def centerOnScreen(self):
+         self.update_idletasks()
+         if (platform.system()=='Linux'):
+                cmd_show_screen_resolution = subprocess.Popen("xrandr --query | grep -oG 'primary [0-9]*x[0-9]*'",\
+                                                            stdout=subprocess.PIPE, shell=True)
+                screen_output =str(cmd_show_screen_resolution.communicate()).split()[1]
+                self.screenwidth, self.root.screenheight = re.findall("[0-9]+",screen_output)
+            ###
+            ###
+         else :
+                self.screenwidth=self.winfo_screenwidth()
+                self.screenheight=self.winfo_screenheight()
+
+         # Adjust size based on screen resolution
+         self.w = int(self.screenwidth/2)
+         self.h = int(self.screenheight/6)
+         x = int(self.screenwidth/2)-int(self.w/2)
+         y =  int(self.screenheight/2)-int(self.h/2)
+         self.geometry("%dx%d+%d+%d" % (self.w, self.h, x, y))
+         self.createWidgets()
+
+     def createWidgets(self):
+    # Need to fill in here
+         im = Image.open(PATH_IMAGE + "logo-xnat-pic.png")
+         width = int(self.w)
+         wpercent = (width/float(im.size[0]))
+         height = int((float(im.size[1])*float(wpercent)))
+         self.my_canvas = tk.Canvas(self, height=height, width=width, bg="white", highlightthickness=1, highlightbackground=THEME_COLOR)
+         self.my_canvas.pack()
+        
+         # Adapt the size of the logo to the size of the canvas
+         im = im.resize((self.w, height), Image.ANTIALIAS)  
+         self.im = ImageTk.PhotoImage(im)
+         self.my_canvas.create_image(2, 0, anchor=tk.NW, image=self.im)
+
+     def destroy(self):
+         self.main.update()
+         self.main.deiconify()
+         self.withdraw()
 
 class xnat_pic_gui(tk.Frame):
 
@@ -107,7 +165,7 @@ class xnat_pic_gui(tk.Frame):
          ##########################################
          # Action buttons           
          # Positions for action button parametric with respect to the size of the canvas
-         x_btn = int(my_width/5) # 
+         x_btn = int(my_width/4) # /5 if there is the processing button
          y_btn = int(my_height*60/100)
          width_btn = int(my_width/7)
 
@@ -130,11 +188,11 @@ class xnat_pic_gui(tk.Frame):
          self.my_canvas.create_window(3*x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.upload_btn)        
         
          # Processing your files
-         process_text = tk.StringVar()
-         self.process_btn = tk.Button(self.my_canvas, textvariable=process_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, cursor=CURSOR_HAND)
-         process_text.set("Processing")
-         self.my_canvas.create_window(4*x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.process_btn)
-        
+         #process_text = tk.StringVar()
+         #self.process_btn = tk.Button(self.my_canvas, textvariable=process_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, cursor=CURSOR_HAND)
+         #process_text.set("Processing")
+         #self.my_canvas.create_window(4*x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.process_btn)
+    
          ##########################################
          # Info buttons
          # Messages displayed when the button is clicked
@@ -162,8 +220,8 @@ class xnat_pic_gui(tk.Frame):
          self.info_upload_btn = tk.Button(self.my_canvas, image = self.logo_info, bg=BG_BTN_COLOR, borderwidth=0, command = lambda: helpmsg("button3"), cursor=QUESTION_HAND)
          self.my_canvas.create_window(3*x_btn, y_btn1, anchor=tk.CENTER, window=self.info_upload_btn)
 
-         self.info_process_btn = tk.Button(self.my_canvas, image = self.logo_info, bg=BG_BTN_COLOR, borderwidth=0, command = lambda: helpmsg("button4"), cursor=QUESTION_HAND)
-         self.my_canvas.create_window(4*x_btn, y_btn1, anchor=tk.CENTER, window=self.info_process_btn)        
+         #self.info_process_btn = tk.Button(self.my_canvas, image = self.logo_info, bg=BG_BTN_COLOR, borderwidth=0, command = lambda: helpmsg("button4"), cursor=QUESTION_HAND)
+         #self.my_canvas.create_window(4*x_btn, y_btn1, anchor=tk.CENTER, window=self.info_process_btn)        
 
     def get_page(self):
         return self.root   
@@ -178,7 +236,7 @@ class xnat_pic_gui(tk.Frame):
             master.convert_btn['state'] = tk.DISABLED
             master.info_btn['state'] = tk.DISABLED
             master.upload_btn['state'] = tk.DISABLED
-            master.process_btn['state'] = tk.DISABLED
+            #master.process_btn['state'] = tk.DISABLED
             
             def normal_btn():
                 self.conv_popup.destroy()
@@ -186,7 +244,7 @@ class xnat_pic_gui(tk.Frame):
                 master.convert_btn['state'] = tk.NORMAL
                 master.info_btn['state'] = tk.NORMAL
                 master.upload_btn['state'] = tk.NORMAL
-                master.process_btn['state'] = tk.NORMAL
+                #master.process_btn['state'] = tk.NORMAL
 
             def isChecked():
                 self.params['results_flag'] = self.results_flag.get()
@@ -226,7 +284,7 @@ class xnat_pic_gui(tk.Frame):
             master.convert_btn['state'] = tk.DISABLED
             master.info_btn['state'] = tk.DISABLED
             master.upload_btn['state'] = tk.DISABLED
-            master.process_btn['state'] = tk.DISABLED
+            #master.process_btn['state'] = tk.DISABLED
 
             # Ask for project directory
             self.folder_to_convert = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC: Select project directory in Bruker ParaVision format")
@@ -235,7 +293,7 @@ class xnat_pic_gui(tk.Frame):
                 master.convert_btn['state'] = tk.NORMAL
                 master.info_btn['state'] = tk.NORMAL
                 master.upload_btn['state'] = tk.NORMAL
-                master.process_btn['state'] = tk.NORMAL
+                #master.process_btn['state'] = tk.NORMAL
                 messagebox.showerror("Dicom Converter", "You have not chosen a directory")
                 return
             master.root.deiconify()
@@ -311,14 +369,14 @@ class xnat_pic_gui(tk.Frame):
                 master.convert_btn['state'] = tk.NORMAL
                 master.info_btn['state'] = tk.NORMAL
                 master.upload_btn['state'] = tk.NORMAL
-                master.process_btn['state'] = tk.NORMAL          
+                #master.process_btn['state'] = tk.NORMAL          
 
             except Exception as e: 
                 messagebox.showerror("XNAT-PIC - Bruker2Dicom", e)
                 master.convert_btn['state'] = tk.NORMAL
                 master.info_btn['state'] = tk.NORMAL
                 master.upload_btn['state'] = tk.NORMAL
-                master.process_btn['state'] = tk.NORMAL
+                #master.process_btn['state'] = tk.NORMAL
                 self.conv_popup.destroy()
                 
         def sbj_conversion(self, master):
@@ -329,7 +387,7 @@ class xnat_pic_gui(tk.Frame):
             master.convert_btn['state'] = tk.DISABLED
             master.info_btn['state'] = tk.DISABLED
             master.upload_btn['state'] = tk.DISABLED
-            master.process_btn['state'] = tk.DISABLED
+            #master.process_btn['state'] = tk.DISABLED
 
             # Ask for subject directory
             self.folder_to_convert = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC: Select subject directory in Bruker ParaVision format")
@@ -338,7 +396,7 @@ class xnat_pic_gui(tk.Frame):
                 master.convert_btn['state'] = tk.NORMAL
                 master.info_btn['state'] = tk.NORMAL
                 master.upload_btn['state'] = tk.NORMAL
-                master.process_btn['state'] = tk.NORMAL
+                #master.process_btn['state'] = tk.NORMAL
                 messagebox.showerror("Dicom Converter", "You have not chosen a directory")
                 return
             master.root.deiconify()
@@ -394,14 +452,14 @@ class xnat_pic_gui(tk.Frame):
                 master.convert_btn['state'] = tk.NORMAL
                 master.info_btn['state'] = tk.NORMAL
                 master.upload_btn['state'] = tk.NORMAL
-                master.process_btn['state'] = tk.NORMAL          
+                #master.process_btn['state'] = tk.NORMAL          
 
             except Exception as e: 
                 messagebox.showerror("XNAT-PIC - Bruker2Dicom", e)
                 master.convert_btn['state'] = tk.NORMAL
                 master.info_btn['state'] = tk.NORMAL
                 master.upload_btn['state'] = tk.NORMAL
-                master.process_btn['state'] = tk.NORMAL
+                #master.process_btn['state'] = tk.NORMAL
                  
     # Fill in information
     class metadata():
@@ -411,7 +469,7 @@ class xnat_pic_gui(tk.Frame):
                 master.convert_btn['state'] = tk.DISABLED
                 master.info_btn['state'] = tk.DISABLED
                 master.upload_btn['state'] = tk.DISABLED
-                master.process_btn['state'] = tk.DISABLED
+                #master.process_btn['state'] = tk.DISABLED
                
                 # Choose your directory
                 self.information_folder = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC: Select project directory!")
@@ -421,7 +479,7 @@ class xnat_pic_gui(tk.Frame):
                     master.convert_btn['state'] = tk.NORMAL
                     master.info_btn['state'] = tk.NORMAL
                     master.upload_btn['state'] = tk.NORMAL
-                    master.process_btn['state'] = tk.NORMAL
+                    #master.process_btn['state'] = tk.NORMAL
                     return
              
                 project_name = (self.information_folder.rsplit("/",1)[1])
@@ -459,11 +517,11 @@ class xnat_pic_gui(tk.Frame):
                 master.convert_btn.destroy()
                 master.info_btn.destroy()
                 master.upload_btn.destroy()
-                master.process_btn.destroy()
+                #master.process_btn.destroy()
                 master.info_convert_btn.destroy()
                 master.info_info_btn.destroy()
                 master.info_upload_btn.destroy()
-                master.info_process_btn.destroy()
+                #master.info_process_btn.destroy()
 
                 #################### Folder list #################### 
                 x_folder_list = int(my_width*10/100)
@@ -589,12 +647,11 @@ class xnat_pic_gui(tk.Frame):
                 
                 #################### Clear the metadata ####################
                 clear_text = tk.StringVar() 
-                clear_btn = tk.Button(master.my_canvas, textvariable=clear_text, font=SMALL_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command = lambda: clear_metadata(), cursor=CURSOR_HAND, takefocus = 0)
+                clear_btn = tk.Button(master.my_canvas, textvariable=clear_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command = lambda: clear_metadata(), cursor=CURSOR_HAND, takefocus = 0)
                 clear_text.set("Clear")
-                width_clear_btn = int(my_width*9.4/100)
-                x_clear_btn = int(my_width*72/100)
-                y_clear_btn = int(my_height*(y_group_perc+0*y_group_delta)/100)
-                master.my_canvas.create_window(x_clear_btn, y_clear_btn, anchor = tk.NW, width = width_clear_btn, window = clear_btn)
+                width_btn = int(my_width*14/100)
+                y_btn1 = int(my_height*77/100)
+                master.my_canvas.create_window(x_lbl, y_btn1, anchor = tk.NW, width = width_btn, window = clear_btn)
                 
                 def clear_metadata():
                     # Clear all the combobox and the entry
@@ -614,7 +671,6 @@ class xnat_pic_gui(tk.Frame):
                 modify_btn = tk.Button(master.my_canvas, textvariable=modify_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command = lambda: modify_metadata(), cursor=CURSOR_HAND, takefocus = 0)
                 modify_text.set("Modify")
                 y_btn = int(my_height*69/100)
-                width_btn = int(my_width*14/100)
                 master.my_canvas.create_window(x_lbl, y_btn, anchor = tk.NW, width = width_btn, window = modify_btn)
                  
                 def modify_metadata():
@@ -824,7 +880,6 @@ class xnat_pic_gui(tk.Frame):
                 save_text = tk.StringVar() 
                 save_btn = tk.Button(master.my_canvas, textvariable=save_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command = lambda: save_metadata(), cursor=CURSOR_HAND, takefocus = 0)
                 save_text.set("Save")
-                y_btn1 = int(my_height*77/100)
                 master.my_canvas.create_window(x_multiple_conf_btn, y_btn1, anchor = tk.NW, width = width_btn, window = save_btn)
                 
                 def save_metadata():
@@ -895,7 +950,7 @@ class xnat_pic_gui(tk.Frame):
                 master.convert_btn['state'] = tk.DISABLED
                 master.info_btn['state'] = tk.DISABLED
                 master.upload_btn['state'] = tk.DISABLED
-                master.process_btn['state'] = tk.DISABLED
+                #master.process_btn['state'] = tk.DISABLED
             
             disable_buttons()
 
@@ -905,7 +960,7 @@ class xnat_pic_gui(tk.Frame):
                 master.convert_btn['state'] = tk.NORMAL
                 master.info_btn['state'] = tk.NORMAL
                 master.upload_btn['state'] = tk.NORMAL
-                master.process_btn['state'] = tk.NORMAL
+                #master.process_btn['state'] = tk.NORMAL
 
             login_popup = tk.Toplevel()
             login_popup.title("XNAT-PIC  ~  Login")
@@ -1007,7 +1062,7 @@ class xnat_pic_gui(tk.Frame):
             master.convert_btn['state'] = tk.NORMAL
             master.info_btn['state'] = tk.NORMAL
             master.upload_btn['state'] = tk.NORMAL
-            master.process_btn['state'] = tk.NORMAL
+            #master.process_btn['state'] = tk.NORMAL
 
         def load_saved_credentials(self, popup):
             # REMEMBER CREDENTIALS
@@ -1129,7 +1184,7 @@ class xnat_pic_gui(tk.Frame):
                 master.convert_btn['state'] = tk.NORMAL
                 master.info_btn['state'] = tk.NORMAL
                 master.upload_btn['state'] = tk.NORMAL
-                master.process_btn['state'] = tk.NORMAL
+                #master.process_btn['state'] = tk.NORMAL
 
             # POPUP 
             popup2 = tk.Toplevel()
@@ -1215,7 +1270,7 @@ class xnat_pic_gui(tk.Frame):
                 master.convert_btn['state'] = tk.NORMAL
                 master.info_btn['state'] = tk.NORMAL
                 master.upload_btn['state'] = tk.NORMAL
-                master.process_btn['state'] = tk.NORMAL
+                #master.process_btn['state'] = tk.NORMAL
 
             # Initialize the uploader class with the current session
             self.uploader = Dicom2XnatUploader()
@@ -1281,7 +1336,7 @@ class xnat_pic_gui(tk.Frame):
             master.convert_btn['state'] = tk.NORMAL
             master.info_btn['state'] = tk.NORMAL
             master.upload_btn['state'] = tk.NORMAL
-            master.process_btn['state'] = tk.NORMAL
+            #master.process_btn['state'] = tk.NORMAL
 
 
         def subject_uploader(self, master):
@@ -1316,7 +1371,7 @@ class xnat_pic_gui(tk.Frame):
             master.convert_btn['state'] = tk.NORMAL
             master.info_btn['state'] = tk.NORMAL
             master.upload_btn['state'] = tk.NORMAL
-            master.process_btn['state'] = tk.NORMAL
+            #master.process_btn['state'] = tk.NORMAL
 
 
         def experiment_uploader(self, master):
@@ -1358,11 +1413,12 @@ class xnat_pic_gui(tk.Frame):
             master.convert_btn['state'] = tk.NORMAL
             master.info_btn['state'] = tk.NORMAL
             master.upload_btn['state'] = tk.NORMAL
-            master.process_btn['state'] = tk.NORMAL
-
+            #master.process_btn['state'] = tk.NORMAL
 
 
 if __name__ == "__main__":
     root = tk.Tk()
     app = xnat_pic_gui(root)
+    s = SplashScreen(root, timeout=5000)
     root.mainloop()
+    
