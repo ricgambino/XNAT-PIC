@@ -8,6 +8,7 @@ from PIL import Image, ImageTk
 from tkinter import ttk
 import time
 import os, re
+import os.path
 from functools import partial
 import subprocess
 import platform
@@ -16,6 +17,7 @@ from pip import main
 from progress_bar import ProgressBar
 from dicom_converter import Bruker2DicomConverter
 import xnat
+from read_visupars import read_visupars_parameters
 from xnat_upload import xnat_uploader, xnat_uploader_dir
 import pyAesCrypt
 from tabulate import tabulate
@@ -24,7 +26,7 @@ import threading
 from dotenv import load_dotenv
 from multiprocessing import Pool
 from xnat_uploader import Dicom2XnatUploader
-
+import datefinder
 
 PATH_IMAGE = "images\\"
 PERCENTAGE_SCREEN = 1  # Defines the size of the canvas. If equal to 1 (100%) ,it takes the whole screen
@@ -487,6 +489,21 @@ class xnat_pic_gui(tk.Frame):
                 results = []
                 path_list = []
                 item_list = []
+                # Load the acq. date from visu_pars file for Bruker file
+                def read_acq_date_visupars(path): 
+                    match_date = ""
+                # Check if the visu pars file is in the scans
+                    match_date = ''
+                    for dirpath, dirnames, filenames in os.walk(path.replace('\\', '/')):
+                            for filename in [f for f in filenames if f.startswith("visu_pars")]:
+                                acq_date = read_visupars_parameters((dirpath + "\\" + filename).replace('\\', '/'))["VisuAcqDate"]
+                                # Read the date
+                                matches = datefinder.find_dates(str(acq_date))
+                                for match in matches:
+                                    match_date = match.strftime('%Y-%m-%d')
+                            if match_date:
+                               break
+                    return match_date
 
                 # Scan all files contained in the folder that the user has provided
                 for item in os.listdir(self.information_folder):
@@ -503,8 +520,19 @@ class xnat_pic_gui(tk.Frame):
                                     for word in fields:
                                         tmp_result = [x.replace(word, '', 1).strip() for x in tmp_result]
                              else:
-                                # If the txt file do not exist, create an empty layout
-                                tmp_result = [str(project_name), str(item), '','','', '']
+                                # If the txt file do not exist, load default value
+                                # Project: name of main folder
+                                # Subject: name of internal folders
+                                # Acq date: from visu_pars file for BRUKER, from DICOM from DICOM file
+                                #
+
+                                # Load the acq. date for BRUKER file
+                                try:
+                                   tmp_acq_date = read_acq_date_visupars(path)
+                                except Exception as e:
+                                    tmp_acq_date = ''
+
+                                tmp_result = [str(project_name), str(item), tmp_acq_date,'','', '']
                              #  with open(path + "\\" + name, 'w+') as meta_file:
                              #       meta_file.write(tabulate([['Project', str(tmp_result[0])], ['Subject', str(tmp_result[1])], ['Acquisition_date', str(tmp_result[2])], 
                              #       ['Group', str(tmp_result[3])], ['Dose', str(tmp_result[4])], ['Timepoint', str(tmp_result[5])]], headers=['Variable', 'Value']))
@@ -687,18 +715,18 @@ class xnat_pic_gui(tk.Frame):
                         entries[i].config(state=tk.NORMAL)
                     
                     # Acquisition date has a default format in entry
-                    default_date = "YYYY-MM-DD"
-                    entries[fields.index("Acquisition_date")].insert(tk.END, default_date)
+                    #default_date = "YYYY-MM-DD"
+                    #entries[fields.index("Acquisition_date")].insert(tk.END, default_date)
                     
-                    def default(event):
-                        current = entries[fields.index("Acquisition_date")].get()
-                        if current == default_date +"\n":
-                            entries[fields.index("Acquisition_date")].delete("1.0", tk.END)
-                        elif current == "\n":
-                            entries[fields.index("Acquisition_date")].insert("1.0", default_date)
+                    #def default(event):
+                    #    current = entries[fields.index("Acquisition_date")].get()
+                    #    if current == default_date +"\n":
+                    #        entries[fields.index("Acquisition_date")].delete("1.0", tk.END)
+                    #    elif current == "\n":
+                    #        entries[fields.index("Acquisition_date")].insert("1.0", default_date)
 
-                    entries[fields.index("Acquisition_date")].bind("<FocusIn>", default)
-                    entries[fields.index("Acquisition_date")].bind("<FocusOut>", default)
+                    #entries[fields.index("Acquisition_date")].bind("<FocusIn>", default)
+                    #entries[fields.index("Acquisition_date")].bind("<FocusOut>", default)
 
                     # Option menu for the dose
                     group_menu['state'] = 'readonly'
@@ -849,8 +877,6 @@ class xnat_pic_gui(tk.Frame):
                     # The user presses 'enter' to confirm 
                     def items_selected2(event):
                        
-
-
                        seltext = [my_listbox.get(index) for index in my_listbox.curselection()]
                        result = messagebox.askquestion("Multiple Confirm", "Are you sure you want to save data for the following folders?\n" + '\n'.join(seltext), icon='warning')
                        if result == 'yes':
