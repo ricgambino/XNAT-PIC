@@ -5,12 +5,14 @@ Created on Dec 7, 2021
 @author: Riccardo Gambino
 
 """
+import threading
 from numpy import empty
 import pandas as pd
 import os
 from tkinter import messagebox
 import xnat, shutil, time
 from multiprocessing import Pool, cpu_count
+from concurrent.futures import ThreadPoolExecutor, process
 
 def read_table(path_to_read):
 
@@ -98,25 +100,43 @@ class Dicom2XnatUploader():
 
         try:
             zip_dst = shutil.make_archive(folder_to_upload.split('/')[-2], "zip", folder_to_upload) # .zip file of the current subfolder
-            with xnat.connect(server=self.session._original_uri, jsession=self.session._jsession, cli=True, logger=self.session.logger) as connection:
-                connection.services.import_(zip_dst,
+            # with xnat.connect(server=self.session._original_uri, jsession=self.session._jsession, cli=True, logger=self.session.logger) as connection:
+            #     connection.services.import_(zip_dst,
+            #                             overwrite="delete", # Overwrite parameter is important!
+            #                             project=project_id,
+            #                             subject=subject_id,
+            #                             experiment=experiment_id,
+            #                             content_type='application/zip')
+
+            #     experiment = project.subjects[subject_id].experiments[experiment_id]
+                
+            #     if flag == 1:
+            #         for var in subject_data.keys():
+            #             if subject_data[var] == '':
+            #                 continue
+            #             if var == 'Project' or var == 'Subject':
+            #                 subject.fields[var] = subject_data[var]
+            #                 experiment.fields[var] = subject_data[var]
+            #             else:
+            #                 experiment.fields[var] = subject_data[var]
+            self.session.services.import_(zip_dst,
                                         overwrite="delete", # Overwrite parameter is important!
                                         project=project_id,
                                         subject=subject_id,
                                         experiment=experiment_id,
                                         content_type='application/zip')
 
-                experiment = project.subjects[subject_id].experiments[experiment_id]
+            experiment = project.subjects[subject_id].experiments[experiment_id]
                 
-                if flag == 1:
-                    for var in subject_data.keys():
-                        if subject_data[var] == '':
-                            continue
-                        if var == 'Project' or var == 'Subject':
-                            subject.fields[var] = subject_data[var]
-                            experiment.fields[var] = subject_data[var]
-                        else:
-                            experiment.fields[var] = subject_data[var]
+            if flag == 1:
+                for var in subject_data.keys():
+                    if subject_data[var] == '':
+                        continue
+                    if var == 'Project' or var == 'Subject':
+                        subject.fields[var] = subject_data[var]
+                        experiment.fields[var] = subject_data[var]
+                    else:
+                        experiment.fields[var] = subject_data[var]
 
             os.remove(zip_dst)
             if master.add_file_flag == 1:
@@ -126,12 +146,18 @@ class Dicom2XnatUploader():
                         params['project_id'] = project_id
                         params['subject_id'] = subject_id
                         params['experiment_id'] = experiment_id
-                        self.multi_file_uploader(os.path.join(folder_to_upload, sub_dir), params)
+                        params['folder_name'] = sub_dir
+                        list_of_files = os.scandir(os.path.join(folder_to_upload, sub_dir))
+                        file_paths = []
+                        for file in list_of_files:
+                            if file.is_file():
+                                file_paths.append(file.path)
+                        self.file_uploader(file_paths, params)
 
         except Exception as e: 
             messagebox.showerror("XNAT-PIC - Uploader", e)
             try:
-                connection.disconnect()
+                # connection.disconnect()
                 os.remove(zip_dst)
             except:
                 os.remove(zip_dst)
@@ -139,34 +165,72 @@ class Dicom2XnatUploader():
         end_time = time.time()
         print('Elapsed time: ' + str(end_time - start_time) + ' seconds')
 
-    def multi_file_uploader(self, folder_to_upload, params):
+    def file_uploader(self, list_of_files, params):
+
+        def upload_file(url, data):
+            try:
+                self.session.put(path=url, files=data)
+                time.sleep(0.5)
+            except Exception as e:
+                messagebox.showerror("XNAT-PIC - Uploader", e)
 
         print('Loading additional files for subject: ' + str(params['subject_id']))
 
-        files = os.scandir(folder_to_upload)
+        file_urls = []
+        file_data = []
+        for i, file in enumerate(list_of_files, 1):
+            if file.endswith(('.png', '.jpg', '.jpeg', '.tiff', '.mat', '.fig', '.pdf', '.xlsx', '.txt')):
+                current_path_file = file.replace('\\', '/')
+                
+                test_project = self.session.projects[params['project_id']]
+                test_subjects = test_project.subjects[params['subject_id']]
+                test_exp = test_subjects.experiments[params['experiment_id']]
+                test_resources = test_exp.resources
 
-        for i, file in enumerate(files, 1):
-            if file.is_file():
-                if file.name.endswith(('.png', '.jpg', '.jpeg', '.tiff', '.mat', '.fig', '.pdf', '.xlsx')):
-                    current_path_file = os.path.join(folder_to_upload, file).replace('\\', '/')
-                    self.file_uploader(current_path_file, params)
+                file_name = str(os.path.splitext(current_path_file.split('/')[-1])[0]).replace(' ', '_').replace('-', '_').replace('.', '_').replace('__', '_').rstrip('_')
+                file_ext = str(os.path.splitext(current_path_file.split('/')[-1])[-1])
+                file_urls.append(test_resources.uri + '/' + str(params['folder_name']) + 
+                            '/files/' + file_name + file_ext)
 
-    def file_uploader(self, file_to_upload, params):
+                with open(current_path_file, 'rb') as f:
+                    img = f.read()
+                file_data.append({"1": img})
 
-        test_project = self.session.projects[params['project_id']]
-        test_subjects = test_project.subjects[params['subject_id']]
-        test_exp = test_subjects.experiments[params['experiment_id']]
-        test_resources = test_exp.resources
-
-        file_to_upload = file_to_upload.replace('\\', '/')
-        with open(file_to_upload, 'rb') as f:
-            img = f.read()
-        image = {"1": img}
+        processes = []
         try:
-            with xnat.connect(server=self.session._original_uri, jsession=self.session._jsession, cli=True, logger=self.session.logger) as connection:
-                connection.put(path=test_resources.uri + '/Additional_Files/files/' + str(file_to_upload.split('/')[-1]), files=image)
+            # for j, url in enumerate(file_urls):
+                # upload_file(url, file_data[j])
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                for j, url in enumerate(file_urls):
+                    processes.append(executor.submit(upload_file, url, file_data[j]))
+            #     t = threading.Thread(target=upload_file, args=(url, file_data[j], ))
+            #     processes.append(t)
+            # for thread in processes:
+            #     thread.start()
+            # for thread in processes:
+            #     thread.join()
         except Exception as e:
-            messagebox.showerror("XNAT-PIC - Uploader", e)
+            print(str(e))
+
+    # def file_uploader(self, params):
+
+    #     file_to_upload = params['current_path_file']
+
+    #     test_project = self.session.projects[params['project_id']]
+    #     test_subjects = test_project.subjects[params['subject_id']]
+    #     test_exp = test_subjects.experiments[params['experiment_id']]
+    #     test_resources = test_exp.resources
+
+    #     file_to_upload = file_to_upload.replace('\\', '/')
+    #     with open(file_to_upload, 'rb') as f:
+    #         img = f.read()
+    #     image = {"1": img}
+    #     try:
+    #         with xnat.connect(server=self.session._original_uri, jsession=self.session._jsession, cli=True, logger=self.session.logger) as connection:
+    #             connection.put(path=test_resources.uri + '/' + str(params['folder_name']) + 
+    #                             '/files/' + str(file_to_upload.split('/')[-1]), files=image)
+    #     except Exception as e:
+    #         messagebox.showerror("XNAT-PIC - Uploader", e)
 
 
     
