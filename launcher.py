@@ -685,6 +685,20 @@ class xnat_pic_gui(tk.Frame):
                     # Normal entry
                     for i in range(0, len(fields)-1):
                         entries[i].config(state=tk.NORMAL)
+                    
+                    # Acquisition date has a default format in entry
+                    default_date = "YYYY-MM-DD"
+                    entries[fields.index("Acquisition_date")].insert(tk.END, default_date)
+                    
+                    def default(event):
+                        current = entries[fields.index("Acquisition_date")].get()
+                        if current == default_date +"\n":
+                            entries[fields.index("Acquisition_date")].delete("1.0", tk.END)
+                        elif current == "\n":
+                            entries[fields.index("Acquisition_date")].insert("1.0", default_date)
+
+                    entries[fields.index("Acquisition_date")].bind("<FocusIn>", default)
+                    entries[fields.index("Acquisition_date")].bind("<FocusOut>", default)
 
                     # Option menu for the dose
                     group_menu['state'] = 'readonly'
