@@ -1256,7 +1256,7 @@ class xnat_pic_gui(tk.Frame):
         def check_project_name(self, popup, master):
 
             # Method to check about project name
-            if popup.entry_prjname.var.get().lower in self.OPTIONS:
+            if popup.entry_prjname.var.get() in list(self.OPTIONS.key_map.keys()):
                 # Case 1 --> The project already exists
                 messagebox.showerror(
                     "Error!",
@@ -1269,8 +1269,13 @@ class xnat_pic_gui(tk.Frame):
                     popup.destroy()
                     if self.newprj_var.get() == 1:
                         self.project = self.entry_prjname.var.get()
+                        # if self.project not in self.session.projects.key_map.keys():
+                        project = self.session.classes.ProjectData(
+                                    name=self.project, parent=self.session)
+                        messagebox.showinfo('XNAT-PIC Uploader', 'A new project is created.')
                     else:
                         self.project = self.prj.get()
+                    
                     self.overall_uploader(master)
                 except exception as e:
                     messagebox.showerror("Error!", str(e))
