@@ -27,6 +27,7 @@ from dotenv import load_dotenv
 from multiprocessing import Pool
 from xnat_uploader import Dicom2XnatUploader
 import datefinder
+import pydicom
 
 PATH_IMAGE = "images\\"
 PERCENTAGE_SCREEN = 1  # Defines the size of the canvas. If equal to 1 (100%) ,it takes the whole screen
@@ -467,12 +468,15 @@ class xnat_pic_gui(tk.Frame):
     class metadata():
         def __init__(self, master):
 
+                self.fill_info(master)
+
+        def fill_info(self, master): 
                 # Disable all buttons
                 master.convert_btn['state'] = tk.DISABLED
                 master.info_btn['state'] = tk.DISABLED
                 master.upload_btn['state'] = tk.DISABLED
                 #master.process_btn['state'] = tk.DISABLED
-               
+
                 # Choose your directory
                 self.information_folder = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC: Select project directory!")
                 
@@ -489,19 +493,29 @@ class xnat_pic_gui(tk.Frame):
                 results = []
                 path_list = []
                 item_list = []
-                # Load the acq. date from visu_pars file for Bruker file
-                def read_acq_date_visupars(path): 
-                # Check if the visu pars file is in the scans
+
+                # Load the acq. date from visu_pars file for Bruker file or DICOM
+                def read_acq_date(path): 
                     match_date = ''
                     for dirpath, dirnames, filenames in os.walk(path.replace('\\', '/')):
+
+                        # Check if the visu pars file is in the scans
                             for filename in [f for f in filenames if f.startswith("visu_pars")]:
                                 acq_date = read_visupars_parameters((dirpath + "\\" + filename).replace('\\', '/'))["VisuAcqDate"]
                                 # Read the date
                                 matches = datefinder.find_dates(str(acq_date))
                                 for match in matches:
                                     match_date = match.strftime('%Y-%m-%d')
+                                    break
+                            # Check if the DICOM is in the scans
+                            for filename in [f for f in filenames if f.endswith(".dcm")]:
+                                dataset = pydicom.dcmread((dirpath + "\\" + filename).replace('\\', '/'))
+                                match_date = datetime.datetime.strptime(dataset.AcquisitionDate, '%Y%m%d').strftime('%Y-%m-%d')
+                                break
+
                             if match_date:
                                break
+
                     return match_date
 
                 # Scan all files contained in the folder that the user has provided
@@ -524,10 +538,9 @@ class xnat_pic_gui(tk.Frame):
                                 # Subject: name of internal folders
                                 # Acq date: from visu_pars file for BRUKER, from DICOM from DICOM file
                                 #
-
                                 # Load the acq. date for BRUKER file
                                 try:
-                                   tmp_acq_date = read_acq_date_visupars(path)
+                                   tmp_acq_date = read_acq_date(path)
                                 except Exception as e:
                                     tmp_acq_date = ''
 
