@@ -491,7 +491,6 @@ class xnat_pic_gui(tk.Frame):
                 item_list = []
                 # Load the acq. date from visu_pars file for Bruker file
                 def read_acq_date_visupars(path): 
-                    match_date = ""
                 # Check if the visu pars file is in the scans
                     match_date = ''
                     for dirpath, dirnames, filenames in os.walk(path.replace('\\', '/')):
