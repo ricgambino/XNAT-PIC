@@ -254,7 +254,7 @@ class xnat_pic_gui(tk.Frame):
 
             self.conv_popup = tk.Toplevel()
             self.conv_popup.geometry("%dx%d+%d+%d" % (500, 150, my_width/3, my_height/3))
-            self.conv_popup.title('DICOM Converter')
+            self.conv_popup.title('XNAT-PIC Converter')
             self.conv_popup.protocol("WM_DELETE_WINDOW", normal_btn)
 
             self.btn_prj = tk.Button(self.conv_popup, text='Convert Project', font=LARGE_FONT, 
@@ -267,7 +267,7 @@ class xnat_pic_gui(tk.Frame):
             self.btn_sbj.grid(row=3, column=0, padx=10, pady=5)
             self.results_flag = tk.IntVar()
             # master.results_flag = self.results_flag.get()
-            self.btn_results = tk.Checkbutton(self.conv_popup, text='Copy results', variable=self.results_flag,
+            self.btn_results = tk.Checkbutton(self.conv_popup, text='Copy additional files', variable=self.results_flag,
                                 onvalue=1, offvalue=0, command=isChecked)
             self.btn_results.grid(row=2, column=1, sticky='W')
             self.overwrite_flag = tk.IntVar()
@@ -294,7 +294,7 @@ class xnat_pic_gui(tk.Frame):
                 master.info_btn['state'] = tk.NORMAL
                 master.upload_btn['state'] = tk.NORMAL
                 #master.process_btn['state'] = tk.NORMAL
-                messagebox.showerror("Dicom Converter", "You have not chosen a directory")
+                messagebox.showerror("XNAT-PIC Converter", "You have not chosen a directory")
                 return
             master.root.deiconify()
             master.root.update()
@@ -307,7 +307,7 @@ class xnat_pic_gui(tk.Frame):
                 start_time = time.time()
 
                 # Start the progress bar
-                progressbar = ProgressBar(bar_title='DICOM Project Converter')
+                progressbar = ProgressBar(bar_title='XNAT-PIC Project Converter')
                 progressbar.start_determinate_bar()
                 # progressbar.start_indeterminate_bar()
 
@@ -363,7 +363,7 @@ class xnat_pic_gui(tk.Frame):
                 end_time = time.time()
                 print('Total elapsed time: ' + str(end_time - start_time) + ' s')
 
-                messagebox.showinfo("Bruker2DICOM","The conversion is done!\n\n\n\n"
+                messagebox.showinfo("XNAT-PIC Converter","The conversion is done!\n\n\n\n"
                                     "Exceptions:\n\n" +
                                     str([str(x) for x in conversion_err])[1:-1])
                 master.convert_btn['state'] = tk.NORMAL
@@ -397,7 +397,7 @@ class xnat_pic_gui(tk.Frame):
                 master.info_btn['state'] = tk.NORMAL
                 master.upload_btn['state'] = tk.NORMAL
                 #master.process_btn['state'] = tk.NORMAL
-                messagebox.showerror("Dicom Converter", "You have not chosen a directory")
+                messagebox.showerror("XNAT-PIC Converter", "You have not chosen a directory")
                 return
             master.root.deiconify()
             master.root.update()
@@ -418,13 +418,13 @@ class xnat_pic_gui(tk.Frame):
                     os.makedirs(self.dst)
                 else:
                     # Existent folder without overwriting flag set to 0 --> ignore folder
-                    messagebox.showerror("Dicom Converter", "Destination folder %s already exists" % self.dst)
+                    messagebox.showerror("XNAT-PIC Converter", "Destination folder %s already exists" % self.dst)
                     return
             else:
                 # Case 2 --> The directory does not exist
                 if self.dst.split('/')[-1].count('_dcm') > 1:
                     # Check to avoid already converted folders
-                    messagebox.showerror("Dicom Converter", "Chosen folder %s already converted" % self.dst)
+                    messagebox.showerror("XNAT-PIC Converter", "Chosen folder %s already converted" % self.dst)
                     return
                 else:
                     # Create the new destination folder
@@ -434,7 +434,7 @@ class xnat_pic_gui(tk.Frame):
                 start_time = time.time()
 
                 # Start the progress bar
-                progressbar = ProgressBar(bar_title='DICOM Subject Converter')
+                progressbar = ProgressBar(bar_title='XNAT-PIC Subject Converter')
                 progressbar.start_indeterminate_bar()
 
                 # Initialize conversion thread
@@ -448,14 +448,14 @@ class xnat_pic_gui(tk.Frame):
                 end_time = time.time()
                 print('Total elapsed time: ' + str(end_time - start_time) + ' s')
 
-                messagebox.showinfo("Bruker2DICOM","Done! Now you can upload your files to XNAT.")
+                messagebox.showinfo("XNAT-PIC Converter","Done! Now you can upload your files to XNAT.")
                 master.convert_btn['state'] = tk.NORMAL
                 master.info_btn['state'] = tk.NORMAL
                 master.upload_btn['state'] = tk.NORMAL
                 #master.process_btn['state'] = tk.NORMAL          
 
             except Exception as e: 
-                messagebox.showerror("XNAT-PIC - Bruker2Dicom", e)
+                messagebox.showerror("XNAT-PIC - Converter", e)
                 master.convert_btn['state'] = tk.NORMAL
                 master.info_btn['state'] = tk.NORMAL
                 master.upload_btn['state'] = tk.NORMAL
@@ -977,7 +977,7 @@ class xnat_pic_gui(tk.Frame):
                 #master.process_btn['state'] = tk.NORMAL
 
             login_popup = tk.Toplevel()
-            login_popup.title("XNAT-PIC  ~  Login")
+            login_popup.title("XNAT-PIC ~ Login")
             login_popup.geometry("%dx%d+%d+%d" % (550, 200, my_width/3, my_height/4))
 
             login_popup.protocol("WM_DELETE_WINDOW", enable_btn)
@@ -1202,7 +1202,7 @@ class xnat_pic_gui(tk.Frame):
 
             # POPUP 
             popup2 = tk.Toplevel()
-            popup2.title("XNAT-PIC")
+            popup2.title("XNAT-PIC Uploader")
             master.root.width = 350
             master.root.height = 100
             master.x = (int(master.root.screenwidth) - master.root.width) / 2
@@ -1259,7 +1259,7 @@ class xnat_pic_gui(tk.Frame):
             if popup.entry_prjname.var.get() in list(self.OPTIONS.key_map.keys()):
                 # Case 1 --> The project already exists
                 messagebox.showerror(
-                    "Error!",
+                    "XNAT-PIC Uploader!",
                     "Project ID %s already exists! Please, enter a different project ID"
                     % self.entry_prjname.var.get(),
                 )
@@ -1299,7 +1299,7 @@ class xnat_pic_gui(tk.Frame):
 
             up_popup = tk.Toplevel()
             up_popup.geometry("%dx%d+%d+%d" % (500, 300,  my_width/3, my_height/6))
-            up_popup.title('XNAT Uploader')
+            up_popup.title('XNAT-PIC Uploader')
             # Upload project
             up_popup.btn_prj = tk.Button(up_popup, text='Upload Project', font=LARGE_FONT, 
                                     bg="grey", fg="white", height=1, width=15, borderwidth=1, 
@@ -1323,7 +1323,7 @@ class xnat_pic_gui(tk.Frame):
             # Check Button for upload additional files
             self.add_file_flag = tk.IntVar()
             master.add_file_flag = self.add_file_flag.get()
-            up_popup.add_file_btn = tk.Checkbutton(up_popup, text='Additional files', variable=self.add_file_flag,
+            up_popup.add_file_btn = tk.Checkbutton(up_popup, text='Upload Additional files', variable=self.add_file_flag,
                                 onvalue=1, offvalue=0, command=isChecked)
             up_popup.add_file_btn.grid(row=2, column=1, sticky='W')
 
@@ -1334,17 +1334,17 @@ class xnat_pic_gui(tk.Frame):
             project_to_upload = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC Project Uploader: Select project directory in DICOM format to upload")
             # Check for empty selected folder
             if os.path.isdir(project_to_upload) == False:
-                messagebox.showerror('XNAT-PIC - Uploader', 'Error! The selected folder does not exist!')
+                messagebox.showerror('XNAT-PIC Uploader', 'Error! The selected folder does not exist!')
                 self.normal_btn(master, disconnect=True)
                 return
             elif os.listdir(project_to_upload) == []:
-                messagebox.showerror('XNAT-PIC - Uploader', 'Error! The selected folder is empty!')
+                messagebox.showerror('XNAT-PIC Uploader', 'Error! The selected folder is empty!')
                 self.normal_btn(master, disconnect=True)
                 return
 
             try:
                 # Start progress bar
-                progressbar = ProgressBar(bar_title='XNAT Uploader')
+                progressbar = ProgressBar(bar_title='XNAT-PIC Uploader')
                 progressbar.start_indeterminate_bar()
 
                 t = threading.Thread(target=self.uploader.single_core_upload, args=(project_to_upload, self.project, master, ))
@@ -1360,7 +1360,7 @@ class xnat_pic_gui(tk.Frame):
                 messagebox.showerror("XNAT-PIC - Uploader", e)
 
             # Restore main frame buttons
-            messagebox.showinfo("XNAT Uploader","Done! Your subject is uploaded on XNAT platform.")
+            messagebox.showinfo("XNAT-PIC Uploader","Done! Your subject is uploaded on XNAT platform.")
             master.convert_btn['state'] = tk.NORMAL
             master.info_btn['state'] = tk.NORMAL
             master.upload_btn['state'] = tk.NORMAL
@@ -1371,17 +1371,17 @@ class xnat_pic_gui(tk.Frame):
             subject_to_upload = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC Subject Uploader: Select subject directory in DICOM format to upload")
             # Check for empty selected folder
             if os.path.isdir(subject_to_upload) == False:
-                messagebox.showerror('XNAT-PIC - Uploader', 'Error! The selected folder does not exist!')
+                messagebox.showerror('XNAT-PIC Uploader', 'Error! The selected folder does not exist!')
                 self.normal_btn(master, disconnect=True)
                 return
             elif os.listdir(subject_to_upload) == []:
-                messagebox.showerror('XNAT-PIC - Uploader', 'Error! The selected folder is empty!')
+                messagebox.showerror('XNAT-PIC Uploader', 'Error! The selected folder is empty!')
                 self.normal_btn(master, disconnect=True)
                 return
 
             try:
                 # Start progress bar
-                progressbar = ProgressBar(bar_title='XNAT Uploader')
+                progressbar = ProgressBar(bar_title='XNAT-PIC Uploader')
                 progressbar.start_indeterminate_bar()
                 # Start thread for uploading
                 upload_thread = threading.Thread(target=self.uploader.uploader, args=((subject_to_upload, self.project), master,  ))
@@ -1391,10 +1391,10 @@ class xnat_pic_gui(tk.Frame):
                 progressbar.stop_progress_bar()
 
             except Exception as e: 
-                messagebox.showerror("XNAT-PIC - Uploader", e)
+                messagebox.showerror("XNAT-PIC Uploader", e)
 
             # Restore main frame buttons
-            messagebox.showinfo("XNAT Uploader","Done! Your subject is uploaded on XNAT platform.")
+            messagebox.showinfo("XNAT-PIC Uploader","Done! Your subject is uploaded on XNAT platform.")
             master.convert_btn['state'] = tk.NORMAL
             master.info_btn['state'] = tk.NORMAL
             master.upload_btn['state'] = tk.NORMAL
@@ -1414,11 +1414,11 @@ class xnat_pic_gui(tk.Frame):
             file_to_upload = filedialog.askopenfilenames(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC File Uploader: Select file to upload")
             
             if file_to_upload == []:
-                messagebox.showerror('XNAT-PIC - Uploader', 'Error! No files selected!')
+                messagebox.showerror('XNAT-PIC Uploader', 'Error! No files selected!')
                 self.normal_btn(master, disconnect=True)
                 return
 
-            progressbar = ProgressBar('DICOM File Uploader')
+            progressbar = ProgressBar('XNAT-PIC File Uploader')
             progressbar.start_determinate_bar()
             for i, file in enumerate(file_to_upload):
                 if os.path.isfile(file):
@@ -1436,7 +1436,7 @@ class xnat_pic_gui(tk.Frame):
                         progressbar.update_progressbar(i + 1, len(file_to_upload))
 
             # Restore main frame buttons
-            messagebox.showinfo("XNAT Uploader","Done! Your file is uploaded on XNAT platform.")
+            messagebox.showinfo("XNAT-PIC Uploader","Done! Your file is uploaded on XNAT platform.")
             master.convert_btn['state'] = tk.NORMAL
             master.info_btn['state'] = tk.NORMAL
             master.upload_btn['state'] = tk.NORMAL
