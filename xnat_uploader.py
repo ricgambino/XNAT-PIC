@@ -52,7 +52,7 @@ class Dicom2XnatUploader():
         start_time = time.time()
 
         for sub in list_of_subjects:
-            self.uploader(sub)
+            self.uploader(sub, master)
 
         end_time = time.time()
         print('Elapsed time for conversion: ' + str(end_time - start_time) + ' s')
