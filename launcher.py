@@ -28,6 +28,7 @@ from multiprocessing import Pool
 from xnat_uploader import Dicom2XnatUploader
 import datefinder
 import pydicom
+from tkcalendar import DateEntry
 
 PATH_IMAGE = "images\\"
 PERCENTAGE_SCREEN = 1  # Defines the size of the canvas. If equal to 1 (100%) ,it takes the whole screen
@@ -622,7 +623,14 @@ class xnat_pic_gui(tk.Frame):
                 folder_entry = tk.Entry(master.my_canvas, state='disabled', font=SMALL_FONT, takefocus = 0)
                 width_folder_entry = int(my_width*31.4/100)
                 master.my_canvas.create_window(x_entry, y_folder_lbl, width = width_folder_entry, anchor = tk.NW, window = folder_entry)
-                # Menu
+                ################ Menu ########################
+                # Calendar for acq. date
+                y_group_perc = 25
+                y_group_delta = 7.5
+                y_group_menu = int(my_height*(y_group_perc+2*y_group_delta)/100)
+                cal = DateEntry(master.my_canvas, year=int(datetime.datetime.year), month=int(datetime.datetime.month), day=int(datetime.datetime.day), 
+                       background='darkblue', foreground='white', borderwidth=2)
+                master.my_canvas.create_window(x_group_menu, y_group_menu, anchor = tk.NW, width = int(my_width*9.5/100), window = cal)
                 # Group
                 OPTIONS = ["untreated", "treated"]
                 selected_group = tk.StringVar()
