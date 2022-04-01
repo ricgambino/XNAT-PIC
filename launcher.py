@@ -2,7 +2,7 @@ from doctest import master
 from logging import exception
 import shutil
 import tkinter as tk
-from tkinter import MULTIPLE, SINGLE, filedialog, messagebox
+from tkinter import MULTIPLE, SINGLE, filedialog, mainloop, messagebox
 from unicodedata import name
 from PIL import Image, ImageTk
 from tkinter import ttk
@@ -53,7 +53,7 @@ class SplashScreen(tk.Toplevel):
          """(master, image, timeout=1000) -> create a splash screen
          from specified image file.  Keep splashscreen up for timeout
          milliseconds"""
-         tk.Toplevel.__init__(self, master, relief=tk.RAISED, borderwidth=0, background=BACKGROUND_COLOR)
+         tk.Toplevel.__init__(self, master)
          self.main = master
          self.main.withdraw()
          self.overrideredirect(1)
@@ -86,7 +86,7 @@ class SplashScreen(tk.Toplevel):
          self.createWidgets()
 
      def createWidgets(self):
-    # Need to fill in here
+         # Need to fill in here
          im = Image.open(PATH_IMAGE + "logo-xnat-pic.png")
          width = int(self.w)
          wpercent = (width/float(im.size[0]))
@@ -101,15 +101,16 @@ class SplashScreen(tk.Toplevel):
 
      def destroy(self):
          self.main.update()
+         self.main.state('zoomed')
          self.main.deiconify()
          self.withdraw()
 
 class xnat_pic_gui(tk.Frame):
 
     def __init__(self, master):
-
-        self.root = master
-        self.root.state("zoomed")
+        
+        self.root = master 
+        #self.root.state('zoomed')
         ### GET PRIMARY SCREEN RESOLUTION
         ### MADE FOR MULTISCREEN ENVIRONMENTS
         if (platform.system()=='Linux'):
@@ -128,7 +129,6 @@ class xnat_pic_gui(tk.Frame):
         h = self.root.screenheight
         self.root.geometry("%dx%d+0+0" % (w, h))
         self.root.title("   XNAT-PIC   ~   Molecular Imaging Center   ~   University of Torino   ")
-        self.root.configure(background=THEME_COLOR)
         # If you want the logo 
         #self.root.iconbitmap(r"logo3.ico")
 
@@ -564,6 +564,19 @@ class xnat_pic_gui(tk.Frame):
                 master.info_upload_btn.destroy()
                 #master.info_process_btn.destroy()
 
+                #################### Menu ###########################
+
+                menu = tk.Menu(master.root)
+                file_menu = tk.Menu(menu, tearoff=0)
+                file_menu.add_command(label="Clear", command = lambda: clear_metadata())
+                file_menu.add_separator()
+                file_menu.add_command(label="Save All", command = lambda: save_metadata())
+
+                menu.add_cascade(label="File", menu=file_menu)
+                menu.add_command(label="About", command = lambda: messagebox.showinfo("XNAT-PIC","Help"))
+                menu.add_command(label="Exit", command = lambda: exit_metadata())
+                master.root.config(menu=menu)
+
                 #################### Folder list #################### 
                 x_folder_list = int(my_width*10/100)
                 y_folder_list = int(my_height*18/100)
@@ -699,12 +712,12 @@ class xnat_pic_gui(tk.Frame):
                 my_listbox.bind('<Tab>', items_selected)
                 
                 #################### Clear the metadata ####################
-                clear_text = tk.StringVar() 
-                clear_btn = tk.Button(master.my_canvas, textvariable=clear_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command = lambda: clear_metadata(), cursor=CURSOR_HAND, takefocus = 0)
-                clear_text.set("Clear")
-                width_btn = int(my_width*14/100)
-                y_btn1 = int(my_height*77/100)
-                master.my_canvas.create_window(x_lbl, y_btn1, anchor = tk.NW, width = width_btn, window = clear_btn)
+                # clear_text = tk.StringVar() 
+                # clear_btn = tk.Button(master.my_canvas, textvariable=clear_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command = lambda: clear_metadata(), cursor=CURSOR_HAND, takefocus = 0)
+                # clear_text.set("Clear")
+                # width_btn = int(my_width*14/100)
+                # y_btn1 = int(my_height*77/100)
+                # master.my_canvas.create_window(x_lbl, y_btn1, anchor = tk.NW, width = width_btn, window = clear_btn)
                 
                 def clear_metadata():
                     # Clear all the combobox and the entry
@@ -725,7 +738,8 @@ class xnat_pic_gui(tk.Frame):
                 modify_text = tk.StringVar() 
                 modify_btn = tk.Button(master.my_canvas, textvariable=modify_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command = lambda: modify_metadata(), cursor=CURSOR_HAND, takefocus = 0)
                 modify_text.set("Modify")
-                y_btn = int(my_height*69/100)
+                y_btn = int(my_height*75/100)
+                width_btn = int(my_width*14/100)
                 master.my_canvas.create_window(x_lbl, y_btn, anchor = tk.NW, width = width_btn, window = modify_btn)
                  
                 def modify_metadata():
@@ -752,6 +766,7 @@ class xnat_pic_gui(tk.Frame):
                         entries[fields.index("Acquisition_date")].delete(0, tk.END)
                         entries[fields.index("Acquisition_date")].insert(0, str(w.get_date()))
                         entries[fields.index("Acquisition_date")].config(state=tk.DISABLED)
+                        my_listbox.selection_set(selected_index)
 
                     cal.bind("<<DateEntrySelected>>", date_entry_selected)
 
@@ -774,7 +789,11 @@ class xnat_pic_gui(tk.Frame):
                     def timepoint_changed(event):
                         entries[fields.index("Timepoint")].config(state=tk.NORMAL)
                         """ handle the timepoint changed event """
-                        timepoint_str = str(selected_timepoint.get()) + "-" + str(time_entry.get()) + "-" + str(selected_timepoint1.get())
+                        if str(time_entry.get()) or str(selected_timepoint1.get()):
+                           timepoint_str = str(selected_timepoint.get()) + "-" + str(time_entry.get()) + "-" + str(selected_timepoint1.get())
+                        else:
+                            timepoint_str = str(selected_timepoint.get()) 
+
                         my_listbox.selection_set(selected_index)
 
                         if time_entry.get():
@@ -823,7 +842,7 @@ class xnat_pic_gui(tk.Frame):
                             messagebox.showerror("XNAT-PIC", "Insert a number in dose")
                             raise
 
-                    if entries[fields.index("Timepoint")].get(): 
+                    if entries[fields.index("Timepoint")].get() and '-' in  entries[fields.index("Timepoint")].get(): 
                         if not str(entries[fields.index("Timepoint")].get()).split('-')[0] in OPTIONS:
                            messagebox.showerror("XNAT-PIC", "Select pre/post in timepoint")
                            raise
@@ -877,18 +896,18 @@ class xnat_pic_gui(tk.Frame):
                 master.my_canvas.create_window(x_multiple_conf_btn, y_btn, anchor = tk.NW, width = width_btn, window = multiple_confirm_btn)
                 
                 def normal_button():
-                    clear_btn["state"] = tk.NORMAL
+                    #clear_btn["state"] = tk.NORMAL
                     modify_btn["state"] = tk.NORMAL
                     confirm_btn["state"] = tk.NORMAL
                     multiple_confirm_btn["state"] = tk.NORMAL
-                    save_btn["state"] = tk.NORMAL
+                    #save_btn["state"] = tk.NORMAL
 
                 def confirm_multiple_metadata():
-                    clear_btn["state"] = tk.DISABLED
+                    #clear_btn["state"] = tk.DISABLED
                     modify_btn["state"] = tk.DISABLED
                     confirm_btn["state"] = tk.DISABLED
                     multiple_confirm_btn["state"] = tk.DISABLED
-                    save_btn["state"] = tk.DISABLED
+                    #save_btn["state"] = tk.DISABLED
                     
                     try:
                         selected_index
@@ -946,10 +965,10 @@ class xnat_pic_gui(tk.Frame):
                     my_listbox.bind("<Escape>", items_cancel)
 
                 #################### Save the metadata ####################
-                save_text = tk.StringVar() 
-                save_btn = tk.Button(master.my_canvas, textvariable=save_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command = lambda: save_metadata(), cursor=CURSOR_HAND, takefocus = 0)
-                save_text.set("Save")
-                master.my_canvas.create_window(x_multiple_conf_btn, y_btn1, anchor = tk.NW, width = width_btn, window = save_btn)
+                # save_text = tk.StringVar() 
+                # save_btn = tk.Button(master.my_canvas, textvariable=save_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command = lambda: save_metadata(), cursor=CURSOR_HAND, takefocus = 0)
+                # save_text.set("Save")
+                # master.my_canvas.create_window(x_multiple_conf_btn, y_btn1, anchor = tk.NW, width = width_btn, window = save_btn)
                 
                 def save_metadata():
                     err = False
@@ -974,18 +993,19 @@ class xnat_pic_gui(tk.Frame):
                         clear_metadata_frame()
                 
                 #################### Exit the metadata ####################
-                exit_text = tk.StringVar() 
-                exit_btn = tk.Button(master.my_canvas, textvariable=exit_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command = lambda: exit_metadata(), cursor=CURSOR_HAND, takefocus = 0)
-                exit_text.set("Exit")
-                x_exit_btn = int(my_width*10/100)
-                master.my_canvas.create_window(x_exit_btn, y_btn1, anchor = tk.NW,width = width_btn, window = exit_btn)
+                # exit_text = tk.StringVar() 
+                # exit_btn = tk.Button(master.my_canvas, textvariable=exit_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command = lambda: exit_metadata(), cursor=CURSOR_HAND, takefocus = 0)
+                # exit_text.set("Exit")
+                # x_exit_btn = int(my_width*10/100)
+                # master.my_canvas.create_window(x_exit_btn, y_btn1, anchor = tk.NW,width = width_btn, window = exit_btn)
 
                 def exit_metadata():
-                    result = messagebox.askquestion("Exit", "You have NOT SAVED your changes. Do you want to go out anyway?", icon='warning')
+                    result = messagebox.askquestion("Exit", "Do you want to exit?", icon='warning')
                     if result == 'yes':
                         clear_metadata_frame()
 
                 def clear_metadata_frame():
+                    menu.destroy()
                     label.destroy()
                     my_listbox.destroy()
                     my_yscrollbar.destroy()
@@ -1003,11 +1023,11 @@ class xnat_pic_gui(tk.Frame):
                     group_menu.destroy()
                     cal.destroy()
 
-                    clear_btn.destroy()
+                    #clear_btn.destroy()
                     modify_btn.destroy()
                     confirm_btn.destroy()
-                    save_btn.destroy()
-                    exit_btn.destroy()
+                    #save_btn.destroy()
+                    #exit_btn.destroy()
                     multiple_confirm_btn.destroy()
                     xnat_pic_gui.choose_you_action(master)
 
@@ -1499,4 +1519,5 @@ if __name__ == "__main__":
     app = xnat_pic_gui(root)
     s = SplashScreen(root, timeout=5000)
     root.mainloop()
-    
+
+           
