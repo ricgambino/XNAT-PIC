@@ -628,8 +628,9 @@ class xnat_pic_gui(tk.Frame):
                 y_group_perc = 25
                 y_group_delta = 7.5
                 y_group_menu = int(my_height*(y_group_perc+2*y_group_delta)/100)
-                cal = DateEntry(master.my_canvas, year=int(datetime.datetime.year), month=int(datetime.datetime.month), day=int(datetime.datetime.day), 
-                       background='darkblue', foreground='white', borderwidth=2)
+                x_group_menu = int(my_width*72/100)
+                cal = DateEntry(master.my_canvas, state = tk.DISABLED, font = SMALL_FONT, background=BACKGROUND_COLOR, date_pattern = 'y-mm-dd', foreground='white', borderwidth=0)
+                cal.delete(0, tk.END)
                 master.my_canvas.create_window(x_group_menu, y_group_menu, anchor = tk.NW, width = int(my_width*9.5/100), window = cal)
                 # Group
                 OPTIONS = ["untreated", "treated"]
@@ -637,9 +638,6 @@ class xnat_pic_gui(tk.Frame):
                 group_menu = ttk.Combobox(master.my_canvas, textvariable=selected_group, font = SMALL_FONT, takefocus = 0)
                 group_menu['values'] = OPTIONS
                 group_menu['state'] = 'disabled'
-                x_group_menu = int(my_width*72/100)
-                y_group_perc = 25
-                y_group_delta = 7.5
                 y_group_menu = int(my_height*(y_group_perc+3*y_group_delta)/100)
                 master.my_canvas.create_window(x_group_menu, y_group_menu, anchor = tk.NW, width = int(my_width*9.5/100), window = group_menu)
                 
@@ -672,6 +670,13 @@ class xnat_pic_gui(tk.Frame):
                     selected_timepoint.set('')
                     selected_timepoint1.set('')
                     time_entry.delete(0, tk.END)
+                    cal.delete(0, tk.END)
+                    time_entry.config(state=tk.DISABLED)
+                    group_menu['state'] = tk.DISABLED
+                    timepoint_menu['state'] = tk.DISABLED
+                    timepoint_menu1['state'] = tk.DISABLED
+                    cal['state'] = tk.DISABLED
+
                     """ handle item selected event
                     """
                     # Get selected indices
@@ -679,7 +684,7 @@ class xnat_pic_gui(tk.Frame):
                     selected_index = my_listbox.curselection()[0]
                     
                     max_lim = len(fields)
-                    # load the info of the selected folder
+                    # load the Info of the selected folder
                     folder_entry.config(state=tk.NORMAL)
                     folder_entry.delete(0, tk.END)
                     folder_entry.insert(0, str(item_list[selected_index]))
@@ -706,7 +711,9 @@ class xnat_pic_gui(tk.Frame):
                     selected_group.set('')
                     selected_timepoint.set('')
                     selected_timepoint1.set('')
+                    cal.delete(0, tk.END)
                     time_entry.delete(0, tk.END)
+
                     state = entries[0]['state']
                     # Set empty string in all the entries
                     for i in range(2, len(fields)):
@@ -731,24 +738,24 @@ class xnat_pic_gui(tk.Frame):
                          raise 
 
                     # Normal entry
-                    for i in range(0, len(fields)-1):
+                    for i in range(0, 2):
                         entries[i].config(state=tk.NORMAL)
-                    
-                    # Acquisition date has a default format in entry
-                    #default_date = "YYYY-MM-DD"
-                    #entries[fields.index("Acquisition_date")].insert(tk.END, default_date)
-                    
-                    #def default(event):
-                    #    current = entries[fields.index("Acquisition_date")].get()
-                    #    if current == default_date +"\n":
-                    #        entries[fields.index("Acquisition_date")].delete("1.0", tk.END)
-                    #    elif current == "\n":
-                    #        entries[fields.index("Acquisition_date")].insert("1.0", default_date)
 
-                    #entries[fields.index("Acquisition_date")].bind("<FocusIn>", default)
-                    #entries[fields.index("Acquisition_date")].bind("<FocusOut>", default)
+                    for i in range(3, len(fields)-1):
+                        entries[i].config(state=tk.NORMAL)
+                    # Acquisition date has a default format in entry but you can modify date with the calendar
+                    cal['state'] = 'normal'
+                    
+                    def date_entry_selected(event):
+                        w = event.widget
+                        entries[fields.index("Acquisition_date")].config(state=tk.NORMAL)
+                        entries[fields.index("Acquisition_date")].delete(0, tk.END)
+                        entries[fields.index("Acquisition_date")].insert(0, str(w.get_date()))
+                        entries[fields.index("Acquisition_date")].config(state=tk.DISABLED)
 
-                    # Option menu for the dose
+                    cal.bind("<<DateEntrySelected>>", date_entry_selected)
+
+                    # Option menu for the group
                     group_menu['state'] = 'readonly'
 
                     def group_changed(event):
@@ -850,11 +857,13 @@ class xnat_pic_gui(tk.Frame):
                         selected_timepoint.set('')
                         selected_timepoint1.set('')
                         time_entry.delete(0, tk.END)
+                        cal.delete(0, tk.END)
                         time_entry.config(state=tk.DISABLED)
                         group_menu['state'] = tk.DISABLED
                         timepoint_menu['state'] = tk.DISABLED
                         timepoint_menu1['state'] = tk.DISABLED
-                        
+                        cal['state'] = tk.DISABLED
+
                         # Saves the changes made by the user in the txt file
                         with open(path_list[selected_index], 'w+') as meta_file:
                                         meta_file.write(tabulate([['Project', str(results[selected_index*max_lim+0])], ['Subject', str(results[selected_index*max_lim+1])], ['Acquisition_date', str(results[selected_index*max_lim+2])], 
@@ -992,7 +1001,8 @@ class xnat_pic_gui(tk.Frame):
                     timepoint_menu1.destroy()
                     time_entry.destroy()
                     group_menu.destroy()
-                    
+                    cal.destroy()
+
                     clear_btn.destroy()
                     modify_btn.destroy()
                     confirm_btn.destroy()
