@@ -2,7 +2,10 @@ from doctest import master
 from logging import exception
 import shutil
 import tkinter as tk
-from tkinter import MULTIPLE, SINGLE, filedialog, mainloop, messagebox
+from tkinter import END, MULTIPLE, SINGLE, W, filedialog, mainloop, messagebox
+from tkinter.font import Font
+from tkinter.tix import COLUMN
+from turtle import bgcolor, width
 from unicodedata import name
 from PIL import Image, ImageTk
 from tkinter import ttk
@@ -576,7 +579,7 @@ class xnat_pic_gui(tk.Frame):
                 menu.add_command(label="About", command = lambda: messagebox.showinfo("XNAT-PIC","Help"))
                 menu.add_command(label="Exit", command = lambda: exit_metadata())
                 master.root.config(menu=menu)
-
+                
                 #################### Folder list #################### 
                 x_folder_list = int(my_width*10/100)
                 y_folder_list = int(my_height*18/100)
@@ -604,77 +607,90 @@ class xnat_pic_gui(tk.Frame):
                 master.my_canvas.create_window(x_folder_list, y_folder_scrollbar, width = int(my_width*25/100), anchor = tk.NW, window = my_xscrollbar)
                 
                 #################### Subject form ####################
-                # Project label
-                keys = ["Project", "Subject", "Acq. date", "Group", "Dose", "Timepoint"]
-                count = 0
-                labels=[]
-                x_lbl = int(my_width*40/100)
-                y_lbl_perc = 25
-                y_lbl_delta = 7.5
-                y_folder_lbl = y_folder_list
-                for key in keys:
-                    y_lbl = int(my_height*y_lbl_perc/100)
-                    labels.append(tk.Label(master.my_canvas, text=key, font=SMALL_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR))
-                    master.my_canvas.create_window(x_lbl, y_lbl, width = int(my_width*8/100), anchor = tk.NW, window = labels[count])
-                    y_lbl_perc += y_lbl_delta
-                    count += 1
-                folder_lbl = tk.Label(master.my_canvas, text="Folder", font=SMALL_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR)
-                master.my_canvas.create_window(x_lbl, y_folder_lbl, width = int(my_width*8/100), anchor = tk.NW, window = folder_lbl)
+                # ID
+                # Label frame for ID: folder selected, project, subject and acq. date
+                label_frame_ID = tk.LabelFrame(master.my_canvas, background = BACKGROUND_COLOR, borderwidth=5, font=SMALL_FONT, relief='solid', text="ID")
+                
+                x_lbl_ID = int(my_width*40/100)
+                y_lbl_ID = int(my_height*24/100)
+                h_lbl_ID = int(my_height*20/100)
+                master.my_canvas.create_window(x_lbl_ID, y_lbl_ID, anchor='nw', height = h_lbl_ID, window=label_frame_ID)
 
-                # Project entry               
-                count = 0
-                entries=[]
-                x_entry = int(my_width*50/100)
-                y_entry_perc = 25
-                y_entry_delta = 7.5
-                for key in keys:
-                    y_entry = int(my_height*y_entry_perc/100)
-                    entries.append(tk.Entry(master.my_canvas, state='disabled', font=SMALL_FONT, takefocus = 0))
-                    master.my_canvas.create_window(x_entry, y_entry, width = int(my_width*20/100), anchor = tk.NW, window = entries[count])
-                    y_entry_perc += y_entry_delta
+                # Label ID
+                keys_ID = ["Project", "Subject", "Acq. date"]
+                folder_lbl = tk.Label(label_frame_ID, background = BACKGROUND_COLOR, text="Folder", width=10, font=SMALL_FONT, fg=TEXT_BTN_COLOR)
+                folder_lbl.grid(row=0, column=0, padx = 5, pady = 5, sticky=W)
+                count = 1
+                labels=[]
+                for key in keys_ID:
+                    labels.append(tk.Label(label_frame_ID, background = BACKGROUND_COLOR, text=key, width=10, font=SMALL_FONT, fg=TEXT_BTN_COLOR))
+                    labels[-1].grid(row=count, column=0, padx = 5, pady = 5, sticky=W)
                     count += 1
-                folder_entry = tk.Entry(master.my_canvas, state='disabled', font=SMALL_FONT, takefocus = 0)
-                width_folder_entry = int(my_width*31.4/100)
-                master.my_canvas.create_window(x_entry, y_folder_lbl, width = width_folder_entry, anchor = tk.NW, window = folder_entry)
-                ################ Menu ########################
+                
+                # Entry ID
+                folder_entry = tk.Entry(label_frame_ID, state='disabled', width=50, font=SMALL_FONT, takefocus = 0)
+                folder_entry.grid(row=0, column=1, padx = 5, pady = 5, sticky=W)              
+                count = 1
+                entries=[]
+                for key in keys_ID:
+                    entries.append(tk.Entry(label_frame_ID, state='disabled', width=50, font=SMALL_FONT, takefocus = 0))
+                    entries[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=W)
+                    count += 1
+
                 # Calendar for acq. date
-                y_group_perc = 25
-                y_group_delta = 7.5
-                y_group_menu = int(my_height*(y_group_perc+2*y_group_delta)/100)
-                x_group_menu = int(my_width*72/100)
-                cal = DateEntry(master.my_canvas, state = tk.DISABLED, font = SMALL_FONT, background=BACKGROUND_COLOR, date_pattern = 'y-mm-dd', foreground='white', borderwidth=0)
+                cal = DateEntry(label_frame_ID, state = tk.DISABLED, width=10, font = SMALL_FONT, background=BACKGROUND_COLOR, date_pattern = 'y-mm-dd', foreground='white', borderwidth=0)
                 cal.delete(0, tk.END)
-                master.my_canvas.create_window(x_group_menu, y_group_menu, anchor = tk.NW, width = int(my_width*9.5/100), window = cal)
-                # Group
+                cal.grid(row=3, column=2, padx = 5, pady = 5, sticky=W)
+
+                ####################################################################
+                # Custom Variables (CV)
+                # Label frame for Custom Variables: group, dose, timepoint
+                label_frame_CV = tk.LabelFrame(master.my_canvas, background = BACKGROUND_COLOR, borderwidth=5, font=SMALL_FONT, relief='solid', text="Custom Variables")
+                x_lbl_CV = x_lbl_ID
+                y_lbl_CV = int(my_height*50/100)
+                h_lbl_CV = int(my_height*15/100)
+                master.my_canvas.create_window(x_lbl_CV, y_lbl_CV, height = h_lbl_CV, window=label_frame_CV, anchor='nw')
+
+                # Label CV
+                keys_CV = ["Group", "Dose", "Timepoint"]
+                count = 0
+                for key in keys_CV:
+                    labels.append(tk.Label(label_frame_CV, background = BACKGROUND_COLOR, fg=TEXT_BTN_COLOR, font=SMALL_FONT, text=key, width=10))
+                    labels[-1].grid(row=count, column=0, padx = 5, pady = 5, sticky=W)
+                    count += 1
+
+                # Entry ID              
+                count = 0
+                for key in keys_CV:
+                    entries.append(tk.Entry(label_frame_CV, font=SMALL_FONT, state='disabled', takefocus = 0, width=35))
+                    entries[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=W)
+                    count += 1
+
+                # Group Menu
                 OPTIONS = ["untreated", "treated"]
                 selected_group = tk.StringVar()
-                group_menu = ttk.Combobox(master.my_canvas, textvariable=selected_group, font = SMALL_FONT, takefocus = 0)
+                group_menu = ttk.Combobox(label_frame_CV, font = SMALL_FONT, takefocus = 0, textvariable=selected_group, width=10)
                 group_menu['values'] = OPTIONS
                 group_menu['state'] = 'disabled'
-                y_group_menu = int(my_height*(y_group_perc+3*y_group_delta)/100)
-                master.my_canvas.create_window(x_group_menu, y_group_menu, anchor = tk.NW, width = int(my_width*9.5/100), window = group_menu)
-                
+                group_menu.grid(row=0, column=3, padx = 5, pady = 5, sticky=W)
+
                 # Timepoint
                 OPTIONS = ["pre", "post"]
                 selected_timepoint = tk.StringVar()
-                timepoint_menu = ttk.Combobox(master.my_canvas, textvariable=selected_timepoint, font = SMALL_FONT, takefocus = 0)
+                timepoint_menu = ttk.Combobox(label_frame_CV, font = SMALL_FONT, takefocus = 0, textvariable=selected_timepoint, width=10)
                 timepoint_menu['values'] = OPTIONS
                 timepoint_menu['state'] = 'disabled'
-                x_timepoint_menu = int(my_width*72/100)
-                y_timepiont_menu = int(my_height*(y_group_perc+5*y_group_delta)/100)
-                master.my_canvas.create_window(x_timepoint_menu, y_timepiont_menu, anchor = tk.NW, width = int(my_width*5/100), window = timepoint_menu)
+                timepoint_menu.grid(row=2, column=3, padx = 5, pady = 5, sticky=W)
 
-                time_entry = tk.Entry(master.my_canvas, state='disabled', font = SMALL_FONT, takefocus = 0)
-                x_timepoint_menu1 = int(my_width*78/100)
-                master.my_canvas.create_window(x_timepoint_menu1, y_timepiont_menu, anchor = tk.NW, width = int(my_width*5/100), window = time_entry)
+                time_entry = tk.Entry(label_frame_CV, font = SMALL_FONT, state='disabled', takefocus = 0, width=5)
+                time_entry.grid(row=2, column=4, padx = 5, pady = 5, sticky=W)
 
                 OPTIONS1 = ["seconds", "minutes", "hours", "days", "weeks", "months", "years"]
                 selected_timepoint1 = tk.StringVar()
-                timepoint_menu1 = ttk.Combobox(master.my_canvas, textvariable=selected_timepoint1, font = SMALL_FONT, takefocus = 0)
+                timepoint_menu1 = ttk.Combobox(label_frame_CV, font = SMALL_FONT, takefocus = 0, textvariable=selected_timepoint1, width=7)
                 timepoint_menu1['values'] = OPTIONS1
                 timepoint_menu1['state'] = 'disabled'
-                x_timepoint_menu2 = int(my_width*84/100)
-                master.my_canvas.create_window(x_timepoint_menu2, y_timepiont_menu, anchor = tk.NW, width = int(my_width*8/100), window = timepoint_menu1)
+                timepoint_menu1.grid(row=2, column=5, padx = 5, pady = 5, sticky=W)
 
                 #################### Load the info about the selected subject ####################
                 def items_selected(event):
@@ -738,6 +754,7 @@ class xnat_pic_gui(tk.Frame):
                 modify_text = tk.StringVar() 
                 modify_btn = tk.Button(master.my_canvas, textvariable=modify_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command = lambda: modify_metadata(), cursor=CURSOR_HAND, takefocus = 0)
                 modify_text.set("Modify")
+                x_lbl = int(my_height*75/100)
                 y_btn = int(my_height*75/100)
                 width_btn = int(my_width*14/100)
                 master.my_canvas.create_window(x_lbl, y_btn, anchor = tk.NW, width = width_btn, window = modify_btn)
@@ -1015,8 +1032,6 @@ class xnat_pic_gui(tk.Frame):
                         labels[i].destroy()   
                         entries[i].destroy()
                     
-                    folder_lbl.destroy()
-                    folder_entry.destroy()
                     timepoint_menu.destroy()
                     timepoint_menu1.destroy()
                     time_entry.destroy()
@@ -1029,6 +1044,7 @@ class xnat_pic_gui(tk.Frame):
                     #save_btn.destroy()
                     #exit_btn.destroy()
                     multiple_confirm_btn.destroy()
+
                     xnat_pic_gui.choose_you_action(master)
 
     class XNATUploader():
