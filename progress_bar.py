@@ -29,8 +29,12 @@ class ProgressBar():
         self.style.theme_use('alt')
         self.style.configure('blue.Horizontal.TProgressbar', troughcolor  = '#4d4d4d', troughrelief = 'flat', background   = '#2f92ff')
 
-    def set_caption(self, index, total):
-        self.label = tk.Label(self.popup, text='Converting ... ' + str(index) + ' / ' + str(total), font=("Calibri", 14, "bold")).place(relx=0.5, rely=0.5, anchor = 's')
+    def show_step(self, index, total):
+        self.label = tk.Label(self.popup, text='Loading ... ' + str(index) + ' / ' + str(total), font=("Calibri", 14, "bold")).place(relx=0.5, rely=0.5, anchor = 's')
+        self.popup.update()
+
+    def set_caption(self, text):
+        self.label = tk.Label(self.popup, text=text, font=("Calibri", 8, "bold")).place(relx=0.5, rely=0.5, anchor = 's')
         self.popup.update()
         
     def start_determinate_bar(self):
