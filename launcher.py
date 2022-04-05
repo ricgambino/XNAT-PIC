@@ -673,6 +673,14 @@ class xnat_pic_gui(tk.Frame):
                 group_menu['values'] = OPTIONS
                 group_menu['state'] = 'disabled'
                 group_menu.grid(row=0, column=3, padx = 5, pady = 5, sticky=W)
+                
+                # UM for dose
+                OPTIONS_UM = ["Mg", "kg", "mg", "µg", "ng"]
+                selected_dose = tk.StringVar()
+                dose_menu = ttk.Combobox(label_frame_CV, font = SMALL_FONT, takefocus = 0, textvariable=selected_dose, width=10)
+                dose_menu['values'] = OPTIONS_UM
+                dose_menu['state'] = 'disabled'
+                dose_menu.grid(row=1, column=3, padx = 5, pady = 5, sticky=W)
 
                 # Timepoint
                 OPTIONS = ["pre", "post"]
@@ -698,11 +706,13 @@ class xnat_pic_gui(tk.Frame):
                     selected_group.set('')
                     selected_timepoint.set('')
                     selected_timepoint1.set('')
+                    dose_menu.set('')
                     time_entry.delete(0, tk.END)
                     cal.delete(0, tk.END)
-                    time_entry.config(state=tk.DISABLED)
+                    dose_menu['state'] = tk.DISABLED
                     group_menu['state'] = tk.DISABLED
                     timepoint_menu['state'] = tk.DISABLED
+                    time_entry.config(state=tk.DISABLED)
                     timepoint_menu1['state'] = tk.DISABLED
                     cal['state'] = tk.DISABLED
 
@@ -737,6 +747,7 @@ class xnat_pic_gui(tk.Frame):
                 
                 def clear_metadata():
                     # Clear all the combobox and the entry
+                    selected_dose.set('')
                     selected_group.set('')
                     selected_timepoint.set('')
                     selected_timepoint1.set('')
@@ -754,8 +765,8 @@ class xnat_pic_gui(tk.Frame):
                 modify_text = tk.StringVar() 
                 modify_btn = tk.Button(master.my_canvas, textvariable=modify_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command = lambda: modify_metadata(), cursor=CURSOR_HAND, takefocus = 0)
                 modify_text.set("Modify")
-                x_lbl = int(my_height*75/100)
-                y_btn = int(my_height*75/100)
+                x_lbl = x_lbl_ID
+                y_btn = int(my_height*70/100)
                 width_btn = int(my_width*14/100)
                 master.my_canvas.create_window(x_lbl, y_btn, anchor = tk.NW, width = width_btn, window = modify_btn)
                  
@@ -797,6 +808,32 @@ class xnat_pic_gui(tk.Frame):
                         my_listbox.selection_set(selected_index)
 
                     group_menu.bind("<<ComboboxSelected>>", group_changed)
+
+                    # Option menu for the dose
+                    dose_menu['state'] = 'readonly'
+
+                    def dose_changed(event):
+                        """ handle the dose changed event """
+                        dose_str = ''
+                        if entries[fields.index("Dose")].get():
+                            for word in filter(str(entries[fields.index("Dose")].get()).__contains__, OPTIONS_UM):
+                                # If a unit of measurement is already present, replace it
+                                dose_str = str(entries[fields.index("Dose")].get()).replace(word, str(selected_dose.get()))
+                                entries[fields.index("Dose")].delete(0, tk.END)     
+                                entries[fields.index("Dose")].insert(0, dose_str)                    
+                                my_listbox.selection_set(selected_index)
+                                return
+                                 # If only the number is present, add the unit of measure
+                            dose_str = str(entries[fields.index("Dose")].get()) + "-" + str(selected_dose.get())
+                        else:
+                            # If the entry is empty, enter only the unit of measure
+                            dose_str = str(selected_dose.get())
+
+                        entries[fields.index("Dose")].delete(0, tk.END)     
+                        entries[fields.index("Dose")].insert(0, dose_str)                    
+                        my_listbox.selection_set(selected_index)
+
+                    dose_menu.bind("<<ComboboxSelected>>", dose_changed)
                     
                     # Option menu for the timepoint
                     timepoint_menu1['state'] = 'readonly'
@@ -852,12 +889,12 @@ class xnat_pic_gui(tk.Frame):
                            messagebox.showerror("XNAT-PIC", "Incorrect data format in acquisition date, should be YYYY-MM-DD")
                            raise
 
-                    if entries[fields.index("Dose")].get(): 
-                        try:
-                            float(entries[fields.index("Dose")].get())
-                        except Exception as e: 
-                            messagebox.showerror("XNAT-PIC", "Insert a number in dose")
-                            raise
+                    # if entries[fields.index("Dose")].get(): 
+                    #     try:
+                    #         float(entries[fields.index("Dose")].get())
+                    #     except Exception as e: 
+                    #         messagebox.showerror("XNAT-PIC", "Insert a number in dose")
+                    #         raise
 
                     if entries[fields.index("Timepoint")].get() and '-' in  entries[fields.index("Timepoint")].get(): 
                         if not str(entries[fields.index("Timepoint")].get()).split('-')[0] in OPTIONS:
@@ -1028,16 +1065,18 @@ class xnat_pic_gui(tk.Frame):
                     my_yscrollbar.destroy()
                     my_xscrollbar.destroy()
 
-                    for i in range(0, len(fields)): 
-                        labels[i].destroy()   
-                        entries[i].destroy()
+                    #for i in range(0, len(fields)): 
+                    #    labels[i].destroy()   
+                    #    entries[i].destroy()
                     
-                    timepoint_menu.destroy()
-                    timepoint_menu1.destroy()
-                    time_entry.destroy()
-                    group_menu.destroy()
-                    cal.destroy()
-
+                    #timepoint_menu.destroy()
+                    #timepoint_menu1.destroy()
+                    #time_entry.destroy()
+                    #group_menu.destroy()
+                    #cal.destroy()
+                    
+                    label_frame_ID.destroy()
+                    label_frame_CV.destroy()
                     #clear_btn.destroy()
                     modify_btn.destroy()
                     confirm_btn.destroy()
