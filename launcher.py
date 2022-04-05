@@ -31,6 +31,7 @@ from xnat_uploader import Dicom2XnatUploader, FileUploader, read_table
 import datefinder
 import pydicom
 from tkcalendar import DateEntry
+from accessory_functions import *
 
 PATH_IMAGE = "images\\"
 PERCENTAGE_SCREEN = 1  # Defines the size of the canvas. If equal to 1 (100%) ,it takes the whole screen
@@ -50,35 +51,6 @@ BORDERWIDTH = 3
 load_dotenv()
 password = os.environ.get('secretKey')
 bufferSize = int(os.environ.get('bufferSize1')) * int(os.environ.get('bufferSize2'))
-
-def disable_buttons(list_of_buttons):
-    for btn in list_of_buttons:
-        try:
-            btn.configure(state="disabled")
-        except:
-            pass
-
-def enable_buttons(list_of_buttons):
-    for btn in list_of_buttons:
-        try:
-            btn.configure(state="normal")
-        except:
-            pass
-
-def destroy_widgets(widgets):
-    for widget in widgets:
-        try:
-            widget.destroy()
-        except:
-            pass
-
-def delete_widgets(canva, widgets_id):
-    for id in widgets_id:
-        try:
-            canva.delete(id)
-        except:
-            pass
-
 
 class SplashScreen(tk.Toplevel):
      def __init__(self, master, timeout=1000):
@@ -1452,7 +1424,6 @@ class xnat_pic_gui(tk.Frame):
 
             #Check Button for upload additional files
             self.add_file_flag = tk.IntVar()
-            # master.add_file_flag = self.add_file_flag.get()
             self.add_file_btn = tk.Checkbutton(master.my_canvas, text='Additional files', variable=self.add_file_flag,
                                 onvalue=1, offvalue=0)
             y_ck_btn = int(my_height*30/100)
@@ -1462,7 +1433,7 @@ class xnat_pic_gui(tk.Frame):
             #############################################
             ################# Project ###################
             x_label = int(my_width/5)
-            width_menu = int(my_width/7)
+            width_menu = int(my_width/5)
             # Label
             y_prj = int(my_height*40/100)
             self.select_prj = master.my_canvas.create_text(x_label, y_prj, anchor = tk.CENTER, width=width_menu, fill=DISABLE_LBL_COLOR, font=LARGE_FONT, 
@@ -1470,7 +1441,7 @@ class xnat_pic_gui(tk.Frame):
             
             # Menu
             def get_subjects(*args):
-                if self.prj.get() != '--' and self.prj.get() in list(self.OPTIONS.key_map.keys()):
+                if self.prj.get() != '--' and self.prj.get() in self.OPTIONS:
                     self.OPTIONS2 = list(self.session.projects[self.prj.get()].subjects.key_map.keys())
                 else:
                     self.OPTIONS2 = []
@@ -1480,7 +1451,7 @@ class xnat_pic_gui(tk.Frame):
                 for key in self.OPTIONS2:
                     self.subject_list['menu'].add_command(label=key, command=lambda var=key:self.sub.set(var))
 
-            self.OPTIONS = self.session.projects
+            self.OPTIONS = list(self.session.projects)
             self.prj = tk.StringVar()
             default_value = "--"
             self.project_list = ttk.OptionMenu(master.my_canvas, self.prj, default_value, *self.OPTIONS)
@@ -1525,7 +1496,7 @@ class xnat_pic_gui(tk.Frame):
                                                             text = "Select Subject")
             # Menu
             def get_experiments(*args):
-                if self.prj.get() != '--' and self.sub.get() != '--' and self.prj.get() in list(self.OPTIONS.key_map.keys()) and self.sub.get() in list(self.OPTIONS2.key_map.keys()):
+                if self.prj.get() != '--' and self.sub.get() != '--' and self.prj.get() in self.OPTIONS and self.sub.get() in self.OPTIONS2:
                     self.OPTIONS3 = list(self.session.projects[self.prj.get()].subjects[self.sub.get()].experiments.key_map.keys())
                 else:
                     self.OPTIONS3 = []
@@ -1731,7 +1702,7 @@ class xnat_pic_gui(tk.Frame):
                 self.subtitle = master.my_canvas.create_text(int(my_width/2), int(my_height*30/100), anchor=tk.CENTER, width=int(my_width/7), fill='red', font=LARGE_FONT, 
                                                             text="Experiment Uploader")
                 # Highlight the field names
-                master.my_canvas.itemconfig(self.select_sub, fill=TEXT_LBL_COLOR)
+                master.my_canvas.itemconfig(self.select_prj, fill=TEXT_LBL_COLOR)
                 master.my_canvas.itemconfig(self.select_sub, fill=TEXT_LBL_COLOR)
                 # Enable NEXT button only if all the requested fields are filled
                 def enable_next(*args):
@@ -1743,7 +1714,7 @@ class xnat_pic_gui(tk.Frame):
 
             elif press_btn == 3:
                 # Disable main buttons
-                disable_buttons([self.prj_btn, self.sub_btn, self.exp_btn, self.file_btn])
+                disable_buttons([self.prj_btn, self.sub_btn, self.exp_btn, self.file_btn, self.add_file_btn])
                 enable_buttons([self.project_list, self.new_prj_btn, self.subject_list, self.new_sub_btn, self.experiment_list, self.new_exp_btn])
                 # Insert subtitle
                 self.subtitle = master.my_canvas.create_text(int(my_width/2), int(my_height*30/100), anchor=tk.CENTER, width=int(my_width/7), fill='red', font=LARGE_FONT, 
@@ -1769,97 +1740,93 @@ class xnat_pic_gui(tk.Frame):
             # Check for empty selected folder
             if os.path.isdir(project_to_upload) == False:
                 messagebox.showerror('XNAT-PIC Uploader', 'Error! The selected folder does not exist!')
-                self.normal_btn(master, disconnect=True)
-                return
             elif os.listdir(project_to_upload) == []:
                 messagebox.showerror('XNAT-PIC Uploader', 'Error! The selected folder is empty!')
-                self.normal_btn(master, disconnect=True)
-                return
+            else:
+                try:
+                    # Start progress bar
+                    progressbar = ProgressBar(bar_title='XNAT-PIC Uploader')
+                    progressbar.start_indeterminate_bar()
 
-            try:
-                # Start progress bar
-                progressbar = ProgressBar(bar_title='XNAT-PIC Uploader')
-                progressbar.start_indeterminate_bar()
+                    list_dirs = os.listdir(project_to_upload)
+                    # list_of_subjects = [(os.path.join(project_to_upload, sub).replace('\\', '/'), self.prj.get()) for sub in list_dirs]
 
-                list_dirs = os.listdir(project_to_upload)
-                # list_of_subjects = [(os.path.join(project_to_upload, sub).replace('\\', '/'), self.prj.get()) for sub in list_dirs]
+                    start_time = time.time()
 
-                start_time = time.time()
+                    def upload_thread():
 
-                def upload_thread():
-
-                    self.uploader = Dicom2XnatUploader(self.session)
-                    
-                    for sub in list_dirs:
-                        # Check if 'MR' folder is already into the folder_to_upload path
-                        if 'MR' != os.path.basename(sub):
-                            sub = os.path.join(sub, 'MR').replace('\\', '/')
-                        else:
-                            sub = sub.replace('\\', '/')
-                        # Check for existing custom variables file
-                        flag = 0
-                        try:
-                            subject_data = read_table('/'.join([sub, 'Custom_Variables.txt']))
-                            # Define the subject_id and the experiment_id
-                            if self.sub.get() == '--':
-                                self.sub.set(subject_data['Subject'])
-                            if self.exp.get() == '--':
-                                self.exp.set('_'.join([subject_data['Project'], subject_data['Subject'], subject_data['Group'], subject_data['Timepoint']]).replace(' ', '_'))
-                            flag = 1
-                        except Exception as error:
-                            # Define the subject_id and the experiment_id 
-                            if self.sub.get() == '--':
-                                self.sub.set(sub.split('/')[-2].replace('_dcm', ''))
-                            if self.exp.get() == '--':
-                                self.exp.set('_'.join([sub.split('/')[-3].replace('_dcm', ''), sub.split('/')[-2].replace('_dcm', '')]).replace(' ', '_'))
+                        self.uploader = Dicom2XnatUploader(self.session)
+                        
+                        for sub in list_dirs:
+                            # Check if 'MR' folder is already into the folder_to_upload path
+                            if 'MR' != os.path.basename(sub):
+                                sub = os.path.join(sub, 'MR').replace('\\', '/')
+                            else:
+                                sub = sub.replace('\\', '/')
+                            # Check for existing custom variables file
                             flag = 0
+                            try:
+                                subject_data = read_table('/'.join([sub, 'Custom_Variables.txt']))
+                                # Define the subject_id and the experiment_id
+                                if self.sub.get() == '--':
+                                    self.sub.set(subject_data['Subject'])
+                                if self.exp.get() == '--':
+                                    self.exp.set('_'.join([subject_data['Project'], subject_data['Subject'], subject_data['Group'], subject_data['Timepoint']]).replace(' ', '_'))
+                                flag = 1
+                            except Exception as error:
+                                # Define the subject_id and the experiment_id 
+                                if self.sub.get() == '--':
+                                    self.sub.set(sub.split('/')[-2].replace('_dcm', ''))
+                                if self.exp.get() == '--':
+                                    self.exp.set('_'.join([sub.split('/')[-3].replace('_dcm', ''), sub.split('/')[-2].replace('_dcm', '')]).replace(' ', '_'))
+                                flag = 0
 
-                        progressbar.set_caption('Uploading ' + str(self.sub.get()) + ' ...')
-                        # Create parameters dictionary to pass to the uploader function
-                        params = {'folder_to_upload': sub,
-                                    'project_id': self.prj.get(),
-                                    'subject_id': self.sub.get(),
-                                    'experiment_id': self.exp.get(),
-                                    'custom_var_flag': flag,
-                                    'custom_var': subject_data
-                                    }
-                        self.uploader.upload(params)
-                        # Check for Results folder
-                        if self.add_file_flag.get() == 1:
-                            self.session.clearcache()
-                            self.uploader_file = FileUploader(self.session)
-                            progressbar.set_caption('Uploading files to ' + str(self.exp.get()) + ' ...')
-                            for sub_dir in os.listdir(sub):
-                                if 'Results' in sub_dir:
-                                    vars = {}
-                                    vars['project_id'] = self.prj.get()
-                                    vars['subject_id'] = self.sub.get()
-                                    vars['experiment_id'] = self.exp.get()
-                                    vars['folder_name'] = sub_dir
-                                    list_of_files = os.scandir(os.path.join(sub, sub_dir))
-                                    file_paths = []
-                                    for file in list_of_files:
-                                        if file.is_file():
-                                            file_paths.append(file.path)
-                                    self.uploader_file.upload(file_paths, vars)
+                            progressbar.set_caption('Uploading ' + str(self.sub.get()) + ' ...')
+                            # Create parameters dictionary to pass to the uploader function
+                            params = {'folder_to_upload': sub,
+                                        'project_id': self.prj.get(),
+                                        'subject_id': self.sub.get(),
+                                        'experiment_id': self.exp.get(),
+                                        'custom_var_flag': flag,
+                                        'custom_var': subject_data
+                                        }
+                            self.uploader.upload(params)
+                            # Check for Results folder
+                            if self.add_file_flag.get() == 1:
+                                self.session.clearcache()
+                                self.uploader_file = FileUploader(self.session)
+                                progressbar.set_caption('Uploading files to ' + str(self.exp.get()) + ' ...')
+                                for sub_dir in os.listdir(sub):
+                                    if 'Results' in sub_dir:
+                                        vars = {}
+                                        vars['project_id'] = self.prj.get()
+                                        vars['subject_id'] = self.sub.get()
+                                        vars['experiment_id'] = self.exp.get()
+                                        vars['folder_name'] = sub_dir
+                                        list_of_files = os.scandir(os.path.join(sub, sub_dir))
+                                        file_paths = []
+                                        for file in list_of_files:
+                                            if file.is_file():
+                                                file_paths.append(file.path)
+                                        self.uploader_file.upload(file_paths, vars)
 
-                end_time = time.time()
-                print('Elapsed time for conversion: ' + str(end_time - start_time) + ' s')
+                    end_time = time.time()
+                    print('Elapsed time for conversion: ' + str(end_time - start_time) + ' s')
 
-                t = threading.Thread(target=upload_thread, args=())
-                t.start()
-                
-                while t.is_alive() == True:
-                    progressbar.update_bar()
-                
-                # Stop the progress bar and close the popup
-                progressbar.stop_progress_bar()
+                    t = threading.Thread(target=upload_thread, args=())
+                    t.start()
+                    
+                    while t.is_alive() == True:
+                        progressbar.update_bar()
+                    
+                    # Stop the progress bar and close the popup
+                    progressbar.stop_progress_bar()
 
-            except Exception as e: 
-                messagebox.showerror("XNAT-PIC - Uploader", e)
+                except Exception as e: 
+                    messagebox.showerror("XNAT-PIC - Uploader", e)
 
-            # Restore main frame buttons
-            messagebox.showinfo("XNAT-PIC Uploader","Done! Your subject is uploaded on XNAT platform.")
+                # Restore main frame buttons
+                messagebox.showinfo("XNAT-PIC Uploader","Done! Your subject is uploaded on XNAT platform.")
             # Destroy all the existent widgets (Button, OptionMenu, ...)
             destroy_widgets([self.prj_btn, self.sub_btn, self.exp_btn, self.file_btn, self.add_file_btn,
                                     self.exit_btn, self.project_list, self.new_prj_btn, self.entry_prjname,
@@ -1880,90 +1847,86 @@ class xnat_pic_gui(tk.Frame):
             # Check for empty selected folder
             if os.path.isdir(subject_to_upload) == False:
                 messagebox.showerror('XNAT-PIC Uploader', 'Error! The selected folder does not exist!')
-                self.normal_btn(master, disconnect=True)
-                return
             elif os.listdir(subject_to_upload) == []:
                 messagebox.showerror('XNAT-PIC Uploader', 'Error! The selected folder is empty!')
-                self.normal_btn(master, disconnect=True)
-                return
-
-            try:
-                self.uploader = Dicom2XnatUploader(self.session)
-                # Start progress bar
-                progressbar = ProgressBar(bar_title='XNAT-PIC Uploader')
-                progressbar.start_indeterminate_bar()
-
-                start_time = time.time()
-                # Check if 'MR' folder is already into the folder_to_upload path
-                if 'MR' != os.path.basename(subject_to_upload):
-                    subject_to_upload = os.path.join(subject_to_upload, 'MR').replace('\\', '/')
-                else:
-                    subject_to_upload = subject_to_upload.replace('\\', '/')
-                # Check for existing custom variables file
-                flag = 0
+            else:
                 try:
-                    subject_data = read_table('/'.join([subject_to_upload, 'Custom_Variables.txt']))
-                    # Define the subject_id and the experiment_id
-                    if self.sub.get() == '--':
-                        self.sub.set(subject_data['Subject'])
-                    if self.exp.get() == '--':
-                        self.exp.set('_'.join([subject_data['Project'], subject_data['Subject'], subject_data['Group'], subject_data['Timepoint']]).replace(' ', '_'))
-                    flag = 1
-                except:
-                    # Define the subject_id and the experiment_id 
-                    if self.sub.get() == '--':
-                        self.sub.set(subject_to_upload.split('/')[-2].replace('_dcm', ''))
-                    if self.exp.get() == '--':
-                        self.exp.set('_'.join([subject_to_upload.split('/')[-3].replace('_dcm', ''), subject_to_upload.split('/')[-2].replace('_dcm', '')]).replace(' ', '_'))
+                    self.uploader = Dicom2XnatUploader(self.session)
+                    # Start progress bar
+                    progressbar = ProgressBar(bar_title='XNAT-PIC Uploader')
+                    progressbar.start_indeterminate_bar()
+
+                    start_time = time.time()
+                    # Check if 'MR' folder is already into the folder_to_upload path
+                    if 'MR' != os.path.basename(subject_to_upload):
+                        subject_to_upload = os.path.join(subject_to_upload, 'MR').replace('\\', '/')
+                    else:
+                        subject_to_upload = subject_to_upload.replace('\\', '/')
+                    # Check for existing custom variables file
                     flag = 0
+                    try:
+                        subject_data = read_table('/'.join([subject_to_upload, 'Custom_Variables.txt']))
+                        # Define the subject_id and the experiment_id
+                        if self.sub.get() == '--':
+                            self.sub.set(subject_data['Subject'])
+                        if self.exp.get() == '--':
+                            self.exp.set('_'.join([subject_data['Project'], subject_data['Subject'], subject_data['Group'], subject_data['Timepoint']]).replace(' ', '_'))
+                        flag = 1
+                    except:
+                        # Define the subject_id and the experiment_id 
+                        if self.sub.get() == '--':
+                            self.sub.set(subject_to_upload.split('/')[-2].replace('_dcm', ''))
+                        if self.exp.get() == '--':
+                            self.exp.set('_'.join([subject_to_upload.split('/')[-3].replace('_dcm', ''), subject_to_upload.split('/')[-2].replace('_dcm', '')]).replace(' ', '_'))
+                        flag = 0
 
-                progressbar.set_caption('Uploading ' + str(self.sub.get()) + ' ...')
-                # Create parameters dictionary to pass to the uploader function
-                params = {'folder_to_upload': subject_to_upload,
-                            'project_id': self.prj.get(),
-                            'subject_id': self.sub.get(),
-                            'experiment_id': self.exp.get(),
-                            'custom_var_flag': flag,
-                            'custom_var': subject_data
-                            }
-                t = threading.Thread(target=self.uploader.upload, args=(params, ))
-                t.start()
+                    progressbar.set_caption('Uploading ' + str(self.sub.get()) + ' ...')
+                    # Create parameters dictionary to pass to the uploader function
+                    params = {'folder_to_upload': subject_to_upload,
+                                'project_id': self.prj.get(),
+                                'subject_id': self.sub.get(),
+                                'experiment_id': self.exp.get(),
+                                'custom_var_flag': flag,
+                                'custom_var': subject_data
+                                }
+                    t = threading.Thread(target=self.uploader.upload, args=(params, ))
+                    t.start()
 
-                while t.is_alive() == True:
-                    progressbar.update_bar()
-                else:
-                    # Check for Results folder
-                    if self.add_file_flag.get() == 1:
-                        self.session.clearcache()
-                        self.uploader_file = FileUploader(self.session)
-                        for sub_dir in os.listdir(subject_to_upload):
-                            if 'Results' in sub_dir:
-                                vars = {}
-                                vars['project_id'] = self.prj.get()
-                                vars['subject_id'] = self.sub.get()
-                                vars['experiment_id'] = self.exp.get()
-                                vars['folder_name'] = sub_dir
-                                list_of_files = os.scandir(os.path.join(subject_to_upload, sub_dir))
-                                file_paths = []
-                                for file in list_of_files:
-                                    if file.is_file():
-                                        file_paths.append(file.path)
-                                progressbar.set_caption('Uploading files on ' + str(self.exp.get()) + ' ...')
-                                ft = threading.Thread(target=self.uploader_file.upload, args=(file_paths, vars, ))
-                                ft.start()
-                                while ft.is_alive() == True:
-                                    progressbar.update_bar()
+                    while t.is_alive() == True:
+                        progressbar.update_bar()
+                    else:
+                        # Check for Results folder
+                        if self.add_file_flag.get() == 1:
+                            self.session.clearcache()
+                            self.uploader_file = FileUploader(self.session)
+                            for sub_dir in os.listdir(subject_to_upload):
+                                if 'Results' in sub_dir:
+                                    vars = {}
+                                    vars['project_id'] = self.prj.get()
+                                    vars['subject_id'] = self.sub.get()
+                                    vars['experiment_id'] = self.exp.get()
+                                    vars['folder_name'] = sub_dir
+                                    list_of_files = os.scandir(os.path.join(subject_to_upload, sub_dir))
+                                    file_paths = []
+                                    for file in list_of_files:
+                                        if file.is_file():
+                                            file_paths.append(file.path)
+                                    progressbar.set_caption('Uploading files on ' + str(self.exp.get()) + ' ...')
+                                    ft = threading.Thread(target=self.uploader_file.upload, args=(file_paths, vars, ))
+                                    ft.start()
+                                    while ft.is_alive() == True:
+                                        progressbar.update_bar()
 
-                    progressbar.stop_progress_bar()
+                        progressbar.stop_progress_bar()
 
-                    end_time = time.time()
-                    print('Elapsed time: ' + str(end_time-start_time) + ' seconds')
+                        end_time = time.time()
+                        print('Elapsed time: ' + str(end_time-start_time) + ' seconds')
 
-            except Exception as e: 
-                messagebox.showerror("XNAT-PIC Uploader", e)
+                except Exception as e: 
+                    messagebox.showerror("XNAT-PIC Uploader", e)
 
-            # Restore main frame buttons
-            messagebox.showinfo("XNAT-PIC Uploader","Done! Your subject is uploaded on XNAT platform.")
+                # Restore main frame buttons
+                messagebox.showinfo("XNAT-PIC Uploader","Done! Your subject is uploaded on XNAT platform.")
             # Destroy all the existent widgets (Button, OptionMenu, ...)
             destroy_widgets([self.prj_btn, self.sub_btn, self.exp_btn, self.file_btn, self.add_file_btn,
                                     self.exit_btn, self.project_list, self.new_prj_btn, self.entry_prjname,
@@ -1984,39 +1947,36 @@ class xnat_pic_gui(tk.Frame):
             pass
 
         def file_uploader(self, master):
-            print(self.session.projects[self.prj.get()].subjects[self.sub.get()].experiments.key_map.keys())
 
             files_to_upload = filedialog.askopenfilenames(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC File Uploader: Select file to upload")
             
-            if files_to_upload == []:
+            if files_to_upload == [] or files_to_upload == '':
                 messagebox.showerror('XNAT-PIC Uploader', 'Error! No files selected!')
-                self.normal_btn(master, disconnect=True)
-                return
-            
-            vars = {}
-            vars['project_id'] = self.prj.get()
-            vars['subject_id'] = self.sub.get()
-            vars['experiment_id'] = self.exp.get()
-            vars['folder_name'] = files_to_upload[0].split('/')[-2]
+            else:
+                vars = {}
+                vars['project_id'] = self.prj.get()
+                vars['subject_id'] = self.sub.get()
+                vars['experiment_id'] = self.exp.get()
+                vars['folder_name'] = files_to_upload[0].split('/')[-2]
 
-            progressbar = ProgressBar('XNAT-PIC File Uploader')
-            progressbar.start_indeterminate_bar()
+                progressbar = ProgressBar('XNAT-PIC File Uploader')
+                progressbar.start_indeterminate_bar()
 
-            file_paths = []
-            for file in files_to_upload:
-                if file.is_file():
-                    file_paths.append(file.path)
-                    
-            progressbar.set_caption('Uploading files on ' + str(self.exp.get()) + ' ...')
-            ft = threading.Thread(target=self.uploader_file.upload, args=(file_paths, vars, ))
-            ft.start()
-            while ft.is_alive() == True:
-                progressbar.update_bar()
+                file_paths = []
+                for file in files_to_upload:
+                    if file.is_file():
+                        file_paths.append(file.path)
+                        
+                progressbar.set_caption('Uploading files on ' + str(self.exp.get()) + ' ...')
+                ft = threading.Thread(target=self.uploader_file.upload, args=(file_paths, vars, ))
+                ft.start()
+                while ft.is_alive() == True:
+                    progressbar.update_bar()
 
-            progressbar.stop_progress_bar()
+                progressbar.stop_progress_bar()
+                # Restore main frame buttons
+                messagebox.showinfo("XNAT-PIC Uploader","Done! Your file is uploaded on XNAT platform.")
 
-            # Restore main frame buttons
-            messagebox.showinfo("XNAT-PIC Uploader","Done! Your file is uploaded on XNAT platform.")
             # Destroy all the existent widgets (Button, OptionMenu, ...)
             destroy_widgets([self.prj_btn, self.sub_btn, self.exp_btn, self.file_btn, self.add_file_btn,
                                     self.exit_btn, self.project_list, self.new_prj_btn, self.entry_prjname,
