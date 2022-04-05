@@ -39,7 +39,7 @@ class Dicom2XnatUploader():
         start_time = time.time()
 
         with Pool(processes = self.n_processes) as pool:
-            pool.map(self.uploader, list_of_subjects)
+            pool.map(self.upload, list_of_subjects)
 
         end_time = time.time()
         print('Elapsed time for conversion: ' + str(end_time - start_time) + ' s')
@@ -52,37 +52,21 @@ class Dicom2XnatUploader():
         start_time = time.time()
 
         for sub in list_of_subjects:
-            self.uploader(sub, master)
+            self.upload(sub, master)
 
         end_time = time.time()
         print('Elapsed time for conversion: ' + str(end_time - start_time) + ' s')
 
-    def uploader(self, args, master):
+    def upload(self, params):
 
-        folder_to_upload = args[0]
-        project_id = args[1]
+        folder_to_upload = params['folder_to_upload']
+        project_id = params['project_id']
+        subject_id = params['subject_id']
+        experiment_id = params['experiment_id']
+        flag = params['custom_var_flag']
+        subject_data = params['custom_var']
 
-        print('Uploading ' + str(folder_to_upload.split('/')[-1]) + ' to ' + str(project_id))
-
-        # Check if 'MR' folder is already into the folder_to_upload path
-        if 'MR' != os.path.basename(folder_to_upload):
-            folder_to_upload = os.path.join(folder_to_upload, 'MR').replace('\\', '/')
-        else:
-            folder_to_upload = folder_to_upload.replace('\\', '/')
-        flag = 0
-        # Check for existing custom variables file
-        try:
-            subject_data = read_table('/'.join([folder_to_upload, 'Custom_Variables.txt']))
-            # Define the subject_id and the experiment_id
-            subject_id = subject_data['Subject']
-            experiment_id = '_'.join([subject_data['Project'], subject_data['Subject'], subject_data['Group'], subject_data['Timepoint']]).replace(' ', '_')
-            flag = 1
-        except Exception as error:
-            # messagebox.showinfo("DICOM Uploader", "Custom Variables are not available in this folder " + str(folder_to_upload))
-            # Define the subject_id and the experiment_id   
-            subject_id = folder_to_upload.split('/')[-2].replace('_dcm', '')
-            experiment_id = '_'.join([folder_to_upload.split('/')[-3].replace('_dcm', ''), folder_to_upload.split('/')[-2].replace('_dcm', '')]).replace(' ', '_')
-            flag = 0 
+        print('Uploading ' + str(folder_to_upload.split('/')[-2]) + ' to ' + str(project_id))
 
         project = self.session.classes.ProjectData(
                                         name=project_id, parent=self.session)
@@ -90,35 +74,15 @@ class Dicom2XnatUploader():
                                         parent=project, label=subject_id)
 
         if experiment_id in subject.experiments.key_map.keys():
-            # ALERT! That patient already exists!
+            # ALERT! That experiment already exists!
             answer = messagebox.askyesno("XNAT-PIC - Uploader", "A patient with the same experiment_id already exists. Do you want to upload it anyway?")
             
             if answer is False:
                 return
 
-        start_time = time.time()
-
         try:
             zip_dst = shutil.make_archive(folder_to_upload.split('/')[-2], "zip", folder_to_upload) # .zip file of the current subfolder
-            # with xnat.connect(server=self.session._original_uri, jsession=self.session._jsession, cli=True, logger=self.session.logger) as connection:
-            #     connection.services.import_(zip_dst,
-            #                             overwrite="delete", # Overwrite parameter is important!
-            #                             project=project_id,
-            #                             subject=subject_id,
-            #                             experiment=experiment_id,
-            #                             content_type='application/zip')
 
-            #     experiment = project.subjects[subject_id].experiments[experiment_id]
-                
-            #     if flag == 1:
-            #         for var in subject_data.keys():
-            #             if subject_data[var] == '':
-            #                 continue
-            #             if var == 'Project' or var == 'Subject':
-            #                 subject.fields[var] = subject_data[var]
-            #                 experiment.fields[var] = subject_data[var]
-            #             else:
-            #                 experiment.fields[var] = subject_data[var]
             self.session.services.import_(zip_dst,
                                         overwrite="delete", # Overwrite parameter is important!
                                         project=project_id,
@@ -139,33 +103,23 @@ class Dicom2XnatUploader():
                         experiment.fields[var] = subject_data[var]
 
             os.remove(zip_dst)
-            if master.add_file_flag == 1:
-                for sub_dir in os.listdir(folder_to_upload):
-                    if 'Results' in sub_dir:
-                        params = {}
-                        params['project_id'] = project_id
-                        params['subject_id'] = subject_id
-                        params['experiment_id'] = experiment_id
-                        params['folder_name'] = sub_dir
-                        list_of_files = os.scandir(os.path.join(folder_to_upload, sub_dir))
-                        file_paths = []
-                        for file in list_of_files:
-                            if file.is_file():
-                                file_paths.append(file.path)
-                        self.file_uploader(file_paths, params)
+            self.session.clearcache()
 
         except Exception as e: 
             messagebox.showerror("XNAT-PIC - Uploader", e)
             try:
-                # connection.disconnect()
                 os.remove(zip_dst)
             except:
-                os.remove(zip_dst)
-  
-        end_time = time.time()
-        print('Elapsed time: ' + str(end_time - start_time) + ' seconds')
+                pass
 
-    def file_uploader(self, list_of_files, params):
+class FileUploader():
+
+    def __init__(self, session):
+
+        self.session = session
+        # self.n_processes = int(cpu_count() - 1)
+
+    def upload(self, list_of_files, params):
 
         def upload_file(url, data):
             try:
@@ -174,7 +128,7 @@ class Dicom2XnatUploader():
             except Exception as e:
                 messagebox.showerror("XNAT-PIC - Uploader", e)
 
-        print('Loading additional files for subject: ' + str(params['subject_id']))
+        print('Loading additional files for experiment: ' + str(params['experiment_id']))
 
         file_urls = []
         file_data = []
@@ -196,41 +150,13 @@ class Dicom2XnatUploader():
                     img = f.read()
                 file_data.append({"1": img})
 
-        processes = []
         try:
-            # for j, url in enumerate(file_urls):
-                # upload_file(url, file_data[j])
-            with ThreadPoolExecutor(max_workers=2) as executor:
-                for j, url in enumerate(file_urls):
-                    processes.append(executor.submit(upload_file, url, file_data[j]))
-            #     t = threading.Thread(target=upload_file, args=(url, file_data[j], ))
-            #     processes.append(t)
-            # for thread in processes:
-            #     thread.start()
-            # for thread in processes:
-            #     thread.join()
+            for j, url in enumerate(file_urls):
+                upload_file(url, file_data[j])
+            # with ThreadPoolExecutor(max_workers=1) as executor:
+            #     for j, url in enumerate(file_urls):
+            #         processes.append(executor.submit(upload_file, url, file_data[j]))
         except Exception as e:
             print(str(e))
-
-    # def file_uploader(self, params):
-
-    #     file_to_upload = params['current_path_file']
-
-    #     test_project = self.session.projects[params['project_id']]
-    #     test_subjects = test_project.subjects[params['subject_id']]
-    #     test_exp = test_subjects.experiments[params['experiment_id']]
-    #     test_resources = test_exp.resources
-
-    #     file_to_upload = file_to_upload.replace('\\', '/')
-    #     with open(file_to_upload, 'rb') as f:
-    #         img = f.read()
-    #     image = {"1": img}
-    #     try:
-    #         with xnat.connect(server=self.session._original_uri, jsession=self.session._jsession, cli=True, logger=self.session.logger) as connection:
-    #             connection.put(path=test_resources.uri + '/' + str(params['folder_name']) + 
-    #                             '/files/' + str(file_to_upload.split('/')[-1]), files=image)
-    #     except Exception as e:
-    #         messagebox.showerror("XNAT-PIC - Uploader", e)
-
 
     
