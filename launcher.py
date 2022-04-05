@@ -505,19 +505,15 @@ class xnat_pic_gui(tk.Frame):
 
         def fill_info(self, master): 
                 # Disable all buttons
-                master.convert_btn['state'] = tk.DISABLED
-                master.info_btn['state'] = tk.DISABLED
-                master.upload_btn['state'] = tk.DISABLED
                 #master.process_btn['state'] = tk.DISABLED
+                disable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
 
                 # Choose your directory
                 self.information_folder = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC: Select project directory!")
                 
                 # If there is no folder selected, re-enable the buttons and return
                 if not self.information_folder:
-                    master.convert_btn['state'] = tk.NORMAL
-                    master.info_btn['state'] = tk.NORMAL
-                    master.upload_btn['state'] = tk.NORMAL
+                    enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
                     #master.process_btn['state'] = tk.NORMAL
                     return
              
@@ -527,7 +523,7 @@ class xnat_pic_gui(tk.Frame):
                 path_list = []
                 item_list = []
 
-                # Load the acq. date from visu_pars file for Bruker file or DICOM
+                # Load the acq. date from visu_pars file for Bruker file or from DICOM
                 def read_acq_date(path): 
                     match_date = ''
                     for dirpath, dirnames, filenames in os.walk(path.replace('\\', '/')):
@@ -539,18 +535,13 @@ class xnat_pic_gui(tk.Frame):
                                 matches = datefinder.find_dates(str(acq_date))
                                 for match in matches:
                                     match_date = match.strftime('%Y-%m-%d')
-                                    break
+                                    return match_date
                             # Check if the DICOM is in the scans
                             for filename in [f for f in filenames if f.endswith(".dcm")]:
                                 dataset = pydicom.dcmread((dirpath + "\\" + filename).replace('\\', '/'))
                                 match_date = datetime.datetime.strptime(dataset.AcquisitionDate, '%Y%m%d').strftime('%Y-%m-%d')
-                                break
-
-                            if match_date:
-                               break
-
+                                return match_date
                     return match_date
-
                 # Scan all files contained in the folder that the user has provided
                 for item in os.listdir(self.information_folder):
                          path = str(self.information_folder) + "\\" + str(item)
@@ -587,20 +578,14 @@ class xnat_pic_gui(tk.Frame):
                              item_list.append(str(item))
 
                 #################### Update the frame ####################
-                master.convert_btn.destroy()
-                master.info_btn.destroy()
-                master.upload_btn.destroy()
                 #master.process_btn.destroy()
-                master.info_convert_btn.destroy()
-                master.info_info_btn.destroy()
-                master.info_upload_btn.destroy()
-                #master.info_process_btn.destroy()
+                destroy_widgets([master.convert_btn.destroy(), master.info_btn.destroy(), master.upload_btn.destroy(),
+                 master.info_convert_btn.destroy(),master.info_info_btn.destroy(), master.info_upload_btn.destroy()])
 
                 #################### Menu ###########################
-
                 menu = tk.Menu(master.root)
                 file_menu = tk.Menu(menu, tearoff=0)
-                file_menu.add_command(label="Clear", command = lambda: clear_metadata())
+                file_menu.add_command(label="Clear Custom Variables", command = lambda: clear_metadata())
                 file_menu.add_separator()
                 file_menu.add_command(label="Save All", command = lambda: save_metadata())
 
@@ -738,13 +723,7 @@ class xnat_pic_gui(tk.Frame):
                     dose_menu.set('')
                     time_entry.delete(0, tk.END)
                     cal.delete(0, tk.END)
-                    dose_menu['state'] = tk.DISABLED
-                    group_menu['state'] = tk.DISABLED
-                    timepoint_menu['state'] = tk.DISABLED
-                    time_entry.config(state=tk.DISABLED)
-                    timepoint_menu1['state'] = tk.DISABLED
-                    cal['state'] = tk.DISABLED
-
+                    disable_buttons([dose_menu, group_menu, timepoint_menu, time_entry, timepoint_menu1, cal])
                     """ handle item selected event
                     """
                     # Get selected indices
@@ -785,7 +764,7 @@ class xnat_pic_gui(tk.Frame):
 
                     state = entries[0]['state']
                     # Set empty string in all the entries
-                    for i in range(2, len(fields)):
+                    for i in range(3, len(fields)):
                             entries[i]['state'] = tk.NORMAL
                             entries[i].delete(0, tk.END)
                             entries[i]['state'] = state
@@ -961,13 +940,7 @@ class xnat_pic_gui(tk.Frame):
                         selected_timepoint1.set('')
                         time_entry.delete(0, tk.END)
                         cal.delete(0, tk.END)
-                        time_entry.config(state=tk.DISABLED)
-                        group_menu['state'] = tk.DISABLED
-                        dose_menu['state'] = tk.DISABLED
-                        timepoint_menu['state'] = tk.DISABLED
-                        timepoint_menu1['state'] = tk.DISABLED
-                        cal['state'] = tk.DISABLED
-
+                        disable_buttons([dose_menu, group_menu, timepoint_menu, time_entry, timepoint_menu1, cal])
                         # Saves the changes made by the user in the txt file
                         with open(path_list[selected_index], 'w+') as meta_file:
                                         meta_file.write(tabulate([['Project', str(results[selected_index*max_lim+0])], ['Subject', str(results[selected_index*max_lim+1])], ['Acquisition_date', str(results[selected_index*max_lim+2])], 
@@ -982,16 +955,12 @@ class xnat_pic_gui(tk.Frame):
                 
                 def normal_button():
                     #clear_btn["state"] = tk.NORMAL
-                    modify_btn["state"] = tk.NORMAL
-                    confirm_btn["state"] = tk.NORMAL
-                    multiple_confirm_btn["state"] = tk.NORMAL
                     #save_btn["state"] = tk.NORMAL
+                    enable_buttons([modify_btn, confirm_btn, multiple_confirm_btn])
 
                 def confirm_multiple_metadata():
                     #clear_btn["state"] = tk.DISABLED
-                    modify_btn["state"] = tk.DISABLED
-                    confirm_btn["state"] = tk.DISABLED
-                    multiple_confirm_btn["state"] = tk.DISABLED
+                    disable_buttons([modify_btn, confirm_btn, multiple_confirm_btn])
                     #save_btn["state"] = tk.DISABLED
                     
                     try:
@@ -1090,31 +1059,9 @@ class xnat_pic_gui(tk.Frame):
                         clear_metadata_frame()
 
                 def clear_metadata_frame():
-                    menu.destroy()
-                    label.destroy()
-                    my_listbox.destroy()
-                    my_yscrollbar.destroy()
-                    my_xscrollbar.destroy()
-
-                    #for i in range(0, len(fields)): 
-                    #    labels[i].destroy()   
-                    #    entries[i].destroy()
-                    
-                    #timepoint_menu.destroy()
-                    #timepoint_menu1.destroy()
-                    #time_entry.destroy()
-                    #group_menu.destroy()
-                    #cal.destroy()
-                    
-                    label_frame_ID.destroy()
-                    label_frame_CV.destroy()
-                    #clear_btn.destroy()
-                    modify_btn.destroy()
-                    confirm_btn.destroy()
-                    #save_btn.destroy()
-                    #exit_btn.destroy()
-                    multiple_confirm_btn.destroy()
-
+ 
+                    destroy_widgets([menu, label, my_listbox, my_xscrollbar, my_yscrollbar, label_frame_ID, label_frame_CV, modify_btn,
+                    confirm_btn, multiple_confirm_btn])
                     xnat_pic_gui.choose_you_action(master)
 
     class XNATUploader():
