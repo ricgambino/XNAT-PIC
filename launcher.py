@@ -241,17 +241,13 @@ class xnat_pic_gui(tk.Frame):
             self.params = {}
             
             # Disable the buttons
-            master.convert_btn['state'] = tk.DISABLED
-            master.info_btn['state'] = tk.DISABLED
-            master.upload_btn['state'] = tk.DISABLED
+            disable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
             #master.process_btn['state'] = tk.DISABLED
             
             def normal_btn():
                 self.conv_popup.destroy()
                 #Enable all buttons
-                master.convert_btn['state'] = tk.NORMAL
-                master.info_btn['state'] = tk.NORMAL
-                master.upload_btn['state'] = tk.NORMAL
+                enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
                 #master.process_btn['state'] = tk.NORMAL
 
             def isChecked():
@@ -289,18 +285,14 @@ class xnat_pic_gui(tk.Frame):
             ############### Whole project conversion ################
 
             # Disable the buttons
-            master.convert_btn['state'] = tk.DISABLED
-            master.info_btn['state'] = tk.DISABLED
-            master.upload_btn['state'] = tk.DISABLED
+            disable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
             #master.process_btn['state'] = tk.DISABLED
 
             # Ask for project directory
             self.folder_to_convert = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC: Select project directory in Bruker ParaVision format")
             if not self.folder_to_convert:
                 # Check for the chosen directory
-                master.convert_btn['state'] = tk.NORMAL
-                master.info_btn['state'] = tk.NORMAL
-                master.upload_btn['state'] = tk.NORMAL
+                enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
                 #master.process_btn['state'] = tk.NORMAL
                 messagebox.showerror("XNAT-PIC Converter", "You have not chosen a directory")
                 return
@@ -374,16 +366,12 @@ class xnat_pic_gui(tk.Frame):
                 messagebox.showinfo("XNAT-PIC Converter","The conversion is done!\n\n\n\n"
                                     "Exceptions:\n\n" +
                                     str([str(x) for x in conversion_err])[1:-1])
-                master.convert_btn['state'] = tk.NORMAL
-                master.info_btn['state'] = tk.NORMAL
-                master.upload_btn['state'] = tk.NORMAL
+                enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
                 #master.process_btn['state'] = tk.NORMAL          
 
             except Exception as e: 
                 messagebox.showerror("XNAT-PIC - Bruker2Dicom", e)
-                master.convert_btn['state'] = tk.NORMAL
-                master.info_btn['state'] = tk.NORMAL
-                master.upload_btn['state'] = tk.NORMAL
+                enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
                 #master.process_btn['state'] = tk.NORMAL
                 self.conv_popup.destroy()
                 
@@ -392,18 +380,14 @@ class xnat_pic_gui(tk.Frame):
             ############### Single subject conversion ################
 
             # Convert from bruker to DICOM and disable the buttons
-            master.convert_btn['state'] = tk.DISABLED
-            master.info_btn['state'] = tk.DISABLED
-            master.upload_btn['state'] = tk.DISABLED
+            disable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
             #master.process_btn['state'] = tk.DISABLED
 
             # Ask for subject directory
             self.folder_to_convert = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC: Select subject directory in Bruker ParaVision format")
             if not self.folder_to_convert:
                 # Check for chosen directory
-                master.convert_btn['state'] = tk.NORMAL
-                master.info_btn['state'] = tk.NORMAL
-                master.upload_btn['state'] = tk.NORMAL
+                enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
                 #master.process_btn['state'] = tk.NORMAL
                 messagebox.showerror("XNAT-PIC Converter", "You have not chosen a directory")
                 return
@@ -457,16 +441,12 @@ class xnat_pic_gui(tk.Frame):
                 print('Total elapsed time: ' + str(end_time - start_time) + ' s')
 
                 messagebox.showinfo("XNAT-PIC Converter","Done! Now you can upload your files to XNAT.")
-                master.convert_btn['state'] = tk.NORMAL
-                master.info_btn['state'] = tk.NORMAL
-                master.upload_btn['state'] = tk.NORMAL
+                enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
                 #master.process_btn['state'] = tk.NORMAL          
 
             except Exception as e: 
                 messagebox.showerror("XNAT-PIC - Converter", e)
-                master.convert_btn['state'] = tk.NORMAL
-                master.info_btn['state'] = tk.NORMAL
-                master.upload_btn['state'] = tk.NORMAL
+                enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
                 #master.process_btn['state'] = tk.NORMAL
                  
     # Fill in information
