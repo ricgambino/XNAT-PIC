@@ -7,6 +7,7 @@ from tkinter.font import Font
 from tkinter.tix import COLUMN
 from turtle import bgcolor, width
 from unicodedata import name
+from unittest import result
 from PIL import Image, ImageTk
 from tkinter import ttk
 import time
@@ -21,14 +22,12 @@ from progress_bar import ProgressBar
 from dicom_converter import Bruker2DicomConverter
 import xnat
 from read_visupars import read_visupars_parameters
-from xnat_upload import xnat_uploader, xnat_uploader_dir
 import pyAesCrypt
 from tabulate import tabulate
 import datetime
 import threading
 from dotenv import load_dotenv
-from multiprocessing import Pool
-from xnat_uploader import Dicom2XnatUploader
+from xnat_uploader import Dicom2XnatUploader, FileUploader, read_table
 import datefinder
 import pydicom
 from tkcalendar import DateEntry
@@ -41,15 +40,45 @@ TEXT_BTN_COLOR = "black"
 TEXT_LBL_COLOR = "white"
 BG_BTN_COLOR = "#80FFE6"
 BG_LBL_COLOR = "black"
+DISABLE_LBL_COLOR = '#D3D3D3'
 LARGE_FONT = ("Calibri", 22, "bold")
 SMALL_FONT = ("Calibri", 16, "bold")
 CURSOR_HAND = "hand2"
 QUESTION_HAND = "question_arrow"
-
+BORDERWIDTH = 3
 
 load_dotenv()
 password = os.environ.get('secretKey')
 bufferSize = int(os.environ.get('bufferSize1')) * int(os.environ.get('bufferSize2'))
+
+def disable_buttons(list_of_buttons):
+    for btn in list_of_buttons:
+        try:
+            btn.configure(state="disabled")
+        except:
+            pass
+
+def enable_buttons(list_of_buttons):
+    for btn in list_of_buttons:
+        try:
+            btn.configure(state="normal")
+        except:
+            pass
+
+def destroy_widgets(widgets):
+    for widget in widgets:
+        try:
+            widget.destroy()
+        except:
+            pass
+
+def delete_widgets(canva, widgets_id):
+    for id in widgets_id:
+        try:
+            canva.delete(id)
+        except:
+            pass
+
 
 class SplashScreen(tk.Toplevel):
      def __init__(self, master, timeout=1000):
@@ -162,7 +191,7 @@ class xnat_pic_gui(tk.Frame):
 
         # Button to enter
         enter_text = tk.StringVar()
-        self.enter_btn = tk.Button(self.my_canvas, textvariable=enter_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command=lambda: (self.enter_btn.destroy(), xnat_pic_gui.choose_you_action(self)), cursor=CURSOR_HAND)
+        self.enter_btn = tk.Button(self.my_canvas, textvariable=enter_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, command=lambda: (self.enter_btn.destroy(), xnat_pic_gui.choose_you_action(self)), cursor=CURSOR_HAND)
         enter_text.set("ENTER")
         self.my_canvas.create_window(int(my_width/2), int(my_height*0.7), width = int(my_width/5), anchor = tk.CENTER, window = self.enter_btn)
         
@@ -178,25 +207,25 @@ class xnat_pic_gui(tk.Frame):
 
          # Convert files Bruker2DICOM
          convert_text = tk.StringVar()
-         self.convert_btn = tk.Button(self.my_canvas, textvariable=convert_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command=partial(self.bruker2dicom_conversion, self), cursor=CURSOR_HAND)
+         self.convert_btn = tk.Button(self.my_canvas, textvariable=convert_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, command=partial(self.bruker2dicom_conversion, self), cursor=CURSOR_HAND)
          convert_text.set("Bruker2DICOM")
          self.my_canvas.create_window(x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.convert_btn)
          
          # Fill in the info
          info_text = tk.StringVar()
-         self.info_btn = tk.Button(self.my_canvas, textvariable=info_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command=partial(self.metadata, self), cursor=CURSOR_HAND)
+         self.info_btn = tk.Button(self.my_canvas, textvariable=info_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, command=partial(self.metadata, self), cursor=CURSOR_HAND)
          info_text.set("Fill in the info")
          self.my_canvas.create_window(2*x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.info_btn)
 
          # Upload files
          upload_text = tk.StringVar()
-         self.upload_btn = tk.Button(self.my_canvas, textvariable=upload_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command=partial(self.XNATUploader, self), cursor=CURSOR_HAND)
+         self.upload_btn = tk.Button(self.my_canvas, textvariable=upload_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, command=partial(self.XNATUploader, self), cursor=CURSOR_HAND)
          upload_text.set("Uploader")
          self.my_canvas.create_window(3*x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.upload_btn)        
         
          # Processing your files
          #process_text = tk.StringVar()
-         #self.process_btn = tk.Button(self.my_canvas, textvariable=process_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, cursor=CURSOR_HAND)
+         #self.process_btn = tk.Button(self.my_canvas, textvariable=process_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, cursor=CURSOR_HAND)
          #process_text.set("Processing")
          #self.my_canvas.create_window(4*x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.process_btn)
     
@@ -218,16 +247,16 @@ class xnat_pic_gui(tk.Frame):
          # Positions for info button parametric with respect to the size of the canvas
          y_btn1 = int(my_height*65/100)
          
-         self.info_convert_btn = tk.Button(self.my_canvas, image = self.logo_info, bg=BG_BTN_COLOR, borderwidth=0, command = lambda: helpmsg("button1"), cursor=QUESTION_HAND)
+         self.info_convert_btn = tk.Button(self.my_canvas, image = self.logo_info, bg=BG_BTN_COLOR, borderwidth=BORDERWIDTH, command = lambda: helpmsg("button1"), cursor=QUESTION_HAND)
          self.my_canvas.create_window(x_btn, y_btn1, anchor=tk.CENTER, window=self.info_convert_btn)
 
-         self.info_info_btn = tk.Button(self.my_canvas, image = self.logo_info, bg=BG_BTN_COLOR, borderwidth=0, command = lambda: helpmsg("button2"), cursor=QUESTION_HAND)
+         self.info_info_btn = tk.Button(self.my_canvas, image = self.logo_info, bg=BG_BTN_COLOR, borderwidth=BORDERWIDTH, command = lambda: helpmsg("button2"), cursor=QUESTION_HAND)
          self.my_canvas.create_window(2*x_btn, y_btn1, anchor=tk.CENTER, window=self.info_info_btn)
 
-         self.info_upload_btn = tk.Button(self.my_canvas, image = self.logo_info, bg=BG_BTN_COLOR, borderwidth=0, command = lambda: helpmsg("button3"), cursor=QUESTION_HAND)
+         self.info_upload_btn = tk.Button(self.my_canvas, image = self.logo_info, bg=BG_BTN_COLOR, borderwidth=BORDERWIDTH, command = lambda: helpmsg("button3"), cursor=QUESTION_HAND)
          self.my_canvas.create_window(3*x_btn, y_btn1, anchor=tk.CENTER, window=self.info_upload_btn)
 
-         #self.info_process_btn = tk.Button(self.my_canvas, image = self.logo_info, bg=BG_BTN_COLOR, borderwidth=0, command = lambda: helpmsg("button4"), cursor=QUESTION_HAND)
+         #self.info_process_btn = tk.Button(self.my_canvas, image = self.logo_info, bg=BG_BTN_COLOR, borderwidth=BORDERWIDTH, command = lambda: helpmsg("button4"), cursor=QUESTION_HAND)
          #self.my_canvas.create_window(4*x_btn, y_btn1, anchor=tk.CENTER, window=self.info_process_btn)        
 
     def get_page(self):
@@ -261,20 +290,20 @@ class xnat_pic_gui(tk.Frame):
 
             self.conv_popup = tk.Toplevel()
             self.conv_popup.geometry("%dx%d+%d+%d" % (500, 150, my_width/3, my_height/3))
-            self.conv_popup.title('DICOM Converter')
+            self.conv_popup.title('XNAT-PIC Converter')
             self.conv_popup.protocol("WM_DELETE_WINDOW", normal_btn)
 
             self.btn_prj = tk.Button(self.conv_popup, text='Convert Project', font=LARGE_FONT, 
-                                    bg="grey", fg="white", height=1, width=15, borderwidth=1, 
+                                    bg="grey", fg="white", height=1, width=15, borderwidth=BORDERWIDTH, 
                                     command=lambda: (self.conv_popup.destroy(), self.prj_conversion(master)))
             self.btn_prj.grid(row=2, column=0, padx=10, pady=5)
             self.btn_sbj = tk.Button(self.conv_popup, text='Convert Subject', font=LARGE_FONT, 
-                                    bg="grey", fg="white", height=1, width=15, borderwidth=1, 
+                                    bg="grey", fg="white", height=1, width=15, borderwidth=BORDERWIDTH, 
                                     command=lambda: (self.conv_popup.destroy(), self.sbj_conversion(master)))
             self.btn_sbj.grid(row=3, column=0, padx=10, pady=5)
             self.results_flag = tk.IntVar()
             # master.results_flag = self.results_flag.get()
-            self.btn_results = tk.Checkbutton(self.conv_popup, text='Copy results', variable=self.results_flag,
+            self.btn_results = tk.Checkbutton(self.conv_popup, text='Copy additional files', variable=self.results_flag,
                                 onvalue=1, offvalue=0, command=isChecked)
             self.btn_results.grid(row=2, column=1, sticky='W')
             self.overwrite_flag = tk.IntVar()
@@ -301,7 +330,7 @@ class xnat_pic_gui(tk.Frame):
                 master.info_btn['state'] = tk.NORMAL
                 master.upload_btn['state'] = tk.NORMAL
                 #master.process_btn['state'] = tk.NORMAL
-                messagebox.showerror("Dicom Converter", "You have not chosen a directory")
+                messagebox.showerror("XNAT-PIC Converter", "You have not chosen a directory")
                 return
             master.root.deiconify()
             master.root.update()
@@ -314,7 +343,7 @@ class xnat_pic_gui(tk.Frame):
                 start_time = time.time()
 
                 # Start the progress bar
-                progressbar = ProgressBar(bar_title='DICOM Project Converter')
+                progressbar = ProgressBar(bar_title='XNAT-PIC Project Converter')
                 progressbar.start_determinate_bar()
                 # progressbar.start_indeterminate_bar()
 
@@ -326,7 +355,7 @@ class xnat_pic_gui(tk.Frame):
         
                     # Update the current step of the progress bar
                     # progressbar.update_progressbar(j, len(list_dirs))
-                    progressbar.set_caption(j + 1, len(list_dirs))
+                    progressbar.show_step(j + 1, len(list_dirs))
                     # Define the current subject path
                     dir_dcm = dir + '_dcm'
                     current_folder = os.path.join(self.folder_to_convert, dir).replace('\\', '/')
@@ -370,7 +399,7 @@ class xnat_pic_gui(tk.Frame):
                 end_time = time.time()
                 print('Total elapsed time: ' + str(end_time - start_time) + ' s')
 
-                messagebox.showinfo("Bruker2DICOM","The conversion is done!\n\n\n\n"
+                messagebox.showinfo("XNAT-PIC Converter","The conversion is done!\n\n\n\n"
                                     "Exceptions:\n\n" +
                                     str([str(x) for x in conversion_err])[1:-1])
                 master.convert_btn['state'] = tk.NORMAL
@@ -404,7 +433,7 @@ class xnat_pic_gui(tk.Frame):
                 master.info_btn['state'] = tk.NORMAL
                 master.upload_btn['state'] = tk.NORMAL
                 #master.process_btn['state'] = tk.NORMAL
-                messagebox.showerror("Dicom Converter", "You have not chosen a directory")
+                messagebox.showerror("XNAT-PIC Converter", "You have not chosen a directory")
                 return
             master.root.deiconify()
             master.root.update()
@@ -425,13 +454,13 @@ class xnat_pic_gui(tk.Frame):
                     os.makedirs(self.dst)
                 else:
                     # Existent folder without overwriting flag set to 0 --> ignore folder
-                    messagebox.showerror("Dicom Converter", "Destination folder %s already exists" % self.dst)
+                    messagebox.showerror("XNAT-PIC Converter", "Destination folder %s already exists" % self.dst)
                     return
             else:
                 # Case 2 --> The directory does not exist
                 if self.dst.split('/')[-1].count('_dcm') > 1:
                     # Check to avoid already converted folders
-                    messagebox.showerror("Dicom Converter", "Chosen folder %s already converted" % self.dst)
+                    messagebox.showerror("XNAT-PIC Converter", "Chosen folder %s already converted" % self.dst)
                     return
                 else:
                     # Create the new destination folder
@@ -441,7 +470,7 @@ class xnat_pic_gui(tk.Frame):
                 start_time = time.time()
 
                 # Start the progress bar
-                progressbar = ProgressBar(bar_title='DICOM Subject Converter')
+                progressbar = ProgressBar(bar_title='XNAT-PIC Subject Converter')
                 progressbar.start_indeterminate_bar()
 
                 # Initialize conversion thread
@@ -455,14 +484,14 @@ class xnat_pic_gui(tk.Frame):
                 end_time = time.time()
                 print('Total elapsed time: ' + str(end_time - start_time) + ' s')
 
-                messagebox.showinfo("Bruker2DICOM","Done! Now you can upload your files to XNAT.")
+                messagebox.showinfo("XNAT-PIC Converter","Done! Now you can upload your files to XNAT.")
                 master.convert_btn['state'] = tk.NORMAL
                 master.info_btn['state'] = tk.NORMAL
                 master.upload_btn['state'] = tk.NORMAL
                 #master.process_btn['state'] = tk.NORMAL          
 
             except Exception as e: 
-                messagebox.showerror("XNAT-PIC - Bruker2Dicom", e)
+                messagebox.showerror("XNAT-PIC - Converter", e)
                 master.convert_btn['state'] = tk.NORMAL
                 master.info_btn['state'] = tk.NORMAL
                 master.upload_btn['state'] = tk.NORMAL
@@ -763,7 +792,7 @@ class xnat_pic_gui(tk.Frame):
 
                 #################### Modify the metadata ####################
                 modify_text = tk.StringVar() 
-                modify_btn = tk.Button(master.my_canvas, textvariable=modify_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command = lambda: modify_metadata(), cursor=CURSOR_HAND, takefocus = 0)
+                modify_btn = tk.Button(master.my_canvas, textvariable=modify_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, command = lambda: modify_metadata(), cursor=CURSOR_HAND, takefocus = 0)
                 modify_text.set("Modify")
                 x_lbl = x_lbl_ID
                 y_btn = int(my_height*70/100)
@@ -912,7 +941,7 @@ class xnat_pic_gui(tk.Frame):
                             raise
 
                 confirm_text = tk.StringVar() 
-                confirm_btn = tk.Button(master.my_canvas, textvariable=confirm_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command = lambda: confirm_metadata(), cursor=CURSOR_HAND, takefocus = 0)
+                confirm_btn = tk.Button(master.my_canvas, textvariable=confirm_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, command = lambda: confirm_metadata(), cursor=CURSOR_HAND, takefocus = 0)
                 confirm_text.set("Confirm")
                 x_conf_btn = int(my_width*59/100)
                 master.my_canvas.create_window(x_conf_btn, y_btn, anchor = tk.NW, width = width_btn, window = confirm_btn)
@@ -946,7 +975,7 @@ class xnat_pic_gui(tk.Frame):
 
                 #################### Confirm multiple metadata ####################
                 multiple_confirm_text = tk.StringVar() 
-                multiple_confirm_btn = tk.Button(master.my_canvas, textvariable=multiple_confirm_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=0, command = lambda: confirm_multiple_metadata(), cursor=CURSOR_HAND, takefocus = 0)
+                multiple_confirm_btn = tk.Button(master.my_canvas, textvariable=multiple_confirm_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, command = lambda: confirm_multiple_metadata(), cursor=CURSOR_HAND, takefocus = 0)
                 multiple_confirm_text.set("Multiple Confirm")
                 x_multiple_conf_btn = int(my_width*78/100)
                 master.my_canvas.create_window(x_multiple_conf_btn, y_btn, anchor = tk.NW, width = width_btn, window = multiple_confirm_btn)
@@ -1110,7 +1139,7 @@ class xnat_pic_gui(tk.Frame):
                 #master.process_btn['state'] = tk.NORMAL
 
             login_popup = tk.Toplevel()
-            login_popup.title("XNAT-PIC  ~  Login")
+            login_popup.title("XNAT-PIC ~ Login")
             login_popup.geometry("%dx%d+%d+%d" % (550, 200, my_width/3, my_height/4))
 
             login_popup.protocol("WM_DELETE_WINDOW", enable_btn)
@@ -1234,7 +1263,7 @@ class xnat_pic_gui(tk.Frame):
                 pass
 
         def login(self, popup, master):
-            # Return to login method
+
             # LOGIN
             popup.entry_address_complete = popup.http.get() + popup.entry_address.var.get()
             self.entry_address_complete = popup.entry_address_complete
@@ -1242,8 +1271,6 @@ class xnat_pic_gui(tk.Frame):
             self.entry_psw = popup.entry_psw.var.get()
 
             # Method to check if there is an existent session!!!!
-
-
             home = os.path.expanduser("~")
             try:
                 self.session = xnat.connect(
@@ -1261,8 +1288,8 @@ class xnat_pic_gui(tk.Frame):
                     except FileNotFoundError:
                         pass
                 popup.destroy()
-                # self.overall_uploader(session, master)
-                self.project_selection(master)
+                self.overall_uploader(master)
+                #self.project_selection(master)
             except xnat.exceptions.XNATLoginFailedError as err:
                 messagebox.showerror("Error!", err)
             except Exception as error:
@@ -1310,172 +1337,516 @@ class xnat_pic_gui(tk.Frame):
                 else:
                     self.button_next["state"] = "disabled"
 
-        def project_selection(self, master):
+        def check_project_name(self, *args):
 
-            def isChecked():
-                 if self.newprj_var.get() == 1:
-                    popup2.label_prjname['state'] = tk.NORMAL
-                    popup2.label_choose_prj['state'] = tk.DISABLED
-                    popup2.entry_prjname['state'] = tk.NORMAL
-                    popup2.project_list['state'] = tk.DISABLED
-                 elif self.newprj_var.get() == 0:
-                    popup2.label_prjname['state'] = tk.DISABLED
-                    popup2.label_choose_prj['state'] = tk.NORMAL
-                    popup2.entry_prjname['state'] = tk.DISABLED
-                    popup2.project_list['state'] = tk.NORMAL
+            if self.entry_prjname.get() != '':
+                # Method to check about project name
+                if self.entry_prjname.get() in list(self.OPTIONS.key_map.keys()):
+                    # Case 1 --> The project already exists
+                    messagebox.showerror(
+                        "XNAT-PIC Uploader!",
+                        "Project ID %s already exists! Please, enter a different project ID"
+                        % self.entry_prjname.get(),
+                    )
+                else:
+                    # Case 2 --> The project does not exist yet
+                    try:
+                        result = messagebox.askyesno("XNAT-PIC Uploader", "A new project will be created. Are you sure?")
+                        if result is False:
+                            return
+                        self.prj.set(self.entry_prjname.get())
+                        disable_buttons([self.entry_prjname, self.confirm_new_prj, self.reject_new_prj])
+                        project = self.session.classes.ProjectData(
+                                       name=self.prj.get(), parent=self.session)
+                        self.session.clearcache()
+                        messagebox.showinfo('XNAT-PIC Uploader', 'A new project is created.')                 
+                    except exception as e:
+                        messagebox.showerror("Error!", str(e))
 
-            def enable_btn():
-                self.session.disconnect()
-                popup2.destroy()
-                #Enable all buttons
-                master.convert_btn['state'] = tk.NORMAL
-                master.info_btn['state'] = tk.NORMAL
-                master.upload_btn['state'] = tk.NORMAL
-                #master.process_btn['state'] = tk.NORMAL
+        def check_subject_name(self, *args):
 
-            # POPUP 
-            popup2 = tk.Toplevel()
-            popup2.title("XNAT-PIC")
-            master.root.width = 350
-            master.root.height = 100
-            master.x = (int(master.root.screenwidth) - master.root.width) / 2
-            master.y = (int(master.root.screenheight)- master.root.height) / 3
-            popup2.geometry("%dx%d+%d+%d" % (master.root.width, master.root.height, master.x, master.y))
-
-            # LABEL
-            popup2.label_prjname = tk.Label(popup2, text="  New project    ", anchor="w", state="disabled")
-            popup2.label_choose_prj = tk.Label(popup2, text="  Select project in XNAT:  ", anchor="w")
-            popup2.label_choose_prj.grid(row=2, column=0)
-            popup2.label_prjname.grid(row=0, column=0)
-
-            # ENTRY INSERT NEW PROJECT
-            popup2.value = tk.StringVar()
-            popup2.entry_prjname = tk.Entry(popup2, state="disabled")
-            self.entry_prjname = popup2.entry_prjname
-            popup2.value.set("  Project ID  ")
-            popup2.entry_prjname.grid(row=0, column=2)
-            popup2.entry_prjname.var = tk.StringVar()
-            popup2.entry_prjname.var.set("Project ID")
-            popup2.entry_prjname["textvariable"] = popup2.entry_prjname.var
-            self.entry_prjname.var = popup2.entry_prjname.var
-           
-            # PROJECTS LIST
-            self.OPTIONS = self.session.projects
-            self.prj = tk.StringVar()
-            default_value = "Select prj"
-            popup2.project_list = ttk.OptionMenu(popup2, self.prj, default_value, *self.OPTIONS)
-            popup2.project_list.grid(row=2, column=2)
-            self.newprj_var = tk.IntVar()
-            popup2.btn_newprj = tk.Checkbutton(popup2, variable=self.newprj_var, onvalue=1, offvalue=0, command=isChecked)
-            popup2.btn_newprj.grid(row=0, column=1)
-
-            popup2.back_btn = tk.Button(
-                popup2, text="Back", command=lambda: self.normal_btn(master, popup=popup2, disconnect=True, close_popup=True)
-            )
-            popup2.back_btn.grid(row=4, column=0)
-            popup2.next_btn = tk.Button(
-                popup2, text="Next", command=partial(self.check_project_name, popup2, master), state="disabled"
-            )
-            popup2.next_btn.grid(row=4, column=2)
-
-            self.button_next = popup2.next_btn
-
-            self.newprj_var.trace_add("write", self.enable_next)
-            popup2.entry_prjname.var.trace_add("write", self.enable_next)
-            self.prj.trace_add("write", self.enable_next)
-
-            popup2.protocol("WM_DELETE_WINDOW", enable_btn)
-
-        def check_project_name(self, popup, master):
-
-            # Method to check about project name
-            if popup.entry_prjname.var.get().lower in self.OPTIONS:
-                # Case 1 --> The project already exists
-                messagebox.showerror(
-                    "Error!",
-                    "Project ID %s already exists! Please, enter a different project ID"
-                    % self.entry_prjname.var.get(),
-                )
-            else:
-                # Case 2 --> The project does not exist yet
-                try:
-                    popup.destroy()
-                    if self.newprj_var.get() == 1:
-                        self.project = self.entry_prjname.var.get()
+            if self.entry_subname.get() != '':
+                # Check if the project already exists
+                if self.prj.get() in list(self.OPTIONS.key_map.keys()):
+                    # Method to check about project name
+                    if self.entry_subname.get() in list(self.OPTIONS2.key_map.keys()):
+                        # Case 1 --> The project already exists
+                        messagebox.showerror(
+                            "XNAT-PIC Uploader!",
+                            "Subject %s already exists! Please, enter a different subject ID"
+                            % self.entry_subname.get(),
+                        )
                     else:
-                        self.project = self.prj.get()
-                    self.overall_uploader(master)
-                except exception as e:
-                    messagebox.showerror("Error!", str(e))
+                        # Case 2 --> The project does not exist yet
+                        try:
+                            result = messagebox.askyesno("XNAT-PIC Uploader", "A new subject will be created into %s. Are you sure?"
+                                                        % self.prj.get())
+                            if result is False:
+                                return
+                            self.sub.set(self.entry_subname.get())
+                            disable_buttons([self.entry_subname, self.confirm_new_sub, self.reject_new_sub])
+
+                            # project = self.session.classes.ProjectData(
+                            #            name=self.prj.get(), parent=self.session)
+                            project = self.session.projects[self.prj.get()]
+                            subject = self.session.classes.SubjectData(
+                                        parent=project, label=self.sub.get())
+                            self.session.clearcache()
+                            messagebox.showinfo('XNAT-PIC Uploader', 'A new subject is created.')                 
+                        except exception as e:
+                            messagebox.showerror("Error!", str(e))
+                else:
+                    messagebox.showerror('XNAT-PIC Uploader', 'The current project does not exist in XNAT platform.'
+                                                            'Please select an other project or create a new one.')
+
+        def check_experiment_name(self):
+            pass
 
         def overall_uploader(self, master):
 
-            def enable_btn():
-                self.session.disconnect()
-                up_popup.destroy()
-                #Enable all buttons
-                master.convert_btn['state'] = tk.NORMAL
-                master.info_btn['state'] = tk.NORMAL
-                master.upload_btn['state'] = tk.NORMAL
-                #master.process_btn['state'] = tk.NORMAL
+            # def isChecked():
+            #     master.add_file_flag = self.add_file_flag.get()
+                           
+            #################### Update the frame ####################
+            try:
+                destroy_widgets([master.convert_btn, master.info_btn, master.upload_btn,
+                                master.info_convert_btn, master.info_info_btn, master.info_upload_btn])
+            except:
+                pass
+            
+            #################### Create the new frame ####################
 
-            def isChecked():
-                master.add_file_flag = self.add_file_flag.get()
+            #############################################
+            ################ Main Buttons ###############
+            x_btn = int(my_width/5) # /5 if there is the processing button
+            y_btn = int(my_height*20/100)
+            width_btn = int(my_width/7)
 
-            # Initialize the uploader class with the current session
-            self.uploader = Dicom2XnatUploader(self.session)
-
-            up_popup = tk.Toplevel()
-            up_popup.geometry("%dx%d+%d+%d" % (500, 300,  my_width/3, my_height/6))
-            up_popup.title('XNAT Uploader')
             # Upload project
-            up_popup.btn_prj = tk.Button(up_popup, text='Upload Project', font=LARGE_FONT, 
-                                    bg="grey", fg="white", height=1, width=15, borderwidth=1, 
-                                    command=lambda: (up_popup.destroy(), self.project_uploader(master)))
-            up_popup.btn_prj.grid(row=2, column=0, padx=10, pady=5)
+            prj_text = tk.StringVar()
+            self.prj_btn = tk.Button(master.my_canvas, textvariable=prj_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, 
+                                    command=partial(self.check_buttons, master, press_btn=0), cursor=CURSOR_HAND)
+            prj_text.set("Upload Project")
+            master.my_canvas.create_window(x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.prj_btn)
+            
             # Upload subject
-            up_popup.btn_sbj = tk.Button(up_popup, text='Upload Subject', font=LARGE_FONT, 
-                                    bg="grey", fg="white", height=1, width=15, borderwidth=1, 
-                                    command=lambda: (up_popup.destroy(), self.subject_uploader(master)))
-            up_popup.btn_sbj.grid(row=3, column=0, padx=10, pady=5)
-            # Upload experiment
-            up_popup.btn_exp = tk.Button(up_popup, text='Upload Experiment', font=LARGE_FONT, 
-                                    bg="grey", fg="white", height=1, width=15, borderwidth=1, 
-                                    command=lambda: (up_popup.destroy(), self.experiment_uploader(master)))
-            up_popup.btn_exp.grid(row=4, column=0, padx=10, pady=5)
-            # Upload file
-            up_popup.btn_file = tk.Button(up_popup, text='Upload File', font=LARGE_FONT, 
-                                    bg="grey", fg="white", height=1, width=15, borderwidth=1, 
-                                    command=lambda: (up_popup.destroy(), self.file_uploader(master)))
-            up_popup.btn_file.grid(row=5, column=0, padx=10, pady=5)
-            # Check Button for upload additional files
-            self.add_file_flag = tk.IntVar()
-            master.add_file_flag = self.add_file_flag.get()
-            up_popup.add_file_btn = tk.Checkbutton(up_popup, text='Additional files', variable=self.add_file_flag,
-                                onvalue=1, offvalue=0, command=isChecked)
-            up_popup.add_file_btn.grid(row=2, column=1, sticky='W')
+            sub_text = tk.StringVar()
+            self.sub_btn = tk.Button(master.my_canvas, textvariable=sub_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, 
+                                    command=partial(self.check_buttons, master, press_btn=1), cursor=CURSOR_HAND)
+            sub_text.set("Upload Subject")
+            master.my_canvas.create_window(2*x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.sub_btn)
 
-            up_popup.protocol("WM_DELETE_WINDOW", enable_btn)
+            # Upload experiment
+            exp_text = tk.StringVar()
+            self.exp_btn = tk.Button(master.my_canvas, textvariable=exp_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, 
+                                    command=partial(self.check_buttons, master, press_btn=2), cursor=CURSOR_HAND)
+            exp_text.set("Upload Experiment")
+            master.my_canvas.create_window(3*x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.exp_btn)       
+            
+            # Upload file
+            file_text = tk.StringVar()
+            self.file_btn = tk.Button(master.my_canvas, textvariable=file_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, 
+                                    command=partial(self.check_buttons, master, press_btn=3), cursor=CURSOR_HAND)
+            file_text.set("Upload File")
+            master.my_canvas.create_window(4*x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.file_btn) 
+
+            #Check Button for upload additional files
+            self.add_file_flag = tk.IntVar()
+            # master.add_file_flag = self.add_file_flag.get()
+            self.add_file_btn = tk.Checkbutton(master.my_canvas, text='Additional files', variable=self.add_file_flag,
+                                onvalue=1, offvalue=0)
+            y_ck_btn = int(my_height*30/100)
+            master.my_canvas.create_window(4*x_btn, y_ck_btn, width=width_btn, anchor=tk.CENTER, window=self.add_file_btn)
+            #############################################
+
+            #############################################
+            ################# Project ###################
+            x_label = int(my_width/5)
+            width_menu = int(my_width/7)
+            # Label
+            y_prj = int(my_height*40/100)
+            self.select_prj = master.my_canvas.create_text(x_label, y_prj, anchor = tk.CENTER, width=width_menu, fill=DISABLE_LBL_COLOR, font=LARGE_FONT, 
+                                                            text="Select Project")
+            
+            # Menu
+            def get_subjects(*args):
+                if self.prj.get() != '--' and self.prj.get() in list(self.OPTIONS.key_map.keys()):
+                    self.OPTIONS2 = list(self.session.projects[self.prj.get()].subjects.key_map.keys())
+                else:
+                    self.OPTIONS2 = []
+                self.sub.set(default_value)
+                self.exp.set(default_value)
+                self.subject_list['menu'].delete(0, 'end')
+                for key in self.OPTIONS2:
+                    self.subject_list['menu'].add_command(label=key, command=lambda var=key:self.sub.set(var))
+
+            self.OPTIONS = self.session.projects
+            self.prj = tk.StringVar()
+            default_value = "--"
+            self.project_list = ttk.OptionMenu(master.my_canvas, self.prj, default_value, *self.OPTIONS)
+            self.project_list.configure(state="disabled")
+            self.prj.trace('w', get_subjects)
+            master.my_canvas.create_window(2*x_label, y_prj, anchor=tk.CENTER, width=width_menu, window=self.project_list)
+            
+            # Button to add a new project
+            def add_project():
+                enable_buttons([self.entry_prjname, self.confirm_new_prj, self.reject_new_prj])
+                self.entry_prjname.delete(0,tk.END)
+            new_prj_text = tk.StringVar()
+            self.new_prj_btn = tk.Button(master.my_canvas, textvariable=new_prj_text, state=tk.DISABLED, font=SMALL_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, 
+                                        command=add_project, cursor=CURSOR_HAND)
+            new_prj_text.set("Add New Project")
+            master.my_canvas.create_window(3*x_btn, y_prj, width = width_btn, anchor = tk.CENTER, window = self.new_prj_btn)
+            
+            # Entry to write a new project
+            width_btn_write = int(my_width/9)
+            self.entry_prjname = tk.Entry(master.my_canvas, font=SMALL_FONT, state="disabled")
+            master.my_canvas.create_window(4*x_btn, y_prj, width = width_btn_write, anchor = tk.E, window = self.entry_prjname)
+
+            # Button to confirm new project
+            x_btn_confirm = int(my_width*84/100)
+            self.confirm_new_prj = tk.Button(master.my_canvas, text = "V", bg=BG_BTN_COLOR, borderwidth=BORDERWIDTH, command=self.check_project_name, cursor=CURSOR_HAND, state='disabled')
+            master.my_canvas.create_window(x_btn_confirm, y_prj, anchor=tk.CENTER, window=self.confirm_new_prj)
+
+            # Button to reject new project
+            def reject():
+                self.entry_prjname.delete(0,tk.END)
+                disable_buttons([self.entry_prjname, self.confirm_new_prj, self.reject_new_prj])
+            x_btn_reject = int(my_width*86/100)
+            self.reject_new_prj = tk.Button(master.my_canvas, text = "X", bg=BG_BTN_COLOR, borderwidth=BORDERWIDTH, command=reject, cursor=CURSOR_HAND, state='disabled')
+            master.my_canvas.create_window(x_btn_reject, y_prj, anchor=tk.CENTER, window=self.reject_new_prj)
+            #############################################
+
+            #############################################
+            ################# Subject ###################
+            # Label
+            y_sub = int(my_height*50/100)
+            self.select_sub = master.my_canvas.create_text(x_label, y_sub, anchor = tk.CENTER, width = width_menu, fill = DISABLE_LBL_COLOR, font = LARGE_FONT, 
+                                                            text = "Select Subject")
+            # Menu
+            def get_experiments(*args):
+                if self.prj.get() != '--' and self.sub.get() != '--' and self.prj.get() in list(self.OPTIONS.key_map.keys()) and self.sub.get() in list(self.OPTIONS2.key_map.keys()):
+                    self.OPTIONS3 = list(self.session.projects[self.prj.get()].subjects[self.sub.get()].experiments.key_map.keys())
+                else:
+                    self.OPTIONS3 = []
+                self.exp.set(default_value)
+                self.experiment_list['menu'].delete(0, 'end')
+                for key in self.OPTIONS3:
+                    self.experiment_list['menu'].add_command(label=key, command=lambda var=key:self.exp.set(var))
+            # Menu
+            if self.prj.get() != '--':
+                self.OPTIONS2 = list(self.session.projects[self.prj.get()].subjects.key_map.keys())
+            else:
+                self.OPTIONS2 = []
+            self.sub = tk.StringVar()
+            self.subject_list = ttk.OptionMenu(master.my_canvas, self.sub, default_value, *self.OPTIONS2)
+            self.subject_list.configure(state="disabled")
+            self.sub.trace('w', get_experiments)
+            master.my_canvas.create_window(2*x_label, y_sub, anchor = tk.CENTER, width = width_menu, window = self.subject_list)
+            
+            # Button to add a new subject
+            def add_subject():
+                enable_buttons([self.entry_subname, self.confirm_new_sub, self.reject_new_sub])
+                self.entry_subname.delete(0,tk.END)
+            new_sub_text = tk.StringVar()
+            self.new_sub_btn = tk.Button(master.my_canvas, textvariable=new_sub_text, state=tk.DISABLED, font=SMALL_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, 
+                                        command=add_subject, cursor=CURSOR_HAND)
+            new_sub_text.set("Add New Subject")
+            master.my_canvas.create_window(3*x_btn, y_sub, width = width_btn, anchor = tk.CENTER, window = self.new_sub_btn)
+
+            # Entry to write a new subject
+            self.entry_subname = tk.Entry(master.my_canvas, font=SMALL_FONT, state="disabled")
+            master.my_canvas.create_window(4*x_btn, y_sub, width=width_btn_write, anchor=tk.E, window=self.entry_subname)
+
+            # Button to confirm new subject
+            self.confirm_new_sub = tk.Button(master.my_canvas, text = "V", bg=BG_BTN_COLOR, borderwidth=BORDERWIDTH, command=self.check_subject_name, cursor=CURSOR_HAND, state='disabled')
+            master.my_canvas.create_window(x_btn_confirm, y_sub, anchor=tk.CENTER, window=self.confirm_new_sub)
+
+            # Button to reject new subject
+            def reject():
+                self.entry_subname.delete(0,tk.END)
+                disable_buttons([self.entry_subname, self.confirm_new_sub, self.reject_new_sub])
+
+            self.reject_new_sub = tk.Button(master.my_canvas, text = "X", bg=BG_BTN_COLOR, borderwidth=BORDERWIDTH, command=reject, cursor=CURSOR_HAND, state='disabled')
+            master.my_canvas.create_window(x_btn_reject, y_sub, anchor=tk.CENTER, window=self.reject_new_sub)
+            #############################################
+
+            #############################################
+            ################# Experiment ################
+            # Label
+            y_exp = int(my_height*60/100)
+            self.select_exp = master.my_canvas.create_text(x_label, y_exp, anchor=tk.CENTER, width=width_menu, fill=DISABLE_LBL_COLOR, font=LARGE_FONT, 
+                                                            text="Select Experiment")
+            
+            # Menu
+            if self.prj.get() != '--' and self.sub.get() != '--':
+                self.OPTIONS3 = list(self.session.projects[self.prj.get()].subjects[self.sub.get()].experiments.key_map.keys())
+            else:
+                self.OPTIONS3 = []
+            self.exp = tk.StringVar()
+            self.experiment_list = ttk.OptionMenu(master.my_canvas, self.exp, default_value, *self.OPTIONS3)
+            self.experiment_list.configure(state="disabled")
+            master.my_canvas.create_window(2*x_label, y_exp, anchor=tk.CENTER, width=width_menu, window=self.experiment_list)
+            
+            # Button to add a new experiment
+            def add_experiment():
+                enable_buttons([self.entry_expname, self.confirm_new_exp, self.reject_new_exp])
+                self.entry_expname.delete(0,tk.END)
+            new_exp_text = tk.StringVar()
+            self.new_exp_btn = tk.Button(master.my_canvas, textvariable=new_exp_text, state=tk.DISABLED, font=SMALL_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, 
+                                        command=add_experiment, cursor=CURSOR_HAND)
+            new_exp_text.set("Add New Experiment")
+            master.my_canvas.create_window(3*x_btn, y_exp, width = width_btn, anchor = tk.CENTER, window = self.new_exp_btn)
+
+            # Entry to write a new experiment
+            self.entry_expname = tk.Entry(master.my_canvas, font=SMALL_FONT, state="disabled")
+            master.my_canvas.create_window(4*x_btn, y_exp, width=width_btn_write, anchor=tk.E, window=self.entry_expname)
+
+            # Button to confirm new experiment
+            self.confirm_new_exp = tk.Button(master.my_canvas, text = "V", bg=BG_BTN_COLOR, borderwidth=BORDERWIDTH, command=self.check_experiment_name, cursor=CURSOR_HAND, state='disabled')
+            master.my_canvas.create_window(x_btn_confirm, y_exp, anchor=tk.CENTER, window=self.confirm_new_exp)
+
+            # Button to reject new experiment
+            def reject():
+                self.entry_expname.delete(0,tk.END)
+                disable_buttons([self.entry_expname, self.confirm_new_exp, self.reject_new_exp])
+
+            self.reject_new_exp = tk.Button(master.my_canvas, text = "X", bg=BG_BTN_COLOR, borderwidth=BORDERWIDTH, command=reject, cursor=CURSOR_HAND, state='disabled')
+            master.my_canvas.create_window(x_btn_reject, y_exp, anchor=tk.CENTER, window=self.reject_new_exp)
+            #############################################
+
+            #############################################
+            ################ EXIT Button ################
+            def exit_upload():
+                result = messagebox.askquestion("XNAT-PIC Uploader", "Do you want to exit anyway?", icon='warning')
+                if result == 'yes':
+                    # Destroy all the existent widgets (Button, OptionMenu, ...)
+                    destroy_widgets([self.prj_btn, self.sub_btn, self.exp_btn, self.file_btn, self.add_file_btn,
+                                    self.exit_btn, self.project_list, self.new_prj_btn, self.entry_prjname,
+                                    self.confirm_new_prj, self.reject_new_prj, self.add_file_btn,
+                                    self.subject_list, self.new_sub_btn, self.experiment_list, self.new_exp_btn,
+                                    self.entry_subname, self.confirm_new_sub, self.reject_new_sub,
+                                    self.entry_expname, self.confirm_new_exp, self.reject_new_exp,
+                                    self.next_btn, self.exit_btn])
+                    # Delete all widgets that cannot be destroyed
+                    delete_widgets(master.my_canvas, [self.select_prj, self.select_sub, self.select_exp])
+                    # Perform disconnection of the session if it is alive
+                    try:
+                        self.session.disconnect()
+                    except:
+                        pass
+                    # Restore the main frame
+                    xnat_pic_gui.choose_you_action(master)
+
+            self.exit_text = tk.StringVar() 
+            self.exit_btn = tk.Button(master.my_canvas, textvariable=self.exit_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, 
+                                    cursor=CURSOR_HAND, takefocus=0)
+            self.exit_btn.configure(command=exit_upload)
+            self.exit_text.set("Exit")
+            y_exit_btn = int(my_height*80/100)
+            width_btn = int(my_width*10/100)
+            master.my_canvas.create_window(x_btn, y_exit_btn, anchor=tk.CENTER, width=width_btn, window=self.exit_btn)
+            #############################################
+
+            #############################################
+            ################ NEXT Button ################
+            def next():
+                if self.press_btn == 0:
+                    self.project_uploader(master)
+                elif self.press_btn == 1:
+                    self.subject_uploader(master)
+                elif self.press_btn == 2:
+                    self.experiment_uploader(master)
+                elif self.press_btn == 3:
+                    self.file_uploader(master)
+                else:
+                    pass
+
+            self.next_text = tk.StringVar() 
+            self.next_btn = tk.Button(master.my_canvas, textvariable=self.next_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, 
+                                    command=next, cursor=CURSOR_HAND, takefocus=0, state='disabled')
+            self.next_text.set("Next")
+            master.my_canvas.create_window(4*x_btn, y_exit_btn, anchor=tk.CENTER, width=width_btn, window=self.next_btn)
+            #############################################
+
+        def check_buttons(self, master, press_btn=0):
+
+            def back():
+                # Destroy all the existent widgets (Button, OptionMenu, ...)
+                destroy_widgets([self.prj_btn, self.sub_btn, self.exp_btn, self.file_btn, self.add_file_btn,
+                                    self.exit_btn, self.project_list, self.new_prj_btn, self.entry_prjname,
+                                    self.confirm_new_prj, self.reject_new_prj, self.add_file_btn,
+                                    self.subject_list, self.new_sub_btn, self.experiment_list, self.new_exp_btn,
+                                    self.entry_subname, self.confirm_new_sub, self.reject_new_sub,
+                                    self.entry_expname, self.confirm_new_exp, self.reject_new_exp,
+                                    self.next_btn, self.exit_btn])
+                # Delete all widgets that cannot be destroyed
+                delete_widgets(master.my_canvas, [self.select_prj, self.select_sub, self.select_exp, self.subtitle])
+                self.overall_uploader(master)
+
+            # Initialize the press button value
+            self.press_btn = press_btn
+
+            # Change the EXIT button into BACK button and modify the command associated with it
+            self.exit_text.set("Back")
+            self.exit_btn.configure(command=back)
+
+            if press_btn == 0:
+                # Disable main buttons
+                disable_buttons([self.prj_btn, self.sub_btn, self.exp_btn, self.file_btn])
+                enable_buttons([self.project_list, self.new_prj_btn])
+                # Insert subtitle
+                self.subtitle = master.my_canvas.create_text(int(my_width/2), int(my_height*30/100), anchor=tk.CENTER, width=int(my_width/7), fill='red', font=LARGE_FONT, 
+                                                            text="Project Uploader")
+                # Highlight the field name
+                master.my_canvas.itemconfig(self.select_prj, fill=TEXT_LBL_COLOR)
+                # Enable NEXT button only if all the requested fields are filled
+                def enable_next(*args):
+                    a = self.prj.get()
+                    if a != '--':
+                        enable_buttons([self.next_btn])
+                self.prj.trace('w', enable_next)
+                
+            elif press_btn == 1:
+                # Disable main buttons
+                disable_buttons([self.prj_btn, self.sub_btn, self.exp_btn, self.file_btn])
+                enable_buttons([self.project_list, self.new_prj_btn])
+                # Insert subtitle
+                self.subtitle = master.my_canvas.create_text(int(my_width/2), int(my_height*30/100), anchor=tk.CENTER, width=int(my_width/7), fill='red', font=LARGE_FONT, 
+                                                            text="Subject Uploader")
+                # Highlight the field name
+                master.my_canvas.itemconfig(self.select_prj, fill=TEXT_LBL_COLOR)
+                # Enable NEXT button only if all the requested fields are filled
+                def enable_next(*args):
+                    a = self.prj.get()
+                    if a != '--':
+                        enable_buttons([self.next_btn])
+                self.prj.trace('w', enable_next)
+                
+            elif press_btn == 2:
+                # Disable main buttons
+                disable_buttons([self.prj_btn, self.sub_btn, self.exp_btn, self.file_btn])
+                enable_buttons([self.project_list, self.new_prj_btn, self.subject_list, self.new_sub_btn])
+                # Insert subtitle
+                self.subtitle = master.my_canvas.create_text(int(my_width/2), int(my_height*30/100), anchor=tk.CENTER, width=int(my_width/7), fill='red', font=LARGE_FONT, 
+                                                            text="Experiment Uploader")
+                # Highlight the field names
+                master.my_canvas.itemconfig(self.select_sub, fill=TEXT_LBL_COLOR)
+                master.my_canvas.itemconfig(self.select_sub, fill=TEXT_LBL_COLOR)
+                # Enable NEXT button only if all the requested fields are filled
+                def enable_next(*args):
+                    a = self.prj.get()
+                    b = self.sub.get()
+                    if a != '--' and b != '--':
+                        enable_buttons([self.next_btn])
+                self.sub.trace('w', enable_next)
+
+            elif press_btn == 3:
+                # Disable main buttons
+                disable_buttons([self.prj_btn, self.sub_btn, self.exp_btn, self.file_btn])
+                enable_buttons([self.project_list, self.new_prj_btn, self.subject_list, self.new_sub_btn, self.experiment_list, self.new_exp_btn])
+                # Insert subtitle
+                self.subtitle = master.my_canvas.create_text(int(my_width/2), int(my_height*30/100), anchor=tk.CENTER, width=int(my_width/7), fill='red', font=LARGE_FONT, 
+                                                            text="File Uploader")
+                # Highlight the field names
+                master.my_canvas.itemconfig(self.select_prj, fill=TEXT_LBL_COLOR)
+                master.my_canvas.itemconfig(self.select_sub, fill=TEXT_LBL_COLOR)
+                master.my_canvas.itemconfig(self.select_exp, fill=TEXT_LBL_COLOR)
+                # Enable NEXT button only if all the requested fields are filled
+                def enable_next(*args):
+                    a = self.prj.get()
+                    b = self.sub.get()
+                    c = self.exp.get()
+                    if a != '--' and b != '--' and c != '--':
+                        enable_buttons([self.next_btn])
+                self.exp.trace('w', enable_next)
+            else:
+                pass
 
         def project_uploader(self, master):
 
             project_to_upload = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC Project Uploader: Select project directory in DICOM format to upload")
             # Check for empty selected folder
             if os.path.isdir(project_to_upload) == False:
-                messagebox.showerror('XNAT-PIC - Uploader', 'Error! The selected folder does not exist!')
+                messagebox.showerror('XNAT-PIC Uploader', 'Error! The selected folder does not exist!')
                 self.normal_btn(master, disconnect=True)
                 return
             elif os.listdir(project_to_upload) == []:
-                messagebox.showerror('XNAT-PIC - Uploader', 'Error! The selected folder is empty!')
+                messagebox.showerror('XNAT-PIC Uploader', 'Error! The selected folder is empty!')
                 self.normal_btn(master, disconnect=True)
                 return
 
             try:
                 # Start progress bar
-                progressbar = ProgressBar(bar_title='XNAT Uploader')
+                progressbar = ProgressBar(bar_title='XNAT-PIC Uploader')
                 progressbar.start_indeterminate_bar()
 
-                t = threading.Thread(target=self.uploader.single_core_upload, args=(project_to_upload, self.project, master, ))
+                list_dirs = os.listdir(project_to_upload)
+                # list_of_subjects = [(os.path.join(project_to_upload, sub).replace('\\', '/'), self.prj.get()) for sub in list_dirs]
+
+                start_time = time.time()
+
+                def upload_thread():
+
+                    self.uploader = Dicom2XnatUploader(self.session)
+                    
+                    for sub in list_dirs:
+                        # Check if 'MR' folder is already into the folder_to_upload path
+                        if 'MR' != os.path.basename(sub):
+                            sub = os.path.join(sub, 'MR').replace('\\', '/')
+                        else:
+                            sub = sub.replace('\\', '/')
+                        # Check for existing custom variables file
+                        flag = 0
+                        try:
+                            subject_data = read_table('/'.join([sub, 'Custom_Variables.txt']))
+                            # Define the subject_id and the experiment_id
+                            if self.sub.get() == '--':
+                                self.sub.set(subject_data['Subject'])
+                            if self.exp.get() == '--':
+                                self.exp.set('_'.join([subject_data['Project'], subject_data['Subject'], subject_data['Group'], subject_data['Timepoint']]).replace(' ', '_'))
+                            flag = 1
+                        except Exception as error:
+                            # Define the subject_id and the experiment_id 
+                            if self.sub.get() == '--':
+                                self.sub.set(sub.split('/')[-2].replace('_dcm', ''))
+                            if self.exp.get() == '--':
+                                self.exp.set('_'.join([sub.split('/')[-3].replace('_dcm', ''), sub.split('/')[-2].replace('_dcm', '')]).replace(' ', '_'))
+                            flag = 0
+
+                        progressbar.set_caption('Uploading ' + str(self.sub.get()) + ' ...')
+                        # Create parameters dictionary to pass to the uploader function
+                        params = {'folder_to_upload': sub,
+                                    'project_id': self.prj.get(),
+                                    'subject_id': self.sub.get(),
+                                    'experiment_id': self.exp.get(),
+                                    'custom_var_flag': flag,
+                                    'custom_var': subject_data
+                                    }
+                        self.uploader.upload(params)
+                        # Check for Results folder
+                        if self.add_file_flag.get() == 1:
+                            self.session.clearcache()
+                            self.uploader_file = FileUploader(self.session)
+                            progressbar.set_caption('Uploading files to ' + str(self.exp.get()) + ' ...')
+                            for sub_dir in os.listdir(sub):
+                                if 'Results' in sub_dir:
+                                    vars = {}
+                                    vars['project_id'] = self.prj.get()
+                                    vars['subject_id'] = self.sub.get()
+                                    vars['experiment_id'] = self.exp.get()
+                                    vars['folder_name'] = sub_dir
+                                    list_of_files = os.scandir(os.path.join(sub, sub_dir))
+                                    file_paths = []
+                                    for file in list_of_files:
+                                        if file.is_file():
+                                            file_paths.append(file.path)
+                                    self.uploader_file.upload(file_paths, vars)
+
+                end_time = time.time()
+                print('Elapsed time for conversion: ' + str(end_time - start_time) + ' s')
+
+                t = threading.Thread(target=upload_thread, args=())
                 t.start()
                 
                 while t.is_alive() == True:
@@ -1488,87 +1859,177 @@ class xnat_pic_gui(tk.Frame):
                 messagebox.showerror("XNAT-PIC - Uploader", e)
 
             # Restore main frame buttons
-            messagebox.showinfo("XNAT Uploader","Done! Your subject is uploaded on XNAT platform.")
-            master.convert_btn['state'] = tk.NORMAL
-            master.info_btn['state'] = tk.NORMAL
-            master.upload_btn['state'] = tk.NORMAL
-            #master.process_btn['state'] = tk.NORMAL
+            messagebox.showinfo("XNAT-PIC Uploader","Done! Your subject is uploaded on XNAT platform.")
+            # Destroy all the existent widgets (Button, OptionMenu, ...)
+            destroy_widgets([self.prj_btn, self.sub_btn, self.exp_btn, self.file_btn, self.add_file_btn,
+                                    self.exit_btn, self.project_list, self.new_prj_btn, self.entry_prjname,
+                                    self.confirm_new_prj, self.reject_new_prj, self.add_file_btn,
+                                    self.subject_list, self.new_sub_btn, self.experiment_list, self.new_exp_btn,
+                                    self.entry_subname, self.confirm_new_sub, self.reject_new_sub,
+                                    self.entry_expname, self.confirm_new_exp, self.reject_new_exp,
+                                    self.next_btn, self.exit_btn])
+            # Delete all widgets that cannot be destroyed
+            delete_widgets(master.my_canvas, [self.select_prj, self.select_sub, self.select_exp, self.subtitle])
+            # Clear and update session cache
+            self.session.clearcache()
+            self.overall_uploader(master)
 
         def subject_uploader(self, master):
 
             subject_to_upload = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC Subject Uploader: Select subject directory in DICOM format to upload")
             # Check for empty selected folder
             if os.path.isdir(subject_to_upload) == False:
-                messagebox.showerror('XNAT-PIC - Uploader', 'Error! The selected folder does not exist!')
+                messagebox.showerror('XNAT-PIC Uploader', 'Error! The selected folder does not exist!')
                 self.normal_btn(master, disconnect=True)
                 return
             elif os.listdir(subject_to_upload) == []:
-                messagebox.showerror('XNAT-PIC - Uploader', 'Error! The selected folder is empty!')
+                messagebox.showerror('XNAT-PIC Uploader', 'Error! The selected folder is empty!')
                 self.normal_btn(master, disconnect=True)
                 return
 
             try:
+                self.uploader = Dicom2XnatUploader(self.session)
                 # Start progress bar
-                progressbar = ProgressBar(bar_title='XNAT Uploader')
+                progressbar = ProgressBar(bar_title='XNAT-PIC Uploader')
                 progressbar.start_indeterminate_bar()
-                # Start thread for uploading
-                upload_thread = threading.Thread(target=self.uploader.uploader, args=((subject_to_upload, self.project), master,  ))
-                upload_thread.start()
-                while upload_thread.is_alive() == True:
+
+                start_time = time.time()
+                # Check if 'MR' folder is already into the folder_to_upload path
+                if 'MR' != os.path.basename(subject_to_upload):
+                    subject_to_upload = os.path.join(subject_to_upload, 'MR').replace('\\', '/')
+                else:
+                    subject_to_upload = subject_to_upload.replace('\\', '/')
+                # Check for existing custom variables file
+                flag = 0
+                try:
+                    subject_data = read_table('/'.join([subject_to_upload, 'Custom_Variables.txt']))
+                    # Define the subject_id and the experiment_id
+                    if self.sub.get() == '--':
+                        self.sub.set(subject_data['Subject'])
+                    if self.exp.get() == '--':
+                        self.exp.set('_'.join([subject_data['Project'], subject_data['Subject'], subject_data['Group'], subject_data['Timepoint']]).replace(' ', '_'))
+                    flag = 1
+                except:
+                    # Define the subject_id and the experiment_id 
+                    if self.sub.get() == '--':
+                        self.sub.set(subject_to_upload.split('/')[-2].replace('_dcm', ''))
+                    if self.exp.get() == '--':
+                        self.exp.set('_'.join([subject_to_upload.split('/')[-3].replace('_dcm', ''), subject_to_upload.split('/')[-2].replace('_dcm', '')]).replace(' ', '_'))
+                    flag = 0
+
+                progressbar.set_caption('Uploading ' + str(self.sub.get()) + ' ...')
+                # Create parameters dictionary to pass to the uploader function
+                params = {'folder_to_upload': subject_to_upload,
+                            'project_id': self.prj.get(),
+                            'subject_id': self.sub.get(),
+                            'experiment_id': self.exp.get(),
+                            'custom_var_flag': flag,
+                            'custom_var': subject_data
+                            }
+                t = threading.Thread(target=self.uploader.upload, args=(params, ))
+                t.start()
+
+                while t.is_alive() == True:
                     progressbar.update_bar()
-                progressbar.stop_progress_bar()
+                else:
+                    # Check for Results folder
+                    if self.add_file_flag.get() == 1:
+                        self.session.clearcache()
+                        self.uploader_file = FileUploader(self.session)
+                        for sub_dir in os.listdir(subject_to_upload):
+                            if 'Results' in sub_dir:
+                                vars = {}
+                                vars['project_id'] = self.prj.get()
+                                vars['subject_id'] = self.sub.get()
+                                vars['experiment_id'] = self.exp.get()
+                                vars['folder_name'] = sub_dir
+                                list_of_files = os.scandir(os.path.join(subject_to_upload, sub_dir))
+                                file_paths = []
+                                for file in list_of_files:
+                                    if file.is_file():
+                                        file_paths.append(file.path)
+                                progressbar.set_caption('Uploading files on ' + str(self.exp.get()) + ' ...')
+                                ft = threading.Thread(target=self.uploader_file.upload, args=(file_paths, vars, ))
+                                ft.start()
+                                while ft.is_alive() == True:
+                                    progressbar.update_bar()
+
+                    progressbar.stop_progress_bar()
+
+                    end_time = time.time()
+                    print('Elapsed time: ' + str(end_time-start_time) + ' seconds')
 
             except Exception as e: 
-                messagebox.showerror("XNAT-PIC - Uploader", e)
+                messagebox.showerror("XNAT-PIC Uploader", e)
 
             # Restore main frame buttons
-            messagebox.showinfo("XNAT Uploader","Done! Your subject is uploaded on XNAT platform.")
-            master.convert_btn['state'] = tk.NORMAL
-            master.info_btn['state'] = tk.NORMAL
-            master.upload_btn['state'] = tk.NORMAL
-            #master.process_btn['state'] = tk.NORMAL
-
+            messagebox.showinfo("XNAT-PIC Uploader","Done! Your subject is uploaded on XNAT platform.")
+            # Destroy all the existent widgets (Button, OptionMenu, ...)
+            destroy_widgets([self.prj_btn, self.sub_btn, self.exp_btn, self.file_btn, self.add_file_btn,
+                                    self.exit_btn, self.project_list, self.new_prj_btn, self.entry_prjname,
+                                    self.confirm_new_prj, self.reject_new_prj, self.add_file_btn,
+                                    self.subject_list, self.new_sub_btn, self.experiment_list, self.new_exp_btn,
+                                    self.entry_subname, self.confirm_new_sub, self.reject_new_sub,
+                                    self.entry_expname, self.confirm_new_exp, self.reject_new_exp,
+                                    self.next_btn, self.exit_btn])
+            # Delete all widgets that cannot be destroyed
+            delete_widgets(master.my_canvas, [self.select_prj, self.select_sub, self.select_exp, self.subtitle])
+            # Clear and update session cache
+            self.session.clearcache()
+            self.overall_uploader(master)
 
         def experiment_uploader(self, master):
             # Call for check_project_name
             # Call for upload() method from Dicom2XnatUploader class
             pass
 
-        def check_experiment(self, master):
-            pass
-
         def file_uploader(self, master):
+            print(self.session.projects[self.prj.get()].subjects[self.sub.get()].experiments.key_map.keys())
 
-            file_to_upload = filedialog.askopenfilenames(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC File Uploader: Select file to upload")
+            files_to_upload = filedialog.askopenfilenames(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC File Uploader: Select file to upload")
             
-            if file_to_upload == []:
-                messagebox.showerror('XNAT-PIC - Uploader', 'Error! No files selected!')
+            if files_to_upload == []:
+                messagebox.showerror('XNAT-PIC Uploader', 'Error! No files selected!')
                 self.normal_btn(master, disconnect=True)
                 return
+            
+            vars = {}
+            vars['project_id'] = self.prj.get()
+            vars['subject_id'] = self.sub.get()
+            vars['experiment_id'] = self.exp.get()
+            vars['folder_name'] = files_to_upload[0].split('/')[-2]
 
-            progressbar = ProgressBar('DICOM File Uploader')
-            progressbar.start_determinate_bar()
-            for i, file in enumerate(file_to_upload):
-                if os.path.isfile(file):
-                    tf = threading.Thread(target=self.uploader.file_uploader, args=(file, self.session,{
-                                        'project_id': 'Project_X',
-                                        'subject_id': 'da_PyMT_5',
-                                        'experiment_id': 'Project_2_da_PyMT_5_Treated_Post_2_months',
-                                    }))
-                    tf.start()
-                    while tf.is_alive() == True:
-                        # progressbar.update_bar()
-                        progressbar.update_bar(0.00001)
-                        time.sleep(0.5)
-                    else:
-                        progressbar.update_progressbar(i + 1, len(file_to_upload))
+            progressbar = ProgressBar('XNAT-PIC File Uploader')
+            progressbar.start_indeterminate_bar()
+
+            file_paths = []
+            for file in files_to_upload:
+                if file.is_file():
+                    file_paths.append(file.path)
+                    
+            progressbar.set_caption('Uploading files on ' + str(self.exp.get()) + ' ...')
+            ft = threading.Thread(target=self.uploader_file.upload, args=(file_paths, vars, ))
+            ft.start()
+            while ft.is_alive() == True:
+                progressbar.update_bar()
+
+            progressbar.stop_progress_bar()
 
             # Restore main frame buttons
-            messagebox.showinfo("XNAT Uploader","Done! Your file is uploaded on XNAT platform.")
-            master.convert_btn['state'] = tk.NORMAL
-            master.info_btn['state'] = tk.NORMAL
-            master.upload_btn['state'] = tk.NORMAL
-            #master.process_btn['state'] = tk.NORMAL
+            messagebox.showinfo("XNAT-PIC Uploader","Done! Your file is uploaded on XNAT platform.")
+            # Destroy all the existent widgets (Button, OptionMenu, ...)
+            destroy_widgets([self.prj_btn, self.sub_btn, self.exp_btn, self.file_btn, self.add_file_btn,
+                                    self.exit_btn, self.project_list, self.new_prj_btn, self.entry_prjname,
+                                    self.confirm_new_prj, self.reject_new_prj, self.add_file_btn,
+                                    self.subject_list, self.new_sub_btn, self.experiment_list, self.new_exp_btn,
+                                    self.entry_subname, self.confirm_new_sub, self.reject_new_sub,
+                                    self.entry_expname, self.confirm_new_exp, self.reject_new_exp,
+                                    self.next_btn, self.exit_btn])
+            # Delete all widgets that cannot be destroyed
+            delete_widgets(master.my_canvas, [self.select_prj, self.select_sub, self.select_exp, self.subtitle])
+            # Clear and update session cache
+            self.session.clearcache()
+            self.overall_uploader(master)
 
 
 if __name__ == "__main__":
