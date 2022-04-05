@@ -927,12 +927,14 @@ class xnat_pic_gui(tk.Frame):
                             entries[i]['state'] = tk.DISABLED            
                         
                         selected_group.set('')
+                        selected_dose.set('')
                         selected_timepoint.set('')
                         selected_timepoint1.set('')
                         time_entry.delete(0, tk.END)
                         cal.delete(0, tk.END)
                         time_entry.config(state=tk.DISABLED)
                         group_menu['state'] = tk.DISABLED
+                        dose_menu['state'] = tk.DISABLED
                         timepoint_menu['state'] = tk.DISABLED
                         timepoint_menu1['state'] = tk.DISABLED
                         cal['state'] = tk.DISABLED
