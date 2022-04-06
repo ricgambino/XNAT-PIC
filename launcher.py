@@ -279,7 +279,9 @@ class xnat_pic_gui(tk.Frame):
             self.btn_overwrite = tk.Checkbutton(self.conv_popup, text="Overwrite existing folders", variable=self.overwrite_flag,
                                 onvalue=1, offvalue=0, command=checkOverwrite)
             self.btn_overwrite.grid(row=3, column=1, sticky='W')
-
+            self.btn_results_info = tk.Button(self.conv_popup, image=master.logo_info, bg="white", borderwidth=BORDERWIDTH, cursor=QUESTION_HAND,
+                                    command=lambda: messagebox.showinfo("XNAT-PIC","Copy additional files info"))
+            self.btn_results_info.grid(row=2, column=2, sticky='W')
         def prj_conversion(self, master):
 
             ############### Whole project conversion ################
