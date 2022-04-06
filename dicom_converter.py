@@ -104,6 +104,7 @@ class Bruker2DicomConverter():
             shutil.copytree(convert_path, dst_path)
 
         elif 'Custom' in dirs[0].split('/')[-1]:
+            check_and_create('/'.join(dst_path.split('/')[:-1]))
             shutil.copy(convert_path, dst_path)
 
         else:

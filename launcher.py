@@ -321,7 +321,7 @@ class xnat_pic_gui(tk.Frame):
                     # progressbar.update_progressbar(j, len(list_dirs))
                     progressbar.show_step(j + 1, len(list_dirs))
                     # Define the current subject path
-                    dir_dcm = dir + '_dcm'
+                    dir_dcm = dir 
                     current_folder = os.path.join(self.folder_to_convert, dir).replace('\\', '/')
                     if os.path.isdir(current_folder):
                         current_dst = os.path.join(self.dst, dir_dcm).replace('\\', '/')
@@ -395,7 +395,7 @@ class xnat_pic_gui(tk.Frame):
             master.root.update()
             head, tail = os.path.split(self.folder_to_convert)
             head = head + '_dcm'
-            project_foldername = tail.split('.',1)[0] + "_dcm"
+            project_foldername = tail.split('.',1)[0] 
             self.dst = os.path.join(head, project_foldername).replace('\\', '/')
 
             # Start converter
