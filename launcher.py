@@ -1039,29 +1039,21 @@ class xnat_pic_gui(tk.Frame):
     class XNATUploader():
 
         def __init__(self, master):
-
-            def disable_buttons():
-                # Disable all buttons
-                master.convert_btn['state'] = tk.DISABLED
-                master.info_btn['state'] = tk.DISABLED
-                master.upload_btn['state'] = tk.DISABLED
-                #master.process_btn['state'] = tk.DISABLED
             
-            disable_buttons()
+            # Disable main frame buttons
+            disable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
 
-            def enable_btn():
-                login_popup.destroy()
-                #Enable all buttons
-                master.convert_btn['state'] = tk.NORMAL
-                master.info_btn['state'] = tk.NORMAL
-                master.upload_btn['state'] = tk.NORMAL
-                #master.process_btn['state'] = tk.NORMAL
-
+            # Start with a popup to get credentials
             login_popup = tk.Toplevel()
             login_popup.title("XNAT-PIC ~ Login")
             login_popup.geometry("%dx%d+%d+%d" % (550, 200, my_width/3, my_height/4))
 
-            login_popup.protocol("WM_DELETE_WINDOW", enable_btn)
+            # Closing window event: if it occurs, the popup must be destroyed and the main frame buttons must be enabled
+            def closed_window():
+                login_popup.destroy()
+                #Enable all buttons
+                enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
+            login_popup.protocol("WM_DELETE_WINDOW", closed_window)
 
             # XNAT ADDRESS      
             login_popup.label_address = tk.Label(login_popup, text="  XNAT web address  ", font=SMALL_FONT)   
@@ -1132,32 +1124,19 @@ class xnat_pic_gui(tk.Frame):
             )
             login_popup.button_connect.grid(row=5, column=0)
 
+            # QUIT button
+            def quit_event():
+                login_popup.destroy()
+                enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
+
             login_popup.button_quit = tk.Button(
                 login_popup,
                 text='Quit', font=SMALL_FONT,
                 width=15,
-                command=lambda: (login_popup.destroy(), self.normal_btn(master, disconnect=True)),
+                command=quit_event,
             )
             login_popup.button_quit.grid(row=5, column=2)
             self.load_saved_credentials(login_popup)
-
-        def normal_btn(self, master, popup=None, disconnect=False, close_popup=False):
-
-            if disconnect == True:
-                try:
-                    self.session.disconnect()
-                except:
-                    pass
-            if close_popup == True:
-                try:
-                    popup.destroy()
-                except:
-                    pass   
-            #Enable all buttons
-            master.convert_btn['state'] = tk.NORMAL
-            master.info_btn['state'] = tk.NORMAL
-            master.upload_btn['state'] = tk.NORMAL
-            #master.process_btn['state'] = tk.NORMAL
 
         def load_saved_credentials(self, popup):
             # REMEMBER CREDENTIALS
@@ -1208,7 +1187,6 @@ class xnat_pic_gui(tk.Frame):
                         pass
                 popup.destroy()
                 self.overall_uploader(master)
-                #self.project_selection(master)
             except xnat.exceptions.XNATLoginFailedError as err:
                 messagebox.showerror("Error!", err)
             except Exception as error:
@@ -1241,30 +1219,15 @@ class xnat_pic_gui(tk.Frame):
                 # decrypt
                 os.remove(file)
 
-        def enable_next(self, *_):
-            # # EXISTING PROJECT
-            if self.newprj_var.get() == 0:
-                if self.prj.get() in self.OPTIONS:
-                    self.button_next["state"] = "normal"
-                else:
-                    self.button_next["state"] = "disabled"
-
-            # # NEW PROJECT
-            else:
-                if self.entry_prjname.var.get():
-                    self.button_next["state"] = "normal"
-                else:
-                    self.button_next["state"] = "disabled"
-
         def check_project_name(self, *args):
 
             if self.entry_prjname.get() != '':
                 # Method to check about project name
-                if self.entry_prjname.get() in list(self.OPTIONS.key_map.keys()):
+                if self.entry_prjname.get() in self.OPTIONS:
                     # Case 1 --> The project already exists
                     messagebox.showerror(
-                        "XNAT-PIC Uploader!",
-                        "Project ID %s already exists! Please, enter a different project ID"
+                        "XNAT-PIC Uploader",
+                        "Project ID %s already exists! Please, enter a different project ID."
                         % self.entry_prjname.get(),
                     )
                 else:
@@ -1278,17 +1241,21 @@ class xnat_pic_gui(tk.Frame):
                         project = self.session.classes.ProjectData(
                                        name=self.prj.get(), parent=self.session)
                         self.session.clearcache()
+                        # Refresh the list of projects
+                        self.OPTIONS = self.session.projects
                         messagebox.showinfo('XNAT-PIC Uploader', 'A new project is created.')                 
                     except exception as e:
                         messagebox.showerror("Error!", str(e))
+            else:
+                messagebox.showerror("XNAT-PIC Uploader", "Please enter a project ID.")
 
         def check_subject_name(self, *args):
 
             if self.entry_subname.get() != '':
                 # Check if the project already exists
-                if self.prj.get() in list(self.OPTIONS.key_map.keys()):
+                if self.prj.get() in self.OPTIONS:
                     # Method to check about project name
-                    if self.entry_subname.get() in list(self.OPTIONS2.key_map.keys()):
+                    if self.entry_subname.get() in self.OPTIONS2:
                         # Case 1 --> The project already exists
                         messagebox.showerror(
                             "XNAT-PIC Uploader!",
@@ -1305,26 +1272,36 @@ class xnat_pic_gui(tk.Frame):
                             self.sub.set(self.entry_subname.get())
                             disable_buttons([self.entry_subname, self.confirm_new_sub, self.reject_new_sub])
 
-                            # project = self.session.classes.ProjectData(
-                            #            name=self.prj.get(), parent=self.session)
-                            project = self.session.projects[self.prj.get()]
-                            subject = self.session.classes.SubjectData(
-                                        parent=project, label=self.sub.get())
+                            try:
+                                # Try to retrieve the project
+                                project = self.session.projects[self.prj.get()]
+                            except:
+                                # otherwise a new one will be created
+                                messagebox.showwarning('XNAT-PIC Uploader', 'The project you are trying to retrieve does not exist.'
+                                                                            'A new project will be created.')
+                                project = self.session.classes.ProjectData(
+                                                    name=self.prj.get(), parent=self.session)
+                                # Clear cache to refresh the catalog
+                                self.session.clearcache()
+                            # Create new subject   
+                            subject = self.session.classes.SubjectData(parent=project, label=self.sub.get())
+                            # Clear cache to refresh the catalog
                             self.session.clearcache()
+                            # Refresh the list of subjects
+                            self.OPTIONS2 = self.session.projects[self.prj.get()].subjects
                             messagebox.showinfo('XNAT-PIC Uploader', 'A new subject is created.')                 
                         except exception as e:
                             messagebox.showerror("Error!", str(e))
                 else:
                     messagebox.showerror('XNAT-PIC Uploader', 'The current project does not exist in XNAT platform.'
-                                                            'Please select an other project or create a new one.')
+                                                            '\nPlease select an other project or create a new one.')
+            else:
+                messagebox.showerror("XNAT-PIC Uploader", "Please enter a subject ID.")
 
         def check_experiment_name(self):
             pass
 
         def overall_uploader(self, master):
-
-            # def isChecked():
-            #     master.add_file_flag = self.add_file_flag.get()
                            
             #################### Update the frame ####################
             try:
@@ -1332,7 +1309,6 @@ class xnat_pic_gui(tk.Frame):
                                 master.info_convert_btn, master.info_info_btn, master.info_upload_btn])
             except:
                 pass
-            
             #################### Create the new frame ####################
 
             #############################################
@@ -1397,11 +1373,15 @@ class xnat_pic_gui(tk.Frame):
                 self.subject_list['menu'].delete(0, 'end')
                 for key in self.OPTIONS2:
                     self.subject_list['menu'].add_command(label=key, command=lambda var=key:self.sub.set(var))
+            
+            def reject_project(*args):
+                self.entry_prjname.delete(0,tk.END)
+                disable_buttons([self.entry_prjname, self.confirm_new_prj, self.reject_new_prj])
 
             self.OPTIONS = list(self.session.projects)
             self.prj = tk.StringVar()
             default_value = "--"
-            self.project_list = ttk.OptionMenu(master.my_canvas, self.prj, default_value, *self.OPTIONS)
+            self.project_list = ttk.OptionMenu(master.my_canvas, self.prj, default_value, *self.OPTIONS, command=reject_project)
             self.project_list.configure(state="disabled")
             self.prj.trace('w', get_subjects)
             master.my_canvas.create_window(2*x_label, y_prj, anchor=tk.CENTER, width=width_menu, window=self.project_list)
@@ -1427,11 +1407,8 @@ class xnat_pic_gui(tk.Frame):
             master.my_canvas.create_window(x_btn_confirm, y_prj, anchor=tk.CENTER, window=self.confirm_new_prj)
 
             # Button to reject new project
-            def reject():
-                self.entry_prjname.delete(0,tk.END)
-                disable_buttons([self.entry_prjname, self.confirm_new_prj, self.reject_new_prj])
             x_btn_reject = int(my_width*86/100)
-            self.reject_new_prj = tk.Button(master.my_canvas, text = "X", bg=BG_BTN_COLOR, borderwidth=BORDERWIDTH, command=reject, cursor=CURSOR_HAND, state='disabled')
+            self.reject_new_prj = tk.Button(master.my_canvas, text = "X", bg=BG_BTN_COLOR, borderwidth=BORDERWIDTH, command=reject_project, cursor=CURSOR_HAND, state='disabled')
             master.my_canvas.create_window(x_btn_reject, y_prj, anchor=tk.CENTER, window=self.reject_new_prj)
             #############################################
 
@@ -1451,13 +1428,18 @@ class xnat_pic_gui(tk.Frame):
                 self.experiment_list['menu'].delete(0, 'end')
                 for key in self.OPTIONS3:
                     self.experiment_list['menu'].add_command(label=key, command=lambda var=key:self.exp.set(var))
+
+            def reject_subject(*args):
+                self.entry_subname.delete(0,tk.END)
+                disable_buttons([self.entry_subname, self.confirm_new_sub, self.reject_new_sub])
+
             # Menu
             if self.prj.get() != '--':
                 self.OPTIONS2 = list(self.session.projects[self.prj.get()].subjects.key_map.keys())
             else:
                 self.OPTIONS2 = []
             self.sub = tk.StringVar()
-            self.subject_list = ttk.OptionMenu(master.my_canvas, self.sub, default_value, *self.OPTIONS2)
+            self.subject_list = ttk.OptionMenu(master.my_canvas, self.sub, default_value, *self.OPTIONS2, command=reject_subject)
             self.subject_list.configure(state="disabled")
             self.sub.trace('w', get_experiments)
             master.my_canvas.create_window(2*x_label, y_sub, anchor = tk.CENTER, width = width_menu, window = self.subject_list)
@@ -1481,16 +1463,15 @@ class xnat_pic_gui(tk.Frame):
             master.my_canvas.create_window(x_btn_confirm, y_sub, anchor=tk.CENTER, window=self.confirm_new_sub)
 
             # Button to reject new subject
-            def reject():
-                self.entry_subname.delete(0,tk.END)
-                disable_buttons([self.entry_subname, self.confirm_new_sub, self.reject_new_sub])
-
-            self.reject_new_sub = tk.Button(master.my_canvas, text = "X", bg=BG_BTN_COLOR, borderwidth=BORDERWIDTH, command=reject, cursor=CURSOR_HAND, state='disabled')
+            self.reject_new_sub = tk.Button(master.my_canvas, text = "X", bg=BG_BTN_COLOR, borderwidth=BORDERWIDTH, command=reject_subject, cursor=CURSOR_HAND, state='disabled')
             master.my_canvas.create_window(x_btn_reject, y_sub, anchor=tk.CENTER, window=self.reject_new_sub)
             #############################################
 
             #############################################
             ################# Experiment ################
+            def reject_experiment(*args):
+                self.entry_expname.delete(0,tk.END)
+                disable_buttons([self.entry_expname, self.confirm_new_exp, self.reject_new_exp])
             # Label
             y_exp = int(my_height*60/100)
             self.select_exp = master.my_canvas.create_text(x_label, y_exp, anchor=tk.CENTER, width=width_menu, fill=DISABLE_LBL_COLOR, font=LARGE_FONT, 
@@ -1502,7 +1483,7 @@ class xnat_pic_gui(tk.Frame):
             else:
                 self.OPTIONS3 = []
             self.exp = tk.StringVar()
-            self.experiment_list = ttk.OptionMenu(master.my_canvas, self.exp, default_value, *self.OPTIONS3)
+            self.experiment_list = ttk.OptionMenu(master.my_canvas, self.exp, default_value, *self.OPTIONS3, command=reject_experiment)
             self.experiment_list.configure(state="disabled")
             master.my_canvas.create_window(2*x_label, y_exp, anchor=tk.CENTER, width=width_menu, window=self.experiment_list)
             
@@ -1525,11 +1506,7 @@ class xnat_pic_gui(tk.Frame):
             master.my_canvas.create_window(x_btn_confirm, y_exp, anchor=tk.CENTER, window=self.confirm_new_exp)
 
             # Button to reject new experiment
-            def reject():
-                self.entry_expname.delete(0,tk.END)
-                disable_buttons([self.entry_expname, self.confirm_new_exp, self.reject_new_exp])
-
-            self.reject_new_exp = tk.Button(master.my_canvas, text = "X", bg=BG_BTN_COLOR, borderwidth=BORDERWIDTH, command=reject, cursor=CURSOR_HAND, state='disabled')
+            self.reject_new_exp = tk.Button(master.my_canvas, text = "X", bg=BG_BTN_COLOR, borderwidth=BORDERWIDTH, command=reject_experiment, cursor=CURSOR_HAND, state='disabled')
             master.my_canvas.create_window(x_btn_reject, y_exp, anchor=tk.CENTER, window=self.reject_new_exp)
             #############################################
 
