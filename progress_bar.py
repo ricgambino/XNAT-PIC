@@ -19,7 +19,7 @@ class ProgressBar():
 
         self.title = bar_title
         self.popup = tk.Toplevel()
-        self.popup.geometry("%dx%d+%d+%d" % (500, 80, 700, 500))
+        self.popup.geometry("%dx%d+%d+%d" % (500, 100, 700, 500))
         self.popup.title(bar_title)
         self.progress_var = tk.DoubleVar()
         self.bar_length = 400
@@ -34,7 +34,7 @@ class ProgressBar():
         self.popup.update()
 
     def set_caption(self, text):
-        self.label = tk.Label(self.popup, text=text, font=("Calibri", 8, "bold")).place(relx=0.5, rely=0.5, anchor = 's')
+        self.caption = tk.Label(self.popup, text=text, font=("Calibri", 10, "bold")).place(relx=0.5, rely=0.5, anchor = 's')
         self.popup.update()
         
     def start_determinate_bar(self):
