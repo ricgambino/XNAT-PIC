@@ -89,8 +89,8 @@ class Dicom2XnatUploader():
                                         subject=subject_id,
                                         experiment=experiment_id,
                                         content_type='application/zip')
-
-            experiment = project.subjects[subject_id].experiments[experiment_id]
+            self.session.clearcache()
+            experiment = self.session.projects[project_id].subjects[subject_id].experiments[experiment_id]
                 
             if flag == 1:
                 for var in subject_data.keys():
