@@ -64,7 +64,6 @@ class Dicom2XnatUploader():
         subject_id = params['subject_id']
         experiment_id = params['experiment_id']
         flag = params['custom_var_flag']
-        subject_data = params['custom_var']
 
         print('Uploading ' + str(folder_to_upload.split('/')[-2]) + ' to ' + str(project_id))
 
@@ -92,15 +91,16 @@ class Dicom2XnatUploader():
             self.session.clearcache()
             experiment = self.session.projects[project_id].subjects[subject_id].experiments[experiment_id]
                 
-            if flag == 1:
-                for var in subject_data.keys():
-                    if subject_data[var] == '':
-                        continue
-                    if var == 'Project' or var == 'Subject':
-                        subject.fields[var] = subject_data[var]
-                        experiment.fields[var] = subject_data[var]
-                    else:
-                        experiment.fields[var] = subject_data[var]
+            if flag > 0:
+                print('Updating ' + str(flag) + ' custom variables...')
+                count = 0
+                for var in params.keys():
+                    if count < flag:
+                        if var not in ['project_id', 'subject_id', 'folder_to_upload', 'experiment_id', 'custom_var_flag']:
+                            experiment.fields[var] = params[var]
+                            count += 1
+                    else: 
+                        break
 
             os.remove(zip_dst)
             self.session.clearcache()
