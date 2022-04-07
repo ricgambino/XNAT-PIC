@@ -1295,20 +1295,22 @@ class xnat_pic_gui(tk.Frame):
                     )
                 else:
                     # Case 2 --> The project does not exist yet
-                    try:
-                        result = messagebox.askyesno("XNAT-PIC Uploader", "A new project will be created. Are you sure?")
-                        if result is False:
+                    result = messagebox.askyesno("XNAT-PIC Uploader", "A new project will be created. Are you sure?")
+                    if result is False:
                             return
-                        self.prj.set(self.entry_prjname.get())
-                        disable_buttons([self.entry_prjname, self.confirm_new_prj, self.reject_new_prj])
+                    self.prj.set(self.entry_prjname.get())
+                    disable_buttons([self.entry_prjname, self.confirm_new_prj, self.reject_new_prj])
+                    try:
                         project = self.session.classes.ProjectData(
                                        name=self.prj.get(), parent=self.session)
-                        self.session.clearcache()
-                        # Refresh the list of projects
-                        self.OPTIONS = self.session.projects
-                        messagebox.showinfo('XNAT-PIC Uploader', 'A new project is created.')                 
                     except exception as e:
                         messagebox.showerror("Error!", str(e))
+                        
+                    self.session.clearcache()
+                    # Refresh the list of projects
+                    self.OPTIONS = self.session.projects
+                    messagebox.showinfo('XNAT-PIC Uploader', 'A new project is created.')                 
+                    
             else:
                 messagebox.showerror("XNAT-PIC Uploader", "Please enter a project ID.")
 
@@ -1662,7 +1664,7 @@ class xnat_pic_gui(tk.Frame):
                                     self.next_btn, self.exit_btn])
                     # Delete all widgets that cannot be destroyed
                     delete_widgets(master.my_canvas, [self.select_prj, self.select_sub, self.select_exp, self.check_add_files,
-                                                    self.check_n_custom_var])
+                                                    self.check_n_custom_var, self.subtitle])
                     # Perform disconnection of the session if it is alive
                     try:
                         self.session.disconnect()
@@ -1821,38 +1823,47 @@ class xnat_pic_gui(tk.Frame):
                         self.uploader = Dicom2XnatUploader(self.session)
                         
                         for sub in list_dirs:
+                            sub = os.path.join(project_to_upload, sub)
                             # Check if 'MR' folder is already into the folder_to_upload path
                             if 'MR' != os.path.basename(sub):
                                 sub = os.path.join(sub, 'MR').replace('\\', '/')
                             else:
                                 sub = sub.replace('\\', '/')
+                            params = {}
+                            params['folder_to_upload'] = sub
+                            params['project_id'] = self.prj.get()
+                            params['custom_var_flag'] = self.n_custom_var.get()
                             # Check for existing custom variables file
-                            flag = 0
                             try:
+                                # If the custom variables file is available
                                 subject_data = read_table('/'.join([sub, 'Custom_Variables.txt']))
+                                
                                 # Define the subject_id and the experiment_id
                                 if self.sub.get() == '--':
                                     self.sub.set(subject_data['Subject'])
+                                if self.sub.get() != subject_data['Subject']:
+                                    ans = messagebox.askyesno("XNAT-PIC Experiment Uploader", "The subject you are trying to retrieve does not match with the custom variables."
+                                                                                                "\n Would you like to continue?")
+                                    if ans != True:
+                                        return
+                                params['subject_id'] = self.sub.get()
                                 if self.exp.get() == '--':
                                     self.exp.set('_'.join([subject_data['Project'], subject_data['Subject'], subject_data['Group'], subject_data['Timepoint']]).replace(' ', '_'))
-                                flag = 1
-                            except Exception as error:
-                                # Define the subject_id and the experiment_id 
+                                params['experiment_id'] = self.exp.get()
+                                for var in subject_data.keys():
+                                    if var not in ['Project', 'Subject', 'AcquisitionDate']:
+                                        params[var] = subject_data[var]
+                            except:
+                                # Define the subject_id and the experiment_id if the custom variables file is not available
                                 if self.sub.get() == '--':
-                                    self.sub.set(sub.split('/')[-2].replace('_dcm', ''))
+                                    self.sub.set(sub.split('/')[-2])
+                                params['subject_id'] = self.sub.get()
                                 if self.exp.get() == '--':
-                                    self.exp.set('_'.join([sub.split('/')[-3].replace('_dcm', ''), sub.split('/')[-2].replace('_dcm', '')]).replace(' ', '_'))
-                                flag = 0
+                                    self.exp.set('_'.join([sub.split('/')[-3], sub.split('/')[-2]]).replace(' ', '_'))
+                                params['experiment_id'] = self.exp.get()
 
                             progressbar.set_caption('Uploading ' + str(self.sub.get()) + ' ...')
-                            # Create parameters dictionary to pass to the uploader function
-                            params = {'folder_to_upload': sub,
-                                        'project_id': self.prj.get(),
-                                        'subject_id': self.sub.get(),
-                                        'experiment_id': self.exp.get(),
-                                        'custom_var_flag': flag,
-                                        'custom_var': subject_data
-                                        }
+
                             self.uploader.upload(params)
                             # Check for Results folder
                             if self.add_file_flag.get() == 1:
@@ -1900,7 +1911,7 @@ class xnat_pic_gui(tk.Frame):
                                     self.next_btn, self.exit_btn])
             # Delete all widgets that cannot be destroyed
             delete_widgets(master.my_canvas, [self.select_prj, self.select_sub, self.select_exp, self.check_add_files,
-                                                    self.check_n_custom_var])
+                                                    self.check_n_custom_var, self.subtitle])
             # Clear and update session cache
             self.session.clearcache()
             self.overall_uploader(master)
@@ -1926,33 +1937,42 @@ class xnat_pic_gui(tk.Frame):
                         subject_to_upload = os.path.join(subject_to_upload, 'MR').replace('\\', '/')
                     else:
                         subject_to_upload = subject_to_upload.replace('\\', '/')
+
+                    params = {}
+                    params['folder_to_upload'] = subject_to_upload
+                    params['project_id'] = self.prj.get()
+                    params['custom_var_flag'] = self.n_custom_var.get()
                     # Check for existing custom variables file
-                    flag = 0
                     try:
+                        # If the custom variables file is available
                         subject_data = read_table('/'.join([subject_to_upload, 'Custom_Variables.txt']))
+                        
                         # Define the subject_id and the experiment_id
                         if self.sub.get() == '--':
                             self.sub.set(subject_data['Subject'])
+                        if self.sub.get() != subject_data['Subject']:
+                            ans = messagebox.askyesno("XNAT-PIC Experiment Uploader", "The subject you are trying to retrieve does not match with the custom variables."
+                                                                                        "\n Would you like to continue?")
+                            if ans != True:
+                                return
+                        params['subject_id'] = self.sub.get()
                         if self.exp.get() == '--':
                             self.exp.set('_'.join([subject_data['Project'], subject_data['Subject'], subject_data['Group'], subject_data['Timepoint']]).replace(' ', '_'))
-                        flag = 1
+                        params['experiment_id'] = self.exp.get()
+                        for var in subject_data.keys():
+                            if var not in ['Project', 'Subject', 'AcquisitionDate']:
+                                params[var] = subject_data[var]
                     except:
-                        # Define the subject_id and the experiment_id 
+                        # Define the subject_id and the experiment_id if the custom variables file is not available
                         if self.sub.get() == '--':
-                            self.sub.set(subject_to_upload.split('/')[-2].replace('_dcm', ''))
+                            self.sub.set(subject_to_upload.split('/')[-2])
+                        params['subject_id'] = self.sub.get()
                         if self.exp.get() == '--':
-                            self.exp.set('_'.join([subject_to_upload.split('/')[-3].replace('_dcm', ''), subject_to_upload.split('/')[-2].replace('_dcm', '')]).replace(' ', '_'))
-                        flag = 0
+                            self.exp.set('_'.join([subject_to_upload.split('/')[-3], subject_to_upload.split('/')[-2]]).replace(' ', '_'))
+                        params['experiment_id'] = self.exp.get()
 
                     progressbar.set_caption('Uploading ' + str(self.sub.get()) + ' ...')
-                    # Create parameters dictionary to pass to the uploader function
-                    params = {'folder_to_upload': subject_to_upload,
-                                'project_id': self.prj.get(),
-                                'subject_id': self.sub.get(),
-                                'experiment_id': self.exp.get(),
-                                'custom_var_flag': flag,
-                                'custom_var': subject_data
-                                }
+
                     t = threading.Thread(target=self.uploader.upload, args=(params, ))
                     t.start()
 
@@ -2001,7 +2021,7 @@ class xnat_pic_gui(tk.Frame):
                                     self.next_btn, self.exit_btn])
             # Delete all widgets that cannot be destroyed
             delete_widgets(master.my_canvas, [self.select_prj, self.select_sub, self.select_exp, self.check_add_files,
-                                                    self.check_n_custom_var])
+                                                    self.check_n_custom_var, self.subtitle])
             # Clear and update session cache
             self.session.clearcache()
             self.overall_uploader(master)
@@ -2027,37 +2047,42 @@ class xnat_pic_gui(tk.Frame):
                         experiment_to_upload = os.path.join(experiment_to_upload, 'MR').replace('\\', '/')
                     else:
                         experiment_to_upload = experiment_to_upload.replace('\\', '/')
+
+                    params = {}
+                    params['folder_to_upload'] = experiment_to_upload
+                    params['project_id'] = self.prj.get()
+                    params['custom_var_flag'] = self.n_custom_var.get()
                     # Check for existing custom variables file
-                    flag = 0
                     try:
+                        # If the custom variables file is available
                         subject_data = read_table('/'.join([experiment_to_upload, 'Custom_Variables.txt']))
+                        
                         # Define the subject_id and the experiment_id
                         if self.sub.get() == '--':
                             self.sub.set(subject_data['Subject'])
-                        elif self.sub.get() != subject_data['Subject']:
+                        if self.sub.get() != subject_data['Subject']:
                             ans = messagebox.askyesno("XNAT-PIC Experiment Uploader", "The subject you are trying to retrieve does not match with the custom variables."
                                                                                         "\n Would you like to continue?")
                             if ans != True:
                                 return
+                        params['subject_id'] = self.sub.get()
                         if self.exp.get() == '--':
                             self.exp.set('_'.join([subject_data['Project'], subject_data['Subject'], subject_data['Group'], subject_data['Timepoint']]).replace(' ', '_'))
-                        flag = 1
+                        params['experiment_id'] = self.exp.get()
+                        for var in subject_data.keys():
+                            if var not in ['Project', 'Subject', 'AcquisitionDate']:
+                                params[var] = subject_data[var]
                     except:
+                        # Define the subject_id and the experiment_id if the custom variables file is not available
                         if self.sub.get() == '--':
-                            self.sub.set(experiment_to_upload.split('/')[-2].replace('_dcm', ''))
+                            self.sub.set(experiment_to_upload.split('/')[-2])
+                        params['subject_id'] = self.sub.get()
                         if self.exp.get() == '--':
-                            self.exp.set('_'.join([experiment_to_upload.split('/')[-3].replace('_dcm', ''), experiment_to_upload.split('/')[-2].replace('_dcm', '')]).replace(' ', '_'))
-                        flag = 0
+                            self.exp.set('_'.join([experiment_to_upload.split('/')[-3], experiment_to_upload.split('/')[-2]]).replace(' ', '_'))
+                        params['experiment_id'] = self.exp.get()
 
-                    progressbar.set_caption('Uploading ' + str(self.sub.get()) + ' ...')
+                    progressbar.set_caption('Uploading ' + str(self.exp.get()) + ' ...')
                     # Create parameters dictionary to pass to the uploader function
-                    params = {'folder_to_upload': experiment_to_upload,
-                                'project_id': self.prj.get(),
-                                'subject_id': self.sub.get(),
-                                'experiment_id': self.exp.get(),
-                                'custom_var_flag': flag,
-                                'custom_var': subject_data
-                                }
 
                     t = threading.Thread(target=self.uploader.upload, args=(params, ))
                     t.start()
@@ -2107,7 +2132,7 @@ class xnat_pic_gui(tk.Frame):
                                     self.next_btn, self.exit_btn])
             # Delete all widgets that cannot be destroyed
             delete_widgets(master.my_canvas, [self.select_prj, self.select_sub, self.select_exp, self.check_add_files,
-                                                    self.check_n_custom_var])
+                                                    self.check_n_custom_var, self.subtitle])
             # Clear and update session cache
             self.session.clearcache()
             self.overall_uploader(master)
@@ -2153,7 +2178,7 @@ class xnat_pic_gui(tk.Frame):
                                     self.next_btn, self.exit_btn])
             # Delete all widgets that cannot be destroyed
             delete_widgets(master.my_canvas, [self.select_prj, self.select_sub, self.select_exp, self.check_add_files,
-                                                    self.check_n_custom_var])
+                                                    self.check_n_custom_var, self.subtitle])
             # Clear and update session cache
             self.session.clearcache()
             self.overall_uploader(master)
