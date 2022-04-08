@@ -2,7 +2,7 @@ from doctest import master
 from logging import exception
 import shutil
 import tkinter as tk
-from tkinter import END, MULTIPLE, SINGLE, W, filedialog, mainloop, messagebox
+from tkinter import END, MULTIPLE, SINGLE, W, filedialog, messagebox
 from tkinter.font import Font
 from tkinter.tix import COLUMN
 from turtle import bgcolor, width
@@ -16,8 +16,6 @@ import os.path
 from functools import partial
 import subprocess
 import platform
-from numpy import empty
-from pip import main 
 from progress_bar import ProgressBar
 from dicom_converter import Bruker2DicomConverter
 import xnat
@@ -49,7 +47,6 @@ QUESTION_HAND = "question_arrow"
 BORDERWIDTH = 3
 
 load_dotenv()
-password = os.environ.get('secretKey')
 bufferSize = int(os.environ.get('bufferSize1')) * int(os.environ.get('bufferSize2'))
 
 class SplashScreen(tk.Toplevel):
@@ -1052,7 +1049,7 @@ class xnat_pic_gui(tk.Frame):
             login_popup.label_address.grid(row=0, column=0, padx=1, ipadx=1)
             login_popup.entry_address = tk.Entry(login_popup)
             login_popup.entry_address.var = tk.StringVar()
-            login_popup.entry_address["textvariable"] = login_popup.entry_address.var
+            login_popup.entry_address["textvariable"] = login_popup.entry_address.var # Optionmenu
             login_popup.entry_address.grid(row=0, column=1, padx=1, ipadx=1)
            
             # XNAT USER 
@@ -1138,7 +1135,7 @@ class xnat_pic_gui(tk.Frame):
                 decrypted_file = os.path.join(
                     home, "Documents", ".XNAT_login_file00000.txt"
                 )
-                pyAesCrypt.decryptFile(encrypted_file, decrypted_file, password, bufferSize)
+                pyAesCrypt.decryptFile(encrypted_file, decrypted_file, os.environ.get('secretKey'), bufferSize)
                 login_file = open(decrypted_file, "r")
                 line = login_file.readline()
                 popup.entry_address.var.set(line[8:-1])
@@ -1156,9 +1153,9 @@ class xnat_pic_gui(tk.Frame):
 
             # LOGIN
             popup.entry_address_complete = popup.http.get() + popup.entry_address.var.get()
-            self.entry_address_complete = popup.entry_address_complete
-            self.entry_user = popup.entry_user.var.get()
-            self.entry_psw = popup.entry_psw.var.get()
+            # self.entry_address_complete = popup.entry_address_complete
+            # self.entry_user = popup.entry_user.var.get()
+            # self.entry_psw = popup.entry_psw.var.get()
 
             # Method to check if there is an existent session!!!!
             home = os.path.expanduser("~")
@@ -1168,6 +1165,9 @@ class xnat_pic_gui(tk.Frame):
                     popup.entry_user.var.get(),
                     popup.entry_psw.var.get(),
                 )
+                # print(type(self.session))
+                # self.session.disconnect()
+                # print(type(self.session))
                 if popup.remember.get() == True:
                     self.save_credentials(popup)
                 else:
@@ -1178,11 +1178,22 @@ class xnat_pic_gui(tk.Frame):
                     except FileNotFoundError:
                         pass
                 popup.destroy()
+                # Start a thread to keep updated the current session
+                # self.session_thread = threading.Thread(target=self.refresh_session, args=())
+                # self.session_thread.start()
                 self.overall_uploader(master)
             except xnat.exceptions.XNATLoginFailedError as err:
                 messagebox.showerror("Error!", err)
             except Exception as error:
                 messagebox.showerror("Error!", error)
+
+        def refresh_session(self):
+            # Keep updated the current session
+            while self.session != '':
+                self.session.clearcache()
+                print('Session updated')
+                time.sleep(60)
+            print('Refresh thread stopped')
 
         def save_credentials(self, popup):
 
@@ -1207,7 +1218,7 @@ class xnat_pic_gui(tk.Frame):
                 login_file.close()
                 # encrypt
                 encrypted_file = os.path.join(home, "Documents", ".XNAT_login_file.txt.aes")
-                pyAesCrypt.encryptFile(file, encrypted_file, password, bufferSize)
+                pyAesCrypt.encryptFile(file, encrypted_file, os.environ.get('secretKey'), bufferSize)
                 # decrypt
                 os.remove(file)
 
@@ -1593,10 +1604,11 @@ class xnat_pic_gui(tk.Frame):
                                     self.next_btn, self.exit_btn])
                     # Delete all widgets that cannot be destroyed
                     delete_widgets(master.my_canvas, [self.select_prj, self.select_sub, self.select_exp, self.check_add_files,
-                                                    self.check_n_custom_var, self.subtitle])
+                                                    self.check_n_custom_var])
                     # Perform disconnection of the session if it is alive
                     try:
                         self.session.disconnect()
+                        self.session = ''
                     except:
                         pass
                     # Restore the main frame
@@ -1667,8 +1679,7 @@ class xnat_pic_gui(tk.Frame):
                 master.my_canvas.itemconfig(self.select_prj, fill=TEXT_LBL_COLOR)
                 # Enable NEXT button only if all the requested fields are filled
                 def enable_next(*args):
-                    a = self.prj.get()
-                    if a != '--':
+                    if self.prj.get() != '--':
                         enable_buttons([self.next_btn])
                 self.prj.trace('w', enable_next)
                 
@@ -1683,8 +1694,7 @@ class xnat_pic_gui(tk.Frame):
                 master.my_canvas.itemconfig(self.select_prj, fill=TEXT_LBL_COLOR)
                 # Enable NEXT button only if all the requested fields are filled
                 def enable_next(*args):
-                    a = self.prj.get()
-                    if a != '--':
+                    if self.prj.get() != '--':
                         enable_buttons([self.next_btn])
                 self.prj.trace('w', enable_next)
                 
@@ -1700,15 +1710,13 @@ class xnat_pic_gui(tk.Frame):
                 master.my_canvas.itemconfig(self.select_sub, fill=TEXT_LBL_COLOR)
                 # Enable NEXT button only if all the requested fields are filled
                 def enable_next(*args):
-                    a = self.prj.get()
-                    b = self.sub.get()
-                    if a != '--' and b != '--':
+                    if self.prj.get() != '--' and self.sub.get() != '--':
                         enable_buttons([self.next_btn])
                 self.sub.trace('w', enable_next)
 
             elif press_btn == 3:
                 # Disable main buttons
-                disable_buttons([self.prj_btn, self.sub_btn, self.exp_btn, self.file_btn, self.add_file_btn])
+                disable_buttons([self.prj_btn, self.sub_btn, self.exp_btn, self.file_btn, self.add_file_btn, self.add_file_btn, self.custom_var_list])
                 enable_buttons([self.project_list, self.new_prj_btn, self.subject_list, self.new_sub_btn, self.experiment_list, self.new_exp_btn])
                 # Insert subtitle
                 self.subtitle = master.my_canvas.create_text(int(my_width/2), int(my_height*30/100), anchor=tk.CENTER, width=int(my_width/7), fill='red', font=LARGE_FONT, 
@@ -1719,10 +1727,7 @@ class xnat_pic_gui(tk.Frame):
                 master.my_canvas.itemconfig(self.select_exp, fill=TEXT_LBL_COLOR)
                 # Enable NEXT button only if all the requested fields are filled
                 def enable_next(*args):
-                    a = self.prj.get()
-                    b = self.sub.get()
-                    c = self.exp.get()
-                    if a != '--' and b != '--' and c != '--':
+                    if self.prj.get() != '--' and self.sub.get() != '--' and self.exp.get() != '--':
                         enable_buttons([self.next_btn])
                 self.exp.trace('w', enable_next)
             else:
@@ -1743,7 +1748,6 @@ class xnat_pic_gui(tk.Frame):
                     progressbar.start_indeterminate_bar()
 
                     list_dirs = os.listdir(project_to_upload)
-                    # list_of_subjects = [(os.path.join(project_to_upload, sub).replace('\\', '/'), self.prj.get()) for sub in list_dirs]
 
                     start_time = time.time()
 
@@ -1763,32 +1767,31 @@ class xnat_pic_gui(tk.Frame):
                             params['project_id'] = self.prj.get()
                             params['custom_var_flag'] = self.n_custom_var.get()
                             # Check for existing custom variables file
+                            
                             try:
                                 # If the custom variables file is available
-                                subject_data = read_table('/'.join([sub, 'Custom_Variables.txt']))
+                                text_file = [os.path.join(sub, f) for f in os.listdir(sub) if f.endswith('.txt') and 'Custom' in f]
+                                subject_data = read_table(text_file[0])
                                 
                                 # Define the subject_id and the experiment_id
-                                if self.sub.get() == '--':
-                                    self.sub.set(subject_data['Subject'])
+                                # Controllo su stringa vuota
+                                self.sub.set(subject_data['Subject'])
                                 if self.sub.get() != subject_data['Subject']:
                                     ans = messagebox.askyesno("XNAT-PIC Experiment Uploader", "The subject you are trying to retrieve does not match with the custom variables."
                                                                                                 "\n Would you like to continue?")
                                     if ans != True:
                                         return
                                 params['subject_id'] = self.sub.get()
-                                if self.exp.get() == '--':
-                                    self.exp.set('_'.join([subject_data['Project'], subject_data['Subject'], subject_data['Group'], subject_data['Timepoint']]).replace(' ', '_'))
+                                self.exp.set('_'.join([subject_data['Project'], subject_data['Subject'], subject_data['Group'], subject_data['Timepoint']]).replace(' ', '_'))
                                 params['experiment_id'] = self.exp.get()
                                 for var in subject_data.keys():
                                     if var not in ['Project', 'Subject', 'AcquisitionDate']:
                                         params[var] = subject_data[var]
                             except:
                                 # Define the subject_id and the experiment_id if the custom variables file is not available
-                                if self.sub.get() == '--':
-                                    self.sub.set(sub.split('/')[-2])
+                                self.sub.set(sub.split('/')[-2])
                                 params['subject_id'] = self.sub.get()
-                                if self.exp.get() == '--':
-                                    self.exp.set('_'.join([sub.split('/')[-3], sub.split('/')[-2]]).replace(' ', '_'))
+                                self.exp.set('_'.join([sub.split('/')[-3], sub.split('/')[-2]]).replace(' ', '_'))
                                 params['experiment_id'] = self.exp.get()
 
                             progressbar.set_caption('Uploading ' + str(self.sub.get()) + ' ...')
@@ -1813,9 +1816,6 @@ class xnat_pic_gui(tk.Frame):
                                                 file_paths.append(file.path)
                                         self.uploader_file.upload(file_paths, vars)
 
-                    end_time = time.time()
-                    print('Elapsed time for conversion: ' + str(end_time - start_time) + ' s')
-
                     t = threading.Thread(target=upload_thread, args=())
                     t.start()
                     
@@ -1824,6 +1824,9 @@ class xnat_pic_gui(tk.Frame):
                     
                     # Stop the progress bar and close the popup
                     progressbar.stop_progress_bar()
+
+                    end_time = time.time()
+                    print('Elapsed time: ' + str(end_time-start_time) + ' seconds')
 
                 except Exception as e: 
                     messagebox.showerror("XNAT-PIC - Uploader", e)
@@ -1874,7 +1877,8 @@ class xnat_pic_gui(tk.Frame):
                     # Check for existing custom variables file
                     try:
                         # If the custom variables file is available
-                        subject_data = read_table('/'.join([subject_to_upload, 'Custom_Variables.txt']))
+                        text_file = [os.path.join(subject_to_upload, f) for f in os.listdir(subject_to_upload) if f.endswith('.txt') and 'Custom' in f]
+                        subject_data = read_table(text_file[0])
                         
                         # Define the subject_id and the experiment_id
                         if self.sub.get() == '--':
@@ -1984,7 +1988,9 @@ class xnat_pic_gui(tk.Frame):
                     # Check for existing custom variables file
                     try:
                         # If the custom variables file is available
-                        subject_data = read_table('/'.join([experiment_to_upload, 'Custom_Variables.txt']))
+                        text_file = [os.path.join(experiment_to_upload, f) for f in os.listdir(experiment_to_upload) if f.endswith('.txt') 
+                                                                                                                        and 'Custom' in f]
+                        subject_data = read_table(text_file[0])
                         
                         # Define the subject_id and the experiment_id
                         if self.sub.get() == '--':
