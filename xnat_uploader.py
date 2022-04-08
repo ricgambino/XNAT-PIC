@@ -72,12 +72,12 @@ class Dicom2XnatUploader():
         subject = self.session.classes.SubjectData(
                                         parent=project, label=subject_id)
 
-        if experiment_id in subject.experiments.key_map.keys():
-            # ALERT! That experiment already exists!
-            answer = messagebox.askyesno("XNAT-PIC - Uploader", "A patient with the same experiment_id already exists. Do you want to upload it anyway?")
+        # if experiment_id in subject.experiments.key_map.keys():
+        #     # ALERT! That experiment already exists!
+        #     answer = messagebox.askyesno("XNAT-PIC - Uploader", "A patient with the same experiment_id already exists. Do you want to upload it anyway?")
             
-            if answer is False:
-                return
+        #     if answer is False:
+        #         return
 
         try:
             zip_dst = shutil.make_archive(folder_to_upload.split('/')[-2], "zip", folder_to_upload) # .zip file of the current subfolder
@@ -103,7 +103,7 @@ class Dicom2XnatUploader():
                         break
 
             os.remove(zip_dst)
-            self.session.clearcache()
+            # self.session.clearcache()
 
         except Exception as e: 
             messagebox.showerror("XNAT-PIC - Uploader", e)
