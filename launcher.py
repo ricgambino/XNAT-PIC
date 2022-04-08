@@ -10,7 +10,7 @@ from unicodedata import name
 from unittest import result
 from PIL import Image, ImageTk
 from tkinter import ttk
-import time
+import time, json
 import os, re
 import os.path
 from functools import partial
@@ -1055,10 +1055,39 @@ class xnat_pic_gui(tk.Frame):
             # XNAT USER 
             login_popup.label_user = tk.Label(login_popup, text="Username", font=SMALL_FONT)
             login_popup.label_user.grid(row=1, column=0, padx=1, ipadx=1)
-            login_popup.entry_user = tk.Entry(login_popup)
-            login_popup.entry_user.var = tk.StringVar()
-            login_popup.entry_user["textvariable"] = login_popup.entry_user.var
-            login_popup.entry_user.grid(row=1, column=1, padx=1, ipadx=1)
+
+            def get_list_of_users():
+                try:
+                    home = os.path.expanduser("~")
+                    encrypted_file = os.path.join(home, "Documents", ".XNAT_login_file.txt.aes")
+                    decrypted_file = os.path.join(
+                        home, "Documents", ".XNAT_login_file00000.txt"
+                    )
+                    pyAesCrypt.decryptFile(encrypted_file, decrypted_file, os.environ.get('secretKey'), bufferSize)
+                    with open(decrypted_file, 'r') as credentials_file:
+                        data = json.load(credentials_file)
+                        list_of_users = list(data.keys())
+                        data = ''
+
+                    os.remove(decrypted_file)
+                    return list_of_users
+                except Exception as error:
+                    return []
+
+            def get_credentials(*args):
+                self.load_saved_credentials(login_popup)
+
+            login_popup.entry_user = tk.StringVar()
+            login_popup.combo_user = ttk.Combobox(login_popup, font=SMALL_FONT, takefocus=0, textvariable=login_popup.entry_user, width=10)
+            login_popup.combo_user['values'] = get_list_of_users()
+            login_popup.combo_user['state'] = 'normal'
+            login_popup.entry_user.trace('w', get_credentials)
+            login_popup.combo_user.grid(row=1, column=1, padx=1, ipadx=1)
+
+            # login_popup.entry_user = tk.Entry(login_popup)
+            # login_popup.entry_user.var = tk.StringVar()
+            # login_popup.entry_user["textvariable"] = login_popup.entry_user.var
+            # login_popup.entry_user.grid(row=1, column=1, padx=1, ipadx=1)
 
             # XNAT PASSWORD 
             login_popup.label_psw = tk.Label(login_popup, text="Password", font=SMALL_FONT)
@@ -1073,7 +1102,6 @@ class xnat_pic_gui(tk.Frame):
                     login_popup.entry_psw.config(show='')
                     login_popup.toggle_btn.config(text='Hide Password')
             
-
             login_popup.entry_psw = tk.Entry(login_popup, show="*")
             login_popup.entry_psw.var = tk.StringVar()
             login_popup.entry_psw["textvariable"] = login_popup.entry_psw.var
@@ -1125,7 +1153,6 @@ class xnat_pic_gui(tk.Frame):
                 command=quit_event,
             )
             login_popup.button_quit.grid(row=5, column=2)
-            self.load_saved_credentials(login_popup)
 
         def load_saved_credentials(self, popup):
             # REMEMBER CREDENTIALS
@@ -1136,14 +1163,13 @@ class xnat_pic_gui(tk.Frame):
                     home, "Documents", ".XNAT_login_file00000.txt"
                 )
                 pyAesCrypt.decryptFile(encrypted_file, decrypted_file, os.environ.get('secretKey'), bufferSize)
-                login_file = open(decrypted_file, "r")
-                line = login_file.readline()
-                popup.entry_address.var.set(line[8:-1])
-                line = login_file.readline()
-                popup.entry_user.var.set(line[9:-1])
-                line = login_file.readline()
-                popup.entry_psw.var.set(line[9:-1])
-                login_file.close()
+                with open(decrypted_file, 'r') as credentials_file:
+                    data = json.load(credentials_file)
+                    popup.entry_address.var.set(data[popup.entry_user.get()]['Address'])
+                    popup.entry_user.set(data[popup.entry_user.get()]['Username'])
+                    popup.entry_psw.var.set(data[popup.entry_user.get()]['Password'])
+                    data = ''
+
                 os.remove(decrypted_file)
                 popup.btn_remember.select()
             except Exception as error:
@@ -1153,16 +1179,13 @@ class xnat_pic_gui(tk.Frame):
 
             # LOGIN
             popup.entry_address_complete = popup.http.get() + popup.entry_address.var.get()
-            # self.entry_address_complete = popup.entry_address_complete
-            # self.entry_user = popup.entry_user.var.get()
-            # self.entry_psw = popup.entry_psw.var.get()
 
             # Method to check if there is an existent session!!!!
             home = os.path.expanduser("~")
             try:
                 self.session = xnat.connect(
                     popup.entry_address_complete,
-                    popup.entry_user.var.get(),
+                    popup.entry_user.get(),
                     popup.entry_psw.var.get(),
                 )
                 # print(type(self.session))
@@ -1201,21 +1224,26 @@ class xnat_pic_gui(tk.Frame):
 
             if os.path.exists(os.path.join(home, "Documents")):
                 file = os.path.join(home, "Documents", ".XNAT_login_file.txt")
-                login_file = open(file, "w+")
-                login_file.write(
-                    "Address:"
-                    + popup.entry_address.var.get()
-                    + "\n"
-                    + "Username:"
-                    + popup.entry_user.var.get()
-                    + "\n"
-                    + "Password:"
-                    + popup.entry_psw.var.get()
-                    + "\n"
-                    + "HTTP:"
-                    + popup.http.get()
+
+                home = os.path.expanduser("~")
+                encrypted_file = os.path.join(home, "Documents", ".XNAT_login_file.txt.aes")
+                decrypted_file = os.path.join(
+                    home, "Documents", ".XNAT_login_file00000.txt"
                 )
-                login_file.close()
+
+                pyAesCrypt.decryptFile(encrypted_file, decrypted_file, os.environ.get('secretKey'), bufferSize)
+                with open(decrypted_file, 'r') as credentials_file:
+                    data = json.load(credentials_file)
+                data[str(popup.entry_user.get())] = {
+                            "Address": popup.entry_address.var.get(),
+                            "Username": popup.entry_user.get(),
+                            "Password": popup.entry_psw.var.get(),
+                            "HTTP": popup.http.get()
+                    }
+                os.remove(decrypted_file)
+                with open(file, 'w+') as login_file:
+                    json.dump(data, login_file)
+                    data = ''
                 # encrypt
                 encrypted_file = os.path.join(home, "Documents", ".XNAT_login_file.txt.aes")
                 pyAesCrypt.encryptFile(file, encrypted_file, os.environ.get('secretKey'), bufferSize)
@@ -1604,7 +1632,7 @@ class xnat_pic_gui(tk.Frame):
                                     self.next_btn, self.exit_btn])
                     # Delete all widgets that cannot be destroyed
                     delete_widgets(master.my_canvas, [self.select_prj, self.select_sub, self.select_exp, self.check_add_files,
-                                                    self.check_n_custom_var, self.subtitle])
+                                                    self.check_n_custom_var])
                     # Perform disconnection of the session if it is alive
                     try:
                         self.session.disconnect()
