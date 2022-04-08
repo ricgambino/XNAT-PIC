@@ -2,7 +2,7 @@ from doctest import master
 from logging import exception
 import shutil
 import tkinter as tk
-from tkinter import END, MULTIPLE, SINGLE, W, filedialog, messagebox
+from tkinter import DISABLED, END, MULTIPLE, SINGLE, W, filedialog, messagebox
 from tkinter.font import Font
 from tkinter.tix import COLUMN
 from turtle import bgcolor, width
@@ -30,6 +30,7 @@ import datefinder
 import pydicom
 from tkcalendar import DateEntry
 from accessory_functions import *
+from idlelib.tooltip import Hovertip
 
 PATH_IMAGE = "images\\"
 PERCENTAGE_SCREEN = 1  # Defines the size of the canvas. If equal to 1 (100%) ,it takes the whole screen
@@ -187,14 +188,14 @@ class xnat_pic_gui(tk.Frame):
          # Convert files Bruker2DICOM
          convert_text = tk.StringVar()
          self.convert_btn = tk.Button(self.my_canvas, textvariable=convert_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, command=partial(self.bruker2dicom_conversion, self), cursor=CURSOR_HAND)
-         convert_text.set("Bruker2DICOM")
-         self.my_canvas.create_window(x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.convert_btn)
+         convert_text.set("DICOM Converter")
+         self.my_canvas.create_window(2*x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.convert_btn)
          
          # Fill in the info
          info_text = tk.StringVar()
          self.info_btn = tk.Button(self.my_canvas, textvariable=info_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, command=partial(self.metadata, self), cursor=CURSOR_HAND)
          info_text.set("Fill in the info")
-         self.my_canvas.create_window(2*x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.info_btn)
+         self.my_canvas.create_window(1*x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.info_btn)
 
          # Upload files
          upload_text = tk.StringVar()
@@ -226,15 +227,17 @@ class xnat_pic_gui(tk.Frame):
          # Positions for info button parametric with respect to the size of the canvas
          y_btn1 = int(my_height*65/100)
          
-         self.info_convert_btn = tk.Button(self.my_canvas, image = self.logo_info, bg=BG_BTN_COLOR, borderwidth=BORDERWIDTH, command = lambda: helpmsg("button1"), cursor=QUESTION_HAND)
-         self.my_canvas.create_window(x_btn, y_btn1, anchor=tk.CENTER, window=self.info_convert_btn)
+         self.info_convert_btn = tk.Button(self.my_canvas, image = self.logo_info, bg=BG_BTN_COLOR, borderwidth=0, command = lambda: helpmsg("button1"), cursor=QUESTION_HAND, state = DISABLED)
+         self.my_canvas.create_window(2*x_btn, y_btn1, anchor=tk.CENTER, window=self.info_convert_btn)
+         myTipConvert = Hovertip(self.info_convert_btn,'Convert images from Bruker ParaVision format to DICOM standard')
 
-         self.info_info_btn = tk.Button(self.my_canvas, image = self.logo_info, bg=BG_BTN_COLOR, borderwidth=BORDERWIDTH, command = lambda: helpmsg("button2"), cursor=QUESTION_HAND)
-         self.my_canvas.create_window(2*x_btn, y_btn1, anchor=tk.CENTER, window=self.info_info_btn)
+         self.info_info_btn = tk.Button(self.my_canvas, image = self.logo_info, bg=BG_BTN_COLOR, borderwidth=0, command = lambda: helpmsg("button2"), cursor=QUESTION_HAND, state = DISABLED)
+         self.my_canvas.create_window(1*x_btn, y_btn1, anchor=tk.CENTER, window=self.info_info_btn)
+         myTipInfo = Hovertip(self.info_info_btn,'Fill in the information about the acquisition')
 
-         self.info_upload_btn = tk.Button(self.my_canvas, image = self.logo_info, bg=BG_BTN_COLOR, borderwidth=BORDERWIDTH, command = lambda: helpmsg("button3"), cursor=QUESTION_HAND)
+         self.info_upload_btn = tk.Button(self.my_canvas, image = self.logo_info, bg=BG_BTN_COLOR, borderwidth=0, command = lambda: helpmsg("button3"), cursor=QUESTION_HAND, state = DISABLED)
          self.my_canvas.create_window(3*x_btn, y_btn1, anchor=tk.CENTER, window=self.info_upload_btn)
-
+         myTipUpload = Hovertip(self.info_upload_btn,'Upload DICOM images to XNAT')
          #self.info_process_btn = tk.Button(self.my_canvas, image = self.logo_info, bg=BG_BTN_COLOR, borderwidth=BORDERWIDTH, command = lambda: helpmsg("button4"), cursor=QUESTION_HAND)
          #self.my_canvas.create_window(4*x_btn, y_btn1, anchor=tk.CENTER, window=self.info_process_btn)        
 
@@ -286,9 +289,14 @@ class xnat_pic_gui(tk.Frame):
             self.btn_overwrite = tk.Checkbutton(self.conv_popup, text="Overwrite existing folders", variable=self.overwrite_flag,
                                 onvalue=1, offvalue=0, command=checkOverwrite)
             self.btn_overwrite.grid(row=3, column=1, sticky='W')
-            self.btn_results_info = tk.Button(self.conv_popup, image=master.logo_info, bg="white", borderwidth=BORDERWIDTH, cursor=QUESTION_HAND,
+            self.btn_results_info = tk.Button(self.conv_popup, image=master.logo_info, state = 'disabled', bg=BG_BTN_COLOR, borderwidth=0, cursor=QUESTION_HAND,
                                     command=lambda: messagebox.showinfo("XNAT-PIC","Copy additional files info"))
             self.btn_results_info.grid(row=2, column=2, sticky='W')
+            myTipResults = Hovertip(self.btn_results_info,'Copy additional files')
+            self.btn_overwrite_info = tk.Button(self.conv_popup, image=master.logo_info, state = 'disabled', bg=BG_BTN_COLOR, borderwidth=0, cursor=QUESTION_HAND,
+                                    command=lambda: messagebox.showinfo("XNAT-PIC","If the project or the subject already exists, it will be overwritten!"))
+            self.btn_overwrite_info.grid(row=3, column=2, sticky='W')
+            myTipOverwrite = Hovertip(self.btn_overwrite_info,'If the project or the subject already exists, it will be overwritten!')
         def prj_conversion(self, master):
 
             ############### Whole project conversion ################
@@ -1754,7 +1762,7 @@ class xnat_pic_gui(tk.Frame):
                     def upload_thread():
 
                         self.uploader = Dicom2XnatUploader(self.session)
-                        
+
                         for sub in list_dirs:
                             sub = os.path.join(project_to_upload, sub)
                             # Check if 'MR' folder is already into the folder_to_upload path
