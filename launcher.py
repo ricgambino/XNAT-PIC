@@ -27,7 +27,7 @@ import threading
 from dotenv import load_dotenv
 from xnat_uploader import Dicom2XnatUploader, FileUploader, read_table
 import datefinder
-import pydicom
+import pydicom, webbrowser
 from tkcalendar import DateEntry
 from accessory_functions import *
 
@@ -42,6 +42,7 @@ BG_LBL_COLOR = "black"
 DISABLE_LBL_COLOR = '#D3D3D3'
 LARGE_FONT = ("Calibri", 22, "bold")
 SMALL_FONT = ("Calibri", 16, "bold")
+SMALL_FONT_2 = ("Calibri", 10, "bold")
 CURSOR_HAND = "hand2"
 QUESTION_HAND = "question_arrow"
 BORDERWIDTH = 3
@@ -1035,7 +1036,7 @@ class xnat_pic_gui(tk.Frame):
             # Start with a popup to get credentials
             login_popup = tk.Toplevel()
             login_popup.title("XNAT-PIC ~ Login")
-            login_popup.geometry("%dx%d+%d+%d" % (550, 200, my_width/3, my_height/4))
+            login_popup.geometry("%dx%d+%d+%d" % (440, 190, my_width/3, my_height/4))
 
             # Closing window event: if it occurs, the popup must be destroyed and the main frame buttons must be enabled
             def closed_window():
@@ -1045,53 +1046,80 @@ class xnat_pic_gui(tk.Frame):
             login_popup.protocol("WM_DELETE_WINDOW", closed_window)
 
             # XNAT ADDRESS      
-            login_popup.label_address = tk.Label(login_popup, text="  XNAT web address  ", font=SMALL_FONT)   
-            login_popup.label_address.grid(row=0, column=0, padx=1, ipadx=1)
-            login_popup.entry_address = tk.Entry(login_popup)
+            login_popup.label_address = tk.Label(login_popup, text="XNAT web address", font=SMALL_FONT_2)   
+            login_popup.label_address.grid(row=1, column=0, padx=1, ipadx=1, sticky=tk.E)
+            login_popup.entry_address = ttk.Entry(login_popup, width=25)
             login_popup.entry_address.var = tk.StringVar()
-            login_popup.entry_address["textvariable"] = login_popup.entry_address.var # Optionmenu
-            login_popup.entry_address.grid(row=0, column=1, padx=1, ipadx=1)
+            login_popup.entry_address["textvariable"] = login_popup.entry_address.var
+            login_popup.entry_address.grid(row=1, column=1, padx=1, ipadx=1, pady=10)
+
+            def enable_address_modification(*args):
+                login_popup.entry_address.configure(state='normal')
+
+            login_popup.modify_address_btn = tk.Checkbutton(login_popup, text="Change address", command=enable_address_modification, state='disabled')
+            login_popup.modify_address_btn.grid(row=1, column=2, padx=1, ipadx=1, sticky=tk.W)
            
             # XNAT USER 
-            login_popup.label_user = tk.Label(login_popup, text="Username", font=SMALL_FONT)
-            login_popup.label_user.grid(row=1, column=0, padx=1, ipadx=1)
+            login_popup.label_user = tk.Label(login_popup, text="Username", font=SMALL_FONT_2)
+            login_popup.label_user.grid(row=2, column=0, padx=1, ipadx=1, sticky=tk.E)
 
             def get_list_of_users():
+                # Get the list of registered and stored users
                 try:
                     home = os.path.expanduser("~")
+                    # Define the encrypted file path
                     encrypted_file = os.path.join(home, "Documents", ".XNAT_login_file.txt.aes")
-                    decrypted_file = os.path.join(
-                        home, "Documents", ".XNAT_login_file00000.txt"
-                    )
+                    # Define the decrypted file path
+                    decrypted_file = os.path.join(home, "Documents", ".XNAT_login_file00000.txt")
+                    # Decrypt the encrypted file
                     pyAesCrypt.decryptFile(encrypted_file, decrypted_file, os.environ.get('secretKey'), bufferSize)
+                    # Open the decrypted file
                     with open(decrypted_file, 'r') as credentials_file:
+                        # Read the data
                         data = json.load(credentials_file)
+                        # Get the list of users
                         list_of_users = list(data.keys())
-                        data = ''
-
+                    # Clear the 'data' variable
+                    data = ''
+                    # Remove the decrypted file
                     os.remove(decrypted_file)
                     return list_of_users
                 except Exception as error:
                     return []
 
             def get_credentials(*args):
-                self.load_saved_credentials(login_popup)
+                if login_popup.entry_user.get() != '':
+                    if login_popup.entry_user.get() in login_popup.combo_user['values']:
+                        # Load stored credentials
+                        self.load_saved_credentials(login_popup)
+                        # Disable the button to modify the web address
+                        login_popup.entry_address.configure(state='disabled')
+                        # Enable the 'Change address' button
+                        login_popup.modify_address_btn.configure(state='normal')
+                        # Enable the 'Remember me' button
+                        login_popup.btn_remember.configure(state='normal')
+                    else:
+                        # Enable the 'Remember me' button
+                        login_popup.btn_remember.configure(state='normal')
+                else:
+                    # Disable the 'Remember me' button
+                    login_popup.btn_remember.configure(state='disabled')
+                    # Reset 'Remember me' button
+                    login_popup.remember.set(0)
+                    # Reset address and password fields
+                    login_popup.entry_psw.var.set('')
+                    login_popup.entry_address.var.set('')
 
             login_popup.entry_user = tk.StringVar()
-            login_popup.combo_user = ttk.Combobox(login_popup, font=SMALL_FONT, takefocus=0, textvariable=login_popup.entry_user, width=10)
+            login_popup.combo_user = ttk.Combobox(login_popup, font=SMALL_FONT_2, takefocus=0, textvariable=login_popup.entry_user, 
+                                                    state='normal', width=19)
             login_popup.combo_user['values'] = get_list_of_users()
-            login_popup.combo_user['state'] = 'normal'
             login_popup.entry_user.trace('w', get_credentials)
-            login_popup.combo_user.grid(row=1, column=1, padx=1, ipadx=1)
-
-            # login_popup.entry_user = tk.Entry(login_popup)
-            # login_popup.entry_user.var = tk.StringVar()
-            # login_popup.entry_user["textvariable"] = login_popup.entry_user.var
-            # login_popup.entry_user.grid(row=1, column=1, padx=1, ipadx=1)
+            login_popup.combo_user.grid(row=2, column=1, padx=1, ipadx=1)
 
             # XNAT PASSWORD 
-            login_popup.label_psw = tk.Label(login_popup, text="Password", font=SMALL_FONT)
-            login_popup.label_psw.grid(row=2, column=0, padx=1, ipadx=1)
+            login_popup.label_psw = tk.Label(login_popup, text="Password", font=SMALL_FONT_2)
+            login_popup.label_psw.grid(row=3, column=0, padx=1, ipadx=1, sticky=tk.E)
 
             # Show/Hide the password
             def toggle_password():
@@ -1099,101 +1127,105 @@ class xnat_pic_gui(tk.Frame):
                     login_popup.entry_psw.config(show='*')
                     login_popup.toggle_btn.config(text='Show Password')
                 else:
+                    # Possibility to ask a passcode to read the password
                     login_popup.entry_psw.config(show='')
                     login_popup.toggle_btn.config(text='Hide Password')
             
-            login_popup.entry_psw = tk.Entry(login_popup, show="*")
+            login_popup.entry_psw = ttk.Entry(login_popup, show="*", width=25)
             login_popup.entry_psw.var = tk.StringVar()
             login_popup.entry_psw["textvariable"] = login_popup.entry_psw.var
-            login_popup.entry_psw.grid(row=2, column=1, padx=1, ipadx=1)
-            login_popup.toggle_btn = tk.Button(login_popup, text='Show Password',  command=toggle_password)
-            login_popup.toggle_btn.grid(row=2, column=2)
+            login_popup.entry_psw.grid(row=3, column=1, padx=1, ipadx=1)
+            login_popup.toggle_btn = tk.Button(login_popup, text='Show Password', command=toggle_password, font=("Calibri", 10))
+            login_popup.toggle_btn.grid(row=3, column=2)
+
+            # Forgot password button
+            def forgot_psw(*args):
+                webbrowser.open("http://130.192.212.48:8080/app/template/ForgotLogin.vm#!", new=1)
+
+            login_popup.forgot_psw = tk.Label(login_popup, text="Forgot password", font=("Calibri", 8, "underline"), fg='blue')
+            login_popup.forgot_psw.grid(row=4, column=1, padx=1, ipadx=1)
+            login_popup.forgot_psw.bind("<Button-1>", forgot_psw)
+
+            # Register button
+            def register(*args):
+                webbrowser.open("http://130.192.212.48:8080/app/template/Register.vm#!", new=1)
+
+            login_popup.register_btn = tk.Label(login_popup, text="Register", font=("Calibri", 8, "underline"), fg='blue')
+            login_popup.register_btn.grid(row=4, column=2, padx=1, ipadx=1)
+            login_popup.register_btn.bind("<Button-1>", register)
 
             # HTTP/HTTPS 
             login_popup.http = tk.StringVar()
-            login_popup.button_http = tk.Radiobutton(
-                login_popup,
-                text=" http:// ",
-                variable=login_popup.http,
-                value="http://")
-            login_popup.button_http.grid(row=4, column=0)
+            login_popup.button_http = tk.Radiobutton(login_popup, text=" http:// ", variable=login_popup.http, value="http://", font=("Calibri", 10))
+            login_popup.button_http.grid(row=5, column=0, sticky=tk.E)
             login_popup.button_http.select()
-            login_popup.button_https = tk.Radiobutton(
-                login_popup,
-                text=" https:// ",
-                variable=login_popup.http,
-                value="https://")
-            login_popup.button_https.grid(row=4, column=1)
+            login_popup.button_https = tk.Radiobutton(login_popup, text=" https:// ", variable=login_popup.http, value="https://", font=("Calibri", 10))
+            login_popup.button_https.grid(row=5, column=1)
 
-            # SAVE CREDENTIALS CHECKBOX
+            # SAVE CREDENTIALS CHECKBUTTON
             login_popup.remember = tk.IntVar()
-            login_popup.btn_remember = tk.Checkbutton(
-                login_popup, text="Remember me", variable=login_popup.remember
-            )
-            login_popup.btn_remember.grid(row=4, column=2, padx=1, ipadx=1)
+            login_popup.btn_remember = tk.Checkbutton(login_popup, text="Remember me", variable=login_popup.remember, state='disabled', font=("Calibri", 10))
+            login_popup.btn_remember.grid(row=5, column=2, padx=1, ipadx=1, sticky=tk.W)
 
             # CONNECTION
-            login_popup.button_connect = tk.Button(
-                login_popup,
-                text="Login", font=SMALL_FONT, 
-                width=15,
-                command=partial(self.login, login_popup, master)
-            )
-            login_popup.button_connect.grid(row=5, column=0)
+            login_popup.button_connect = tk.Button(login_popup, text="Login", font=SMALL_FONT, width=10, borderwidth=BORDERWIDTH,
+                                                    command=partial(self.login, login_popup, master))
+            login_popup.button_connect.grid(row=6, column=2, padx=1, ipadx=1, sticky=tk.W)
 
             # QUIT button
             def quit_event():
                 login_popup.destroy()
                 enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
 
-            login_popup.button_quit = tk.Button(
-                login_popup,
-                text='Quit', font=SMALL_FONT,
-                width=15,
-                command=quit_event,
-            )
-            login_popup.button_quit.grid(row=5, column=2)
+            login_popup.button_quit = tk.Button(login_popup, text='Quit', font=SMALL_FONT, width=10, borderwidth=BORDERWIDTH, command=quit_event)
+            login_popup.button_quit.grid(row=6, column=0, padx=10, ipadx=1, sticky=tk.E)
 
         def load_saved_credentials(self, popup):
             # REMEMBER CREDENTIALS
             try:
                 home = os.path.expanduser("~")
+                # Define the encrypted file path
                 encrypted_file = os.path.join(home, "Documents", ".XNAT_login_file.txt.aes")
-                decrypted_file = os.path.join(
-                    home, "Documents", ".XNAT_login_file00000.txt"
-                )
+                # Define the decrypted file path
+                decrypted_file = os.path.join(home, "Documents", ".XNAT_login_file00000.txt")
+                # Decrypt the file
                 pyAesCrypt.decryptFile(encrypted_file, decrypted_file, os.environ.get('secretKey'), bufferSize)
+                # Open the decrypted file in 'read' mode
                 with open(decrypted_file, 'r') as credentials_file:
+                    # Read the data
                     data = json.load(credentials_file)
+                    # Fill the empty fields
                     popup.entry_address.var.set(data[popup.entry_user.get()]['Address'])
                     popup.entry_user.set(data[popup.entry_user.get()]['Username'])
                     popup.entry_psw.var.set(data[popup.entry_user.get()]['Password'])
-                    data = ''
-
+                # Clear the 'data' variable
+                data = ''
+                # Remove the decrypted file
                 os.remove(decrypted_file)
+                # Check the 'Remember me' button
                 popup.btn_remember.select()
             except Exception as error:
-                pass
+                messagebox.showerror("XNAT-PIC Login", "Error! The user information is not available, or you don't have access to it.")
 
         def login(self, popup, master):
 
-            # LOGIN
+            # Retireve the complete address
             popup.entry_address_complete = popup.http.get() + popup.entry_address.var.get()
 
-            # Method to check if there is an existent session!!!!
             home = os.path.expanduser("~")
             try:
+                # Start a new xnat session
                 self.session = xnat.connect(
                     popup.entry_address_complete,
                     popup.entry_user.get(),
                     popup.entry_psw.var.get(),
                 )
-                # print(type(self.session))
-                # self.session.disconnect()
-                # print(type(self.session))
+                # Check if the 'Remember Button' is checked
                 if popup.remember.get() == True:
+                    # Save credentials
                     self.save_credentials(popup)
                 else:
+                    # Try to remove the existent encrypted file
                     try:
                         os.remove(
                             os.path.join(home, "Documents", ".XNAT_login_file.txt.aes")
@@ -1204,11 +1236,14 @@ class xnat_pic_gui(tk.Frame):
                 # Start a thread to keep updated the current session
                 # self.session_thread = threading.Thread(target=self.refresh_session, args=())
                 # self.session_thread.start()
+
+                # Go to the overall uploader
                 self.overall_uploader(master)
-            except xnat.exceptions.XNATLoginFailedError as err:
-                messagebox.showerror("Error!", err)
+
             except Exception as error:
                 messagebox.showerror("Error!", error)
+                popup.destroy()
+                enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
 
         def refresh_session(self):
             # Keep updated the current session
@@ -1223,31 +1258,36 @@ class xnat_pic_gui(tk.Frame):
             home = os.path.expanduser("~")
 
             if os.path.exists(os.path.join(home, "Documents")):
-                file = os.path.join(home, "Documents", ".XNAT_login_file.txt")
-
-                home = os.path.expanduser("~")
+                
+                # Define the path of the encrypted file
                 encrypted_file = os.path.join(home, "Documents", ".XNAT_login_file.txt.aes")
-                decrypted_file = os.path.join(
-                    home, "Documents", ".XNAT_login_file00000.txt"
-                )
+                # Define the path of the decrypted file
+                decrypted_file = os.path.join(home, "Documents", ".XNAT_login_file00000.txt")
 
+                # Decrypt the encrypted file exploiting the secret key
                 pyAesCrypt.decryptFile(encrypted_file, decrypted_file, os.environ.get('secretKey'), bufferSize)
+                # Open decrypted file and read the data stored
                 with open(decrypted_file, 'r') as credentials_file:
                     data = json.load(credentials_file)
+                # Update the already stored data with the current session parameters
                 data[str(popup.entry_user.get())] = {
                             "Address": popup.entry_address.var.get(),
                             "Username": popup.entry_user.get(),
                             "Password": popup.entry_psw.var.get(),
                             "HTTP": popup.http.get()
                     }
+                # Remove the decrypted file
                 os.remove(decrypted_file)
+                # Define the path of the file
+                file = os.path.join(home, "Documents", ".XNAT_login_file.txt")
+                # Open the file to write in the data to be stored
                 with open(file, 'w+') as login_file:
                     json.dump(data, login_file)
-                    data = ''
-                # encrypt
-                encrypted_file = os.path.join(home, "Documents", ".XNAT_login_file.txt.aes")
+                # Clear data variable
+                data = ''
+                # Encrypt the file
                 pyAesCrypt.encryptFile(file, encrypted_file, os.environ.get('secretKey'), bufferSize)
-                # decrypt
+                # Remove the file
                 os.remove(file)
 
         def check_project_name(self, *args):
@@ -1365,9 +1405,11 @@ class xnat_pic_gui(tk.Frame):
                                     # Clear cache to refresh the catalog
                                     self.session.clearcache()
                                 # Create new experiment
+
                                 ...
-                                # experiment = self.session.classes.MRSessionData(parent=subject, label=self.exp.get())
+
                                 # Clear cache to refresh the catalog
+                                # os.remove(str(self.exp.get()))
                                 self.session.clearcache()
                                 # Refresh the list of projects and subjects
                                 self.OPTIONS2 = self.session.projects[self.prj.get()].subjects
@@ -1402,29 +1444,29 @@ class xnat_pic_gui(tk.Frame):
 
             # Upload project
             prj_text = tk.StringVar()
-            self.prj_btn = tk.Button(master.my_canvas, textvariable=prj_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, 
-                                    command=partial(self.check_buttons, master, press_btn=0), cursor=CURSOR_HAND)
+            self.prj_btn = tk.Button(master.my_canvas, textvariable=prj_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, 
+                                    borderwidth=BORDERWIDTH, command=partial(self.check_buttons, master, press_btn=0), cursor=CURSOR_HAND)
             prj_text.set("Upload Project")
             master.my_canvas.create_window(x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.prj_btn)
             
             # Upload subject
             sub_text = tk.StringVar()
-            self.sub_btn = tk.Button(master.my_canvas, textvariable=sub_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, 
-                                    command=partial(self.check_buttons, master, press_btn=1), cursor=CURSOR_HAND)
+            self.sub_btn = tk.Button(master.my_canvas, textvariable=sub_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, 
+                                    borderwidth=BORDERWIDTH, command=partial(self.check_buttons, master, press_btn=1), cursor=CURSOR_HAND)
             sub_text.set("Upload Subject")
             master.my_canvas.create_window(2*x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.sub_btn)
 
             # Upload experiment
             exp_text = tk.StringVar()
-            self.exp_btn = tk.Button(master.my_canvas, textvariable=exp_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, 
-                                    command=partial(self.check_buttons, master, press_btn=2), cursor=CURSOR_HAND)
+            self.exp_btn = tk.Button(master.my_canvas, textvariable=exp_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, 
+                                    borderwidth=BORDERWIDTH, command=partial(self.check_buttons, master, press_btn=2), cursor=CURSOR_HAND)
             exp_text.set("Upload Experiment")
             master.my_canvas.create_window(3*x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.exp_btn)       
             
             # Upload file
             file_text = tk.StringVar()
-            self.file_btn = tk.Button(master.my_canvas, textvariable=file_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, 
-                                    command=partial(self.check_buttons, master, press_btn=3), cursor=CURSOR_HAND)
+            self.file_btn = tk.Button(master.my_canvas, textvariable=file_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, 
+                                    borderwidth=BORDERWIDTH, command=partial(self.check_buttons, master, press_btn=3), cursor=CURSOR_HAND)
             file_text.set("Upload File")
             master.my_canvas.create_window(4*x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.file_btn) 
 
@@ -1643,8 +1685,8 @@ class xnat_pic_gui(tk.Frame):
                     xnat_pic_gui.choose_you_action(master)
 
             self.exit_text = tk.StringVar() 
-            self.exit_btn = tk.Button(master.my_canvas, textvariable=self.exit_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, 
-                                    cursor=CURSOR_HAND, takefocus=0)
+            self.exit_btn = tk.Button(master.my_canvas, textvariable=self.exit_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, 
+                                    borderwidth=BORDERWIDTH, cursor=CURSOR_HAND, takefocus=0)
             self.exit_btn.configure(command=exit_upload)
             self.exit_text.set("Exit")
             y_exit_btn = int(my_height*80/100)
@@ -1667,8 +1709,8 @@ class xnat_pic_gui(tk.Frame):
                     pass
 
             self.next_text = tk.StringVar() 
-            self.next_btn = tk.Button(master.my_canvas, textvariable=self.next_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, 
-                                    command=next, cursor=CURSOR_HAND, takefocus=0, state='disabled')
+            self.next_btn = tk.Button(master.my_canvas, textvariable=self.next_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, 
+                                    borderwidth=BORDERWIDTH, command=next, cursor=CURSOR_HAND, takefocus=0, state='disabled')
             self.next_text.set("Next")
             master.my_canvas.create_window(4*x_btn, y_exit_btn, anchor=tk.CENTER, width=width_btn, window=self.next_btn)
             #############################################
@@ -1701,8 +1743,8 @@ class xnat_pic_gui(tk.Frame):
                 disable_buttons([self.prj_btn, self.sub_btn, self.exp_btn, self.file_btn])
                 enable_buttons([self.project_list, self.new_prj_btn])
                 # Insert subtitle
-                self.subtitle = master.my_canvas.create_text(int(my_width/2), int(my_height*30/100), anchor=tk.CENTER, width=int(my_width/7), fill='red', font=LARGE_FONT, 
-                                                            text="Project Uploader")
+                self.subtitle = master.my_canvas.create_text(int(my_width/2), int(my_height*30/100), anchor=tk.CENTER, width=int(my_width/7), fill='red', 
+                                                            font=LARGE_FONT, text="Project Uploader")
                 # Highlight the field name
                 master.my_canvas.itemconfig(self.select_prj, fill=TEXT_LBL_COLOR)
                 # Enable NEXT button only if all the requested fields are filled
@@ -1716,8 +1758,8 @@ class xnat_pic_gui(tk.Frame):
                 disable_buttons([self.prj_btn, self.sub_btn, self.exp_btn, self.file_btn])
                 enable_buttons([self.project_list, self.new_prj_btn])
                 # Insert subtitle
-                self.subtitle = master.my_canvas.create_text(int(my_width/2), int(my_height*30/100), anchor=tk.CENTER, width=int(my_width/7), fill='red', font=LARGE_FONT, 
-                                                            text="Subject Uploader")
+                self.subtitle = master.my_canvas.create_text(int(my_width/2), int(my_height*30/100), anchor=tk.CENTER, width=int(my_width/7), fill='red', 
+                                                            font=LARGE_FONT, text="Subject Uploader")
                 # Highlight the field name
                 master.my_canvas.itemconfig(self.select_prj, fill=TEXT_LBL_COLOR)
                 # Enable NEXT button only if all the requested fields are filled
@@ -1731,8 +1773,8 @@ class xnat_pic_gui(tk.Frame):
                 disable_buttons([self.prj_btn, self.sub_btn, self.exp_btn, self.file_btn])
                 enable_buttons([self.project_list, self.new_prj_btn, self.subject_list, self.new_sub_btn])
                 # Insert subtitle
-                self.subtitle = master.my_canvas.create_text(int(my_width/2), int(my_height*30/100), anchor=tk.CENTER, width=int(my_width/7), fill='red', font=LARGE_FONT, 
-                                                            text="Experiment Uploader")
+                self.subtitle = master.my_canvas.create_text(int(my_width/2), int(my_height*30/100), anchor=tk.CENTER, width=int(my_width/7), fill='red', 
+                                                            font=LARGE_FONT, text="Experiment Uploader")
                 # Highlight the field names
                 master.my_canvas.itemconfig(self.select_prj, fill=TEXT_LBL_COLOR)
                 master.my_canvas.itemconfig(self.select_sub, fill=TEXT_LBL_COLOR)
@@ -1747,8 +1789,8 @@ class xnat_pic_gui(tk.Frame):
                 disable_buttons([self.prj_btn, self.sub_btn, self.exp_btn, self.file_btn, self.add_file_btn, self.add_file_btn, self.custom_var_list])
                 enable_buttons([self.project_list, self.new_prj_btn, self.subject_list, self.new_sub_btn, self.experiment_list, self.new_exp_btn])
                 # Insert subtitle
-                self.subtitle = master.my_canvas.create_text(int(my_width/2), int(my_height*30/100), anchor=tk.CENTER, width=int(my_width/7), fill='red', font=LARGE_FONT, 
-                                                            text="File Uploader")
+                self.subtitle = master.my_canvas.create_text(int(my_width/2), int(my_height*30/100), anchor=tk.CENTER, width=int(my_width/7), fill='red', 
+                                                            font=LARGE_FONT, text="File Uploader")
                 # Highlight the field names
                 master.my_canvas.itemconfig(self.select_prj, fill=TEXT_LBL_COLOR)
                 master.my_canvas.itemconfig(self.select_sub, fill=TEXT_LBL_COLOR)
@@ -1763,7 +1805,8 @@ class xnat_pic_gui(tk.Frame):
 
         def project_uploader(self, master):
 
-            project_to_upload = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC Project Uploader: Select project directory in DICOM format to upload")
+            project_to_upload = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), 
+                                                        title="XNAT-PIC Project Uploader: Select project directory in DICOM format to upload")
             # Check for empty selected folder
             if os.path.isdir(project_to_upload) == False:
                 messagebox.showerror('XNAT-PIC Uploader', 'Error! The selected folder does not exist!')
@@ -1806,12 +1849,14 @@ class xnat_pic_gui(tk.Frame):
                                 # Controllo su stringa vuota
                                 self.sub.set(subject_data['Subject'])
                                 if self.sub.get() != subject_data['Subject']:
-                                    ans = messagebox.askyesno("XNAT-PIC Experiment Uploader", "The subject you are trying to retrieve does not match with the custom variables."
-                                                                                                "\n Would you like to continue?")
+                                    ans = messagebox.askyesno("XNAT-PIC Experiment Uploader", 
+                                                            "The subject you are trying to retrieve does not match with the custom variables."
+                                                            "\n Would you like to continue?")
                                     if ans != True:
                                         return
                                 params['subject_id'] = self.sub.get()
-                                self.exp.set('_'.join([subject_data['Project'], subject_data['Subject'], subject_data['Group'], subject_data['Timepoint']]).replace(' ', '_'))
+                                self.exp.set('_'.join([subject_data['Project'], subject_data['Subject'], subject_data['Group'], 
+                                                        subject_data['Timepoint']]).replace(' ', '_'))
                                 params['experiment_id'] = self.exp.get()
                                 for var in subject_data.keys():
                                     if var not in ['Project', 'Subject', 'AcquisitionDate']:
@@ -1878,7 +1923,8 @@ class xnat_pic_gui(tk.Frame):
 
         def subject_uploader(self, master):
 
-            subject_to_upload = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC Subject Uploader: Select subject directory in DICOM format to upload")
+            subject_to_upload = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), 
+                                                        title="XNAT-PIC Subject Uploader: Select subject directory in DICOM format to upload")
             # Check for empty selected folder
             if os.path.isdir(subject_to_upload) == False:
                 messagebox.showerror('XNAT-PIC Uploader', 'Error! The selected folder does not exist!')
@@ -1917,13 +1963,15 @@ class xnat_pic_gui(tk.Frame):
                         if self.sub.get() == '--':
                             self.sub.set(subject_data['Subject'])
                         if self.sub.get() != subject_data['Subject']:
-                            ans = messagebox.askyesno("XNAT-PIC Experiment Uploader", "The subject you are trying to retrieve does not match with the custom variables."
-                                                                                        "\n Would you like to continue?")
+                            ans = messagebox.askyesno("XNAT-PIC Experiment Uploader", 
+                                                    "The subject you are trying to retrieve does not match with the custom variables."
+                                                    "\n Would you like to continue?")
                             if ans != True:
                                 return
                         params['subject_id'] = self.sub.get()
                         if self.exp.get() == '--':
-                            self.exp.set('_'.join([subject_data['Project'], subject_data['Subject'], subject_data['Group'], subject_data['Timepoint']]).replace(' ', '_'))
+                            self.exp.set('_'.join([subject_data['Project'], subject_data['Subject'], subject_data['Group'], 
+                                                    subject_data['Timepoint']]).replace(' ', '_'))
                         params['experiment_id'] = self.exp.get()
                         for var in subject_data.keys():
                             if var not in ['Project', 'Subject', 'AcquisitionDate']:
@@ -1991,7 +2039,8 @@ class xnat_pic_gui(tk.Frame):
 
         def experiment_uploader(self, master):
 
-            experiment_to_upload = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC Experiment Uploader: Select experiment directory in DICOM format to upload")
+            experiment_to_upload = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), 
+                                                            title="XNAT-PIC Experiment Uploader: Select experiment directory in DICOM format to upload")
             # Check for empty selected folder
             if os.path.isdir(experiment_to_upload) == False:
                 messagebox.showerror('XNAT-PIC Uploader', 'Error! The selected folder does not exist!')
@@ -2026,13 +2075,15 @@ class xnat_pic_gui(tk.Frame):
                         if self.sub.get() == '--':
                             self.sub.set(subject_data['Subject'])
                         if self.sub.get() != subject_data['Subject']:
-                            ans = messagebox.askyesno("XNAT-PIC Experiment Uploader", "The subject you are trying to retrieve does not match with the custom variables."
-                                                                                        "\n Would you like to continue?")
+                            ans = messagebox.askyesno("XNAT-PIC Experiment Uploader", 
+                                                    "The subject you are trying to retrieve does not match with the custom variables."
+                                                    "\n Would you like to continue?")
                             if ans != True:
                                 return
                         params['subject_id'] = self.sub.get()
                         if self.exp.get() == '--':
-                            self.exp.set('_'.join([subject_data['Project'], subject_data['Subject'], subject_data['Group'], subject_data['Timepoint']]).replace(' ', '_'))
+                            self.exp.set('_'.join([subject_data['Project'], subject_data['Subject'], subject_data['Group'], 
+                                                    subject_data['Timepoint']]).replace(' ', '_'))
                         params['experiment_id'] = self.exp.get()
                         for var in subject_data.keys():
                             if var not in ['Project', 'Subject', 'AcquisitionDate']:
@@ -2043,7 +2094,8 @@ class xnat_pic_gui(tk.Frame):
                             self.sub.set(experiment_to_upload.split('/')[-2].replace('.','_'))
                         params['subject_id'] = self.sub.get()
                         if self.exp.get() == '--':
-                            self.exp.set('_'.join([experiment_to_upload.split('/')[-3].replace('_dcm', ''), experiment_to_upload.split('/')[-2].replace('.','_')]).replace(' ', '_'))
+                            self.exp.set('_'.join([experiment_to_upload.split('/')[-3].replace('_dcm', ''), 
+                                                    experiment_to_upload.split('/')[-2].replace('.','_')]).replace(' ', '_'))
                         params['experiment_id'] = self.exp.get()
 
                     progressbar.set_caption('Uploading ' + str(self.exp.get()) + ' ...')
@@ -2103,7 +2155,8 @@ class xnat_pic_gui(tk.Frame):
 
         def file_uploader(self, master):
 
-            files_to_upload = filedialog.askopenfilenames(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC File Uploader: Select file to upload")
+            files_to_upload = filedialog.askopenfilenames(parent=master.root, initialdir=os.path.expanduser("~"), 
+                                                        title="XNAT-PIC File Uploader: Select file to upload")
             
             if files_to_upload == [] or files_to_upload == '':
                 messagebox.showerror('XNAT-PIC Uploader', 'Error! No files selected!')
