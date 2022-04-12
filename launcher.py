@@ -18,6 +18,7 @@ import subprocess
 import platform
 from progress_bar import ProgressBar
 from dicom_converter import Bruker2DicomConverter
+from glob import glob
 import xnat
 from read_visupars import read_visupars_parameters
 import pyAesCrypt
@@ -31,6 +32,7 @@ import pydicom, webbrowser
 from tkcalendar import DateEntry
 from accessory_functions import *
 from idlelib.tooltip import Hovertip
+from multiprocessing import Pool, cpu_count
 
 PATH_IMAGE = "images\\"
 PERCENTAGE_SCREEN = 1  # Defines the size of the canvas. If equal to 1 (100%) ,it takes the whole screen
@@ -253,42 +255,39 @@ class xnat_pic_gui(tk.Frame):
             
             # Disable the buttons
             disable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
-            #master.process_btn['state'] = tk.DISABLED
             
-            def normal_btn():
+            def close_window():
                 self.conv_popup.destroy()
                 #Enable all buttons
                 enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
-                #master.process_btn['state'] = tk.NORMAL
 
             def isChecked():
                 self.params['results_flag'] = self.results_flag.get()
-            
-            def checkOverwrite():
-                master.overwrite_flag = self.overwrite_flag.get()
 
             self.conv_popup = tk.Toplevel()
-            self.conv_popup.geometry("%dx%d+%d+%d" % (500, 150, my_width/3, my_height/3))
+            self.conv_popup.geometry("%dx%d+%d+%d" % (500, 220, my_width/3, my_height/3))
             self.conv_popup.title('XNAT-PIC Converter')
-            self.conv_popup.protocol("WM_DELETE_WINDOW", normal_btn)
+            self.conv_popup.protocol("WM_DELETE_WINDOW", close_window)
 
             self.btn_prj = tk.Button(self.conv_popup, text='Convert Project', font=LARGE_FONT, 
                                     bg="grey", fg="white", height=1, width=15, borderwidth=BORDERWIDTH, 
-                                    command=lambda: (self.conv_popup.destroy(), self.prj_conversion(master)))
+                                    command=lambda: (self.conv_popup.destroy(), self.prj_convertion(master)))
             self.btn_prj.grid(row=2, column=0, padx=10, pady=5)
             self.btn_sbj = tk.Button(self.conv_popup, text='Convert Subject', font=LARGE_FONT, 
                                     bg="grey", fg="white", height=1, width=15, borderwidth=BORDERWIDTH, 
-                                    command=lambda: (self.conv_popup.destroy(), self.sbj_conversion(master)))
+                                    command=lambda: (self.conv_popup.destroy(), self.sbj_convertion(master)))
             self.btn_sbj.grid(row=3, column=0, padx=10, pady=5)
+            self.btn_exp = tk.Button(self.conv_popup, text='Convert Experiment', font=LARGE_FONT, 
+                                    bg="grey", fg="white", height=1, width=15, borderwidth=BORDERWIDTH, 
+                                    command=lambda: (self.conv_popup.destroy(), self.experiment_convertion(master)))
+            self.btn_exp.grid(row=4, column=0, padx=10, pady=5)
             self.results_flag = tk.IntVar()
-            # master.results_flag = self.results_flag.get()
             self.btn_results = tk.Checkbutton(self.conv_popup, text='Copy additional files', variable=self.results_flag,
                                 onvalue=1, offvalue=0, command=isChecked)
             self.btn_results.grid(row=2, column=1, sticky='W')
             self.overwrite_flag = tk.IntVar()
-            master.overwrite_flag = self.overwrite_flag.get()
             self.btn_overwrite = tk.Checkbutton(self.conv_popup, text="Overwrite existing folders", variable=self.overwrite_flag,
-                                onvalue=1, offvalue=0, command=checkOverwrite)
+                                onvalue=1, offvalue=0)
             self.btn_overwrite.grid(row=3, column=1, sticky='W')
             self.btn_results_info = tk.Button(self.conv_popup, image=master.logo_info, state = 'disabled', bg=BG_BTN_COLOR, borderwidth=0, cursor=QUESTION_HAND,
                                     command=lambda: messagebox.showinfo("XNAT-PIC","Copy additional files info"))
@@ -298,174 +297,255 @@ class xnat_pic_gui(tk.Frame):
                                     command=lambda: messagebox.showinfo("XNAT-PIC","If the project or the subject already exists, it will be overwritten!"))
             self.btn_overwrite_info.grid(row=3, column=2, sticky='W')
             myTipOverwrite = Hovertip(self.btn_overwrite_info,'If the project or the subject already exists, it will be overwritten!')
-        def prj_conversion(self, master):
 
-            ############### Whole project conversion ################
+        def prj_convertion(self, master):
 
             # Disable the buttons
             disable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
-            #master.process_btn['state'] = tk.DISABLED
 
             # Ask for project directory
-            self.folder_to_convert = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC: Select project directory in Bruker ParaVision format")
-            if not self.folder_to_convert:
-                # Check for the chosen directory
+            self.project_to_convert = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), 
+                                                            title="XNAT-PIC: Select project directory in Bruker ParaVision format")
+            # Check for the chosen directory
+            if not self.project_to_convert:
                 enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
-                #master.process_btn['state'] = tk.NORMAL
-                messagebox.showerror("XNAT-PIC Converter", "You have not chosen a directory")
+                messagebox.showerror("XNAT-PIC Converter", "The selected folder does not exists. Please select an other one.")
                 return
+
+            if glob(self.project_to_convert + '/**/**/**/**/**/2dseq', recursive=False) == []:
+                enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
+                messagebox.showerror("XNAT-PIC Converter", "The selected folder is not project related")
+                return
+            
             master.root.deiconify()
             master.root.update()
-            self.dst = self.folder_to_convert + '_dcm'
+            # Define the project destination folder
+            self.prj_dst = self.project_to_convert + '_dcm'
 
             # Initialize converter class
-            converter = Bruker2DicomConverter(self.params)
-            
-            try:
-                start_time = time.time()
+            self.converter = Bruker2DicomConverter(self.params)
 
-                # Start the progress bar
-                progressbar = ProgressBar(bar_title='XNAT-PIC Project Converter')
-                progressbar.start_determinate_bar()
-                # progressbar.start_indeterminate_bar()
+            def prj_converter():
 
-                # Check for subjects within the given project
-                list_dirs = os.listdir(self.folder_to_convert)
+                # Get the list of the subject into the project
+                list_sub = os.listdir(self.project_to_convert)
                 # Initialize the list of conversion errors
-                conversion_err = []
-                for j, dir in enumerate(list_dirs, 0):
-        
-                    # Update the current step of the progress bar
-                    # progressbar.update_progressbar(j, len(list_dirs))
-                    progressbar.show_step(j + 1, len(list_dirs))
-                    # Define the current subject path
-                    dir_dcm = dir 
-                    current_folder = os.path.join(self.folder_to_convert, dir).replace('\\', '/')
+                self.conversion_err = []
+                # Loop over subjects
+                for j, dir in enumerate(list_sub, 0):
+                    # Show the current step on the progress bar
+                    progressbar.show_step(j + 1, len(list_sub))
+                    # Define the current subject path 
+                    current_folder = os.path.join(self.project_to_convert, dir).replace('\\', '/')
+
                     if os.path.isdir(current_folder):
-                        current_dst = os.path.join(self.dst, dir_dcm).replace('\\', '/')
-                        # Check if the current destination folder already exists
+                        current_dst = os.path.join(self.prj_dst, dir).replace('\\', '/')
+                        # Check if the current subject folder already exists
                         if os.path.isdir(current_dst):
                             # Case 1 --> The directory already exists
-                            if master.overwrite_flag == 1:
+                            if self.overwrite_flag == 1:
                                 # Existent folder with overwrite flag set to 1 --> remove folder and generate new one
                                 shutil.rmtree(current_dst)
                                 os.makedirs(current_dst)
                             else:
                                 # Existent folder without overwriting flag set to 0 --> ignore folder
-                                conversion_err.append(current_folder.split('/')[-1])
+                                self.conversion_err.append(current_folder.split('/')[-1])
                                 continue
                         else:
                             # Case 2 --> The directory does not exist
-                            if current_dst.split('/')[-1].count('_dcm') > 1:
+                            if current_dst.split('/')[-1].count('_dcm') >= 1:
                                 # Check to avoid already converted folders
-                                conversion_err.append(current_folder.split('/')[-1])
+                                self.conversion_err.append(current_folder.split('/')[-1])
                                 continue
                             else:
                                 # Create the new destination folder
                                 os.makedirs(current_dst)
 
-                        # Perform DICOM conversion
-                        # converter.start_conversion()
-                        tp = threading.Thread(target=converter.multi_core_conversion, args=(current_folder, current_dst, ))
-                        tp.start()
-                        while tp.is_alive() == True:
-                            # progressbar.update_bar()
-                            progressbar.update_bar(0.00001)
-                            time.sleep(0.5)
-                        else:
-                            progressbar.update_progressbar(j + 1, len(list_dirs))
+                        # Set progress bar caption to the current scan folder
+                        progressbar.set_caption('Converting ' + str(current_folder.split('/')[-1]) + ' ...')
 
-                # Stop the progress bar and close the popup
+                        # Get the list of the experiments into the subject
+                        list_exp = os.listdir(current_folder)
+
+                        for k, exp in enumerate(list_exp):
+                            print('Converting ' + str(exp))
+                            exp_folder = os.path.join(current_folder, exp).replace('\\', '/')
+                            exp_dst = os.path.join(current_dst, exp).replace('\\','/')
+
+                            list_scans = self.converter.get_list_of_folders(exp_folder, exp_dst)
+
+                            # Start the multiprocessing conversion: one pool per each scan folder
+                            with Pool(processes=int(cpu_count() - 1)) as pool:
+                                pool.map(self.converter.convert, list_scans)
+
+                    # Update the current step of the progress bar
+                    progressbar.update_progressbar(j + 1, len(list_sub))
+                    # Set progress bar caption 'done' to the current folder
+                    progressbar.set_caption('Converting ' + str(current_folder.split('/')[-1]) + ' ...done!')
+            
+            start_time = time.time()
+
+            # Start the progress bar
+            progressbar = ProgressBar(bar_title='XNAT-PIC Project Converter')
+            progressbar.start_determinate_bar()
+
+            # Perform DICOM convertion through separate thread (different from the main thread)
+            tp = threading.Thread(target=prj_converter, args=())
+            tp.start()
+            while tp.is_alive() == True:
+                progressbar.update_bar(0.0001)
+            else:
                 progressbar.stop_progress_bar()
+            
+            end_time = time.time()
+            print('Total elapsed time: ' + str(end_time - start_time) + ' s')
 
-                end_time = time.time()
-                print('Total elapsed time: ' + str(end_time - start_time) + ' s')
-
-                messagebox.showinfo("XNAT-PIC Converter","The conversion is done!\n\n\n\n"
-                                    "Exceptions:\n\n" +
-                                    str([str(x) for x in conversion_err])[1:-1])
-                enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
-                #master.process_btn['state'] = tk.NORMAL          
-
-            except Exception as e: 
-                messagebox.showerror("XNAT-PIC - Bruker2Dicom", e)
-                enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
-                #master.process_btn['state'] = tk.NORMAL
-                self.conv_popup.destroy()
+            messagebox.showinfo("XNAT-PIC Converter","The conversion of the project is done!\n\n\n\n"
+                                "Exceptions:\n\n" +
+                                str([str(x) for x in self.conversion_err])[1:-1])
+            enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])        
                 
-        def sbj_conversion(self, master):
-
-            ############### Single subject conversion ################
+        def sbj_convertion(self, master):
 
             # Convert from bruker to DICOM and disable the buttons
             disable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
-            #master.process_btn['state'] = tk.DISABLED
 
             # Ask for subject directory
-            self.folder_to_convert = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC: Select subject directory in Bruker ParaVision format")
-            if not self.folder_to_convert:
-                # Check for chosen directory
+            self.subject_to_convert = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), 
+                                                            title="XNAT-PIC: Select subject directory in Bruker ParaVision format")
+            # Check for chosen directory
+            if not self.subject_to_convert:
                 enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
-                #master.process_btn['state'] = tk.NORMAL
                 messagebox.showerror("XNAT-PIC Converter", "You have not chosen a directory")
                 return
+            if glob(self.subject_to_convert + '/**/**/**/**/2dseq', recursive=False) == []:
+                enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
+                messagebox.showerror("XNAT-PIC Converter", "The selected folder is not subject related")
+                return
+
             master.root.deiconify()
             master.root.update()
-            head, tail = os.path.split(self.folder_to_convert)
+            head, tail = os.path.split(self.subject_to_convert)
             head = head + '_dcm'
-            project_foldername = tail.split('.',1)[0] 
-            self.dst = os.path.join(head, project_foldername).replace('\\', '/')
+            project_foldername = tail.split('.',1)[0]
+            self.sub_dst = os.path.join(head, project_foldername).replace('\\', '/')
 
             # Start converter
-            converter = Bruker2DicomConverter(self.params)
+            self.converter = Bruker2DicomConverter(self.params)
 
             # If the destination folder already exists throw exception, otherwise create the new folder
-            if os.path.isdir(self.dst):
+            if os.path.isdir(self.sub_dst):
                 # Case 1 --> The directory already exists
-                if master.overwrite_flag == 1:
+                if self.overwrite_flag == 1:
                     # Existent folder with overwrite flag set to 1 --> remove folder and generate new one
-                    shutil.rmtree(self.dst)
-                    os.makedirs(self.dst)
+                    shutil.rmtree(self.sub_dst)
+                    os.makedirs(self.sub_dst)
                 else:
                     # Existent folder without overwriting flag set to 0 --> ignore folder
-                    messagebox.showerror("XNAT-PIC Converter", "Destination folder %s already exists" % self.dst)
+                    messagebox.showerror("XNAT-PIC Converter", "Destination folder %s already exists" % self.sub_dst)
                     return
             else:
                 # Case 2 --> The directory does not exist
-                if self.dst.split('/')[-1].count('_dcm') > 1:
+                if self.sub_dst.split('/')[-1].count('_dcm') >= 1:
                     # Check to avoid already converted folders
-                    messagebox.showerror("XNAT-PIC Converter", "Chosen folder %s already converted" % self.dst)
+                    messagebox.showerror("XNAT-PIC Converter", "Chosen folder %s already converted" % self.sub_dst)
                     return
                 else:
                     # Create the new destination folder
-                    os.makedirs(self.dst)
+                    os.makedirs(self.sub_dst)
 
-            try:
-                start_time = time.time()
+            def sbj_converter():
 
-                # Start the progress bar
-                progressbar = ProgressBar(bar_title='XNAT-PIC Subject Converter')
-                progressbar.start_indeterminate_bar()
+                list_exp = os.listdir(self.subject_to_convert)
+                for k, exp in enumerate(list_exp):
+                    progressbar.show_step(k + 1, len(list_exp))
+                    progressbar.update_progressbar(k + 1, len(list_exp))
+                    print('Converting ' + str(exp))
+                    exp_folder = os.path.join(self.subject_to_convert, exp).replace('\\','/')
+                    exp_dst = os.path.join(self.sub_dst, exp).replace('\\','/')
 
-                # Initialize conversion thread
-                tp = threading.Thread(target=converter.multi_core_conversion, args=(self.folder_to_convert, self.dst, ))
-                tp.start()
-                while tp.is_alive() == True:
-                    # As long as the thread is working, update the progress bar
-                    progressbar.update_bar()
-                progressbar.stop_progress_bar()
+                    list_scans = self.converter.get_list_of_folders(exp_folder, exp_dst)
+        
+                    progressbar.set_caption('Converting ' + str(exp_folder.split('/')[-1]) + ' ...')
+                    with Pool(processes=int(cpu_count() - 1)) as pool:
+                        pool.map(self.converter.convert, list_scans)
+                    progressbar.set_caption('Converting ' + str(exp_folder.split('/')[-1]) + ' ...done!')
 
-                end_time = time.time()
-                print('Total elapsed time: ' + str(end_time - start_time) + ' s')
+            start_time = time.time()
 
-                messagebox.showinfo("XNAT-PIC Converter","Done! Now you can upload your files to XNAT.")
+            # Start the progress bar
+            progressbar = ProgressBar(bar_title='XNAT-PIC Subject Converter')
+            progressbar.start_determinate_bar()
+
+            # Initialize and start convertion thread
+            tp = threading.Thread(target=sbj_converter, args=())
+            tp.start()
+            while tp.is_alive() == True:
+                # As long as the thread is working, update the progress bar
+                progressbar.update_bar(0.0001)
+            progressbar.stop_progress_bar()
+
+            end_time = time.time()
+            print('Total elapsed time: ' + str(end_time - start_time) + ' s')
+
+            messagebox.showinfo("XNAT-PIC Converter","Done! Your subject is successfully converted.")
+            enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])   
+
+        def experiment_convertion(self, master):
+
+            # Convert from bruker to DICOM and disable the buttons
+            disable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
+
+            # Ask for subject directory
+            self.experiment_to_convert = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), 
+                                                            title="XNAT-PIC: Select experiment directory in Bruker ParaVision format")
+            # Check for chosen directory
+            if not self.experiment_to_convert:
                 enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
-                #master.process_btn['state'] = tk.NORMAL          
-
-            except Exception as e: 
-                messagebox.showerror("XNAT-PIC - Converter", e)
+                messagebox.showerror("XNAT-PIC Converter", "You have not chosen a directory")
+                return
+            if glob(self.experiment_to_convert + '/**/**/**/2dseq', recursive=False) == []:
                 enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
-                #master.process_btn['state'] = tk.NORMAL
+                messagebox.showerror("XNAT-PIC Converter", "The selected folder is not experiment related")
+                return
+
+            master.root.deiconify()
+            master.root.update()
+            head, tail = os.path.split(self.experiment_to_convert)
+            head2, tail2 = os.path.split(head)
+            head2 = head2 + '_dcm'
+            self.exp_dst = os.path.join(head2, tail2, tail).replace('\\', '/')
+
+            # Initialize converter class
+            self.converter = Bruker2DicomConverter(self.params)
+
+            def exp_converter():
+                list_scans = self.converter.get_list_of_folders(self.experiment_to_convert, self.exp_dst)
+    
+                progressbar.set_caption('Converting ' + str(self.experiment_to_convert.split('/')[-1]) + ' ...')
+                with Pool(processes=int(cpu_count() - 1)) as pool:
+                    pool.map(self.converter.convert, list_scans)
+                progressbar.set_caption('Converting ' + str(self.experiment_to_convert.split('/')[-1]) + ' ...done!')
+
+            start_time = time.time()
+
+            # Start the progress bar
+            progressbar = ProgressBar(bar_title='XNAT-PIC Experiment Converter')
+            progressbar.start_indeterminate_bar()
+
+            # Initialize and start convertion thread
+            tp = threading.Thread(target=exp_converter, args=())
+            tp.start()
+            while tp.is_alive() == True:
+                # As long as the thread is working, update the progress bar
+                progressbar.update_bar()
+            progressbar.stop_progress_bar()
+
+            end_time = time.time()
+            print('Total elapsed time: ' + str(end_time - start_time) + ' s')
+
+            messagebox.showinfo("XNAT-PIC Converter","Done! Your experiment is successfully converted.")
+            enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
                  
     # Fill in information
     class metadata():
