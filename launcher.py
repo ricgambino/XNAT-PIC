@@ -33,6 +33,7 @@ from tkcalendar import DateEntry
 from accessory_functions import *
 from idlelib.tooltip import Hovertip
 from multiprocessing import Pool, cpu_count
+from credential_manager import CredentialManager
 
 PATH_IMAGE = "images\\"
 PERCENTAGE_SCREEN = 1  # Defines the size of the canvas. If equal to 1 (100%) ,it takes the whole screen
@@ -51,7 +52,12 @@ QUESTION_HAND = "question_arrow"
 BORDERWIDTH = 3
 
 load_dotenv()
-bufferSize = int(os.environ.get('bufferSize1')) * int(os.environ.get('bufferSize2'))
+def check_credentials():
+    dir = os.getcwd().replace('\\', '/')
+    head, tail = os.path.split(dir)
+    head, tail = os.path.split(head)
+    if os.path.isfile(head + '/.env') == False or os.environ.get('secretKey') == '':
+        CredentialManager()
 
 class SplashScreen(tk.Toplevel):
      def __init__(self, master, timeout=1000):
@@ -178,7 +184,7 @@ class xnat_pic_gui(tk.Frame):
         self.enter_btn = tk.Button(self.my_canvas, textvariable=enter_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, command=lambda: (self.enter_btn.destroy(), xnat_pic_gui.choose_you_action(self)), cursor=CURSOR_HAND)
         enter_text.set("ENTER")
         self.my_canvas.create_window(int(my_width/2), int(my_height*0.7), width = int(my_width/5), anchor = tk.CENTER, window = self.enter_btn)
-        
+            
     # Choose to upload files, fill in the info, convert files, process images
     def choose_you_action(self):
          ##########################################
@@ -1160,7 +1166,8 @@ class xnat_pic_gui(tk.Frame):
                     # Define the decrypted file path
                     decrypted_file = os.path.join(home, "Documents", ".XNAT_login_file00000.txt")
                     # Decrypt the encrypted file
-                    pyAesCrypt.decryptFile(encrypted_file, decrypted_file, os.environ.get('secretKey'), bufferSize)
+                    pyAesCrypt.decryptFile(encrypted_file, decrypted_file, os.environ.get('secretKey'), 
+                                            int(os.environ.get('bufferSize1')) * int(os.environ.get('bufferSize2')))
                     # Open the decrypted file
                     with open(decrypted_file, 'r') as credentials_file:
                         # Read the data
@@ -1277,7 +1284,8 @@ class xnat_pic_gui(tk.Frame):
                 # Define the decrypted file path
                 decrypted_file = os.path.join(home, "Documents", ".XNAT_login_file00000.txt")
                 # Decrypt the file
-                pyAesCrypt.decryptFile(encrypted_file, decrypted_file, os.environ.get('secretKey'), bufferSize)
+                pyAesCrypt.decryptFile(encrypted_file, decrypted_file, os.environ.get('secretKey'), 
+                                        int(os.environ.get('bufferSize1')) * int(os.environ.get('bufferSize2')))
                 # Open the decrypted file in 'read' mode
                 with open(decrypted_file, 'r') as credentials_file:
                     # Read the data
@@ -1353,7 +1361,8 @@ class xnat_pic_gui(tk.Frame):
                 decrypted_file = os.path.join(home, "Documents", ".XNAT_login_file00000.txt")
 
                 # Decrypt the encrypted file exploiting the secret key
-                pyAesCrypt.decryptFile(encrypted_file, decrypted_file, os.environ.get('secretKey'), bufferSize)
+                pyAesCrypt.decryptFile(encrypted_file, decrypted_file, os.environ.get('secretKey'), 
+                                        int(os.environ.get('bufferSize1')) * int(os.environ.get('bufferSize2')))
                 # Open decrypted file and read the data stored
                 with open(decrypted_file, 'r') as credentials_file:
                     data = json.load(credentials_file)
@@ -1374,7 +1383,8 @@ class xnat_pic_gui(tk.Frame):
                 # Clear data variable
                 data = ''
                 # Encrypt the file
-                pyAesCrypt.encryptFile(file, encrypted_file, os.environ.get('secretKey'), bufferSize)
+                pyAesCrypt.encryptFile(file, encrypted_file, os.environ.get('secretKey'), 
+                                        int(os.environ.get('bufferSize1')) * int(os.environ.get('bufferSize2')))
                 # Remove the file
                 os.remove(file)
 
@@ -1749,7 +1759,7 @@ class xnat_pic_gui(tk.Frame):
 
             #############################################
             ################ EXIT Button ################
-            def exit_upload():
+            def exit_uploader():
                 result = messagebox.askquestion("XNAT-PIC Uploader", "Do you want to exit anyway?", icon='warning')
                 if result == 'yes':
                     # Destroy all the existent widgets (Button, OptionMenu, ...)
@@ -1775,7 +1785,7 @@ class xnat_pic_gui(tk.Frame):
             self.exit_text = tk.StringVar() 
             self.exit_btn = tk.Button(master.my_canvas, textvariable=self.exit_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, 
                                     borderwidth=BORDERWIDTH, cursor=CURSOR_HAND, takefocus=0)
-            self.exit_btn.configure(command=exit_upload)
+            self.exit_btn.configure(command=exit_uploader)
             self.exit_text.set("Exit")
             y_exit_btn = int(my_height*80/100)
             width_btn = int(my_width*10/100)
@@ -2290,6 +2300,9 @@ class xnat_pic_gui(tk.Frame):
 
 
 if __name__ == "__main__":
+
+    check_credentials()
+
     root = tk.Tk()
     app = xnat_pic_gui(root)
     s = SplashScreen(root, timeout=5000)
