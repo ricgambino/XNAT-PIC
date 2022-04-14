@@ -10,6 +10,7 @@ from unicodedata import name
 from unittest import result
 from PIL import Image, ImageTk
 from tkinter import ttk
+import tkinter.simpledialog
 import time, json
 import os, re
 import os.path
@@ -55,7 +56,6 @@ load_dotenv()
 def check_credentials():
     dir = os.getcwd().replace('\\', '/')
     head, tail = os.path.split(dir)
-    head, tail = os.path.split(head)
     if os.path.isfile(head + '/.env') == False or os.environ.get('secretKey') == '':
         CredentialManager()
 
@@ -1206,7 +1206,7 @@ class xnat_pic_gui(tk.Frame):
                     login_popup.entry_address.var.set('')
 
             login_popup.entry_user = tk.StringVar()
-            login_popup.combo_user = ttk.Combobox(login_popup, font=SMALL_FONT_2, takefocus=0, textvariable=login_popup.entry_user, 
+            login_popup.combo_user = ttk.Combobox(login_popup, font=("Calibri", 10), takefocus=0, textvariable=login_popup.entry_user, 
                                                     state='normal', width=19)
             login_popup.combo_user['values'] = get_list_of_users()
             login_popup.entry_user.trace('w', get_credentials)
@@ -1222,9 +1222,11 @@ class xnat_pic_gui(tk.Frame):
                     login_popup.entry_psw.config(show='*')
                     login_popup.toggle_btn.config(text='Show Password')
                 else:
-                    # Possibility to ask a passcode to read the password
-                    login_popup.entry_psw.config(show='')
-                    login_popup.toggle_btn.config(text='Hide Password')
+                    if tkinter.simpledialog.askstring("PIN", "Enter PIN: ", show='*', parent=login_popup) == os.environ.get('secretPIN'):
+                        login_popup.entry_psw.config(show='')
+                        login_popup.toggle_btn.config(text='Hide Password')
+                    else:
+                        messagebox.showerror("XNAT-PIC Uploader", "Error! The PIN code does not correspond")
             
             login_popup.entry_psw = ttk.Entry(login_popup, show="*", width=25)
             login_popup.entry_psw.var = tk.StringVar()
