@@ -123,7 +123,6 @@ class CredentialManager():
 
         dir = os.getcwd().replace('\\', '/')
         head, tail = os.path.split(dir)
-        head, tail = os.path.split(head)
 
         with open(head + '/.env', 'w+') as credential_file:
             credential_file.write('secretUser=' + '"' + str(user.get()) + '"' + '\n')
@@ -136,14 +135,13 @@ class CredentialManager():
 
         dir = os.getcwd().replace('\\', '/')
         head, tail = os.path.split(dir)
-        head, tail = os.path.split(head)
         with open(head + '/.env', 'r') as credential_file:
             data = credential_file.read().split('\n')
             for i, d in enumerate(data):
                 if 'secretUser' in d:
                     data.remove(d)
                     data.insert(i, 'secretUser=' + '"' + str(user) + '"')
-                if 'secretKey' in d:
+                elif 'secretKey' in d:
                     data.remove(d)
                     data.insert(i, 'secretKey=' + '"' + str(psw) + '"')
                 elif 'secretPIN' in d:
