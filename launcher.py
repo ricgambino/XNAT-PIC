@@ -2,7 +2,7 @@ from doctest import master
 from logging import exception
 import shutil
 import tkinter as tk
-from tkinter import DISABLED, END, MULTIPLE, SINGLE, W, filedialog, messagebox
+from tkinter import DISABLED, END, MULTIPLE, RAISED, SINGLE, W, Menu, filedialog, messagebox
 from tkinter.font import Font
 from tkinter.tix import COLUMN
 from turtle import bgcolor, width
@@ -17,6 +17,7 @@ import os.path
 from functools import partial
 import subprocess
 import platform
+from matplotlib import image
 from progress_bar import ProgressBar
 from dicom_converter import Bruker2DicomConverter
 from glob import glob
@@ -187,68 +188,68 @@ class xnat_pic_gui(tk.Frame):
             
     # Choose to upload files, fill in the info, convert files, process images
     def choose_you_action(self):
-         ##########################################
-         # Action buttons           
-         # Positions for action button parametric with respect to the size of the canvas
-         x_btn = int(my_width/4) # /5 if there is the processing button
-         y_btn = int(my_height*60/100)
-         width_btn = int(my_width/7)
+        ##########################################
+        # Action buttons           
+        # Positions for action button parametric with respect to the size of the canvas
+        x_btn = int(my_width/4) # /5 if there is the processing button
+        y_btn = int(my_height*60/100)
+        width_btn = int(my_width/7)
 
-         # Convert files Bruker2DICOM
-         convert_text = tk.StringVar()
-         self.convert_btn = tk.Button(self.my_canvas, textvariable=convert_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, command=partial(self.bruker2dicom_conversion, self), cursor=CURSOR_HAND)
-         convert_text.set("DICOM Converter")
-         self.my_canvas.create_window(2*x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.convert_btn)
-         
-         # Fill in the info
-         info_text = tk.StringVar()
-         self.info_btn = tk.Button(self.my_canvas, textvariable=info_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, command=partial(self.metadata, self), cursor=CURSOR_HAND)
-         info_text.set("Fill in the info")
-         self.my_canvas.create_window(1*x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.info_btn)
-
-         # Upload files
-         upload_text = tk.StringVar()
-         self.upload_btn = tk.Button(self.my_canvas, textvariable=upload_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, command=partial(self.XNATUploader, self), cursor=CURSOR_HAND)
-         upload_text.set("Uploader")
-         self.my_canvas.create_window(3*x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.upload_btn)        
+        # Convert files Bruker2DICOM
+        convert_text = tk.StringVar()
+        self.convert_btn = tk.Button(self.my_canvas, textvariable=convert_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, command=partial(self.bruker2dicom_conversion, self), cursor=CURSOR_HAND)
+        convert_text.set("DICOM Converter")
+        self.my_canvas.create_window(2*x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.convert_btn)
         
-         # Processing your files
-         #process_text = tk.StringVar()
-         #self.process_btn = tk.Button(self.my_canvas, textvariable=process_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, cursor=CURSOR_HAND)
-         #process_text.set("Processing")
-         #self.my_canvas.create_window(4*x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.process_btn)
+        # Fill in the info
+        info_text = tk.StringVar()
+        self.info_btn = tk.Button(self.my_canvas, textvariable=info_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, command=partial(self.metadata, self), cursor=CURSOR_HAND)
+        info_text.set("Fill in the info")
+        self.my_canvas.create_window(1*x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.info_btn)
+
+        # Upload files
+        upload_text = tk.StringVar()
+        self.upload_btn = tk.Button(self.my_canvas, textvariable=upload_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, command=partial(self.XNATUploader, self), cursor=CURSOR_HAND)
+        upload_text.set("Uploader")
+        self.my_canvas.create_window(3*x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.upload_btn)
     
-         ##########################################
-         # Info buttons
-         # Messages displayed when the button is clicked
-         def helpmsg(text):  
-             if text == "button1":
-                 msg="Convert images from Bruker ParaVision format to DICOM standard" 
-             elif text == "button2":
-                 msg="Fill in the information about the acquisition" 
-             elif text == "button3":
-                 msg="Upload DICOM images to XNAT" 
-             elif text == "button4":
-                 msg="Process images" 
+        # Processing your files
+        #process_text = tk.StringVar()
+        #self.process_btn = tk.Button(self.my_canvas, textvariable=process_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, cursor=CURSOR_HAND)
+        #process_text.set("Processing")
+        #self.my_canvas.create_window(4*x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.process_btn)
 
-             messagebox.showinfo("XNAT-PIC",msg)
-                 
-         # Positions for info button parametric with respect to the size of the canvas
-         y_btn1 = int(my_height*65/100)
-         
-         self.info_convert_btn = tk.Button(self.my_canvas, image = self.logo_info, bg=BG_BTN_COLOR, borderwidth=0, command = lambda: helpmsg("button1"), cursor=QUESTION_HAND, state = DISABLED)
-         self.my_canvas.create_window(2*x_btn, y_btn1, anchor=tk.CENTER, window=self.info_convert_btn)
-         myTipConvert = Hovertip(self.info_convert_btn,'Convert images from Bruker ParaVision format to DICOM standard')
+        ##########################################
+        # Info buttons
+        # Messages displayed when the button is clicked
+        def helpmsg(text):  
+            if text == "button1":
+                msg="Convert images from Bruker ParaVision format to DICOM standard" 
+            elif text == "button2":
+                msg="Fill in the information about the acquisition" 
+            elif text == "button3":
+                msg="Upload DICOM images to XNAT" 
+            elif text == "button4":
+                msg="Process images" 
 
-         self.info_info_btn = tk.Button(self.my_canvas, image = self.logo_info, bg=BG_BTN_COLOR, borderwidth=0, command = lambda: helpmsg("button2"), cursor=QUESTION_HAND, state = DISABLED)
-         self.my_canvas.create_window(1*x_btn, y_btn1, anchor=tk.CENTER, window=self.info_info_btn)
-         myTipInfo = Hovertip(self.info_info_btn,'Fill in the information about the acquisition')
+            messagebox.showinfo("XNAT-PIC",msg)
+                
+        # Positions for info button parametric with respect to the size of the canvas
+        y_btn1 = int(my_height*65/100)
+        
+        self.info_convert_btn = tk.Button(self.my_canvas, image = self.logo_info, bg=BG_BTN_COLOR, borderwidth=0, command = lambda: helpmsg("button1"), cursor=QUESTION_HAND, state = DISABLED)
+        self.my_canvas.create_window(2*x_btn, y_btn1, anchor=tk.CENTER, window=self.info_convert_btn)
+        myTipConvert = Hovertip(self.info_convert_btn,'Convert images from Bruker ParaVision format to DICOM standard')
 
-         self.info_upload_btn = tk.Button(self.my_canvas, image = self.logo_info, bg=BG_BTN_COLOR, borderwidth=0, command = lambda: helpmsg("button3"), cursor=QUESTION_HAND, state = DISABLED)
-         self.my_canvas.create_window(3*x_btn, y_btn1, anchor=tk.CENTER, window=self.info_upload_btn)
-         myTipUpload = Hovertip(self.info_upload_btn,'Upload DICOM images to XNAT')
-         #self.info_process_btn = tk.Button(self.my_canvas, image = self.logo_info, bg=BG_BTN_COLOR, borderwidth=BORDERWIDTH, command = lambda: helpmsg("button4"), cursor=QUESTION_HAND)
-         #self.my_canvas.create_window(4*x_btn, y_btn1, anchor=tk.CENTER, window=self.info_process_btn)        
+        self.info_info_btn = tk.Button(self.my_canvas, image = self.logo_info, bg=BG_BTN_COLOR, borderwidth=0, command = lambda: helpmsg("button2"), cursor=QUESTION_HAND, state = DISABLED)
+        self.my_canvas.create_window(1*x_btn, y_btn1, anchor=tk.CENTER, window=self.info_info_btn)
+        myTipInfo = Hovertip(self.info_info_btn,'Fill in the information about the acquisition')
+
+        self.info_upload_btn = tk.Button(self.my_canvas, image = self.logo_info, bg=BG_BTN_COLOR, borderwidth=0, command = lambda: helpmsg("button3"), cursor=QUESTION_HAND, state = DISABLED)
+        self.my_canvas.create_window(3*x_btn, y_btn1, anchor=tk.CENTER, window=self.info_upload_btn)
+        myTipUpload = Hovertip(self.info_upload_btn,'Upload DICOM images to XNAT')
+        #self.info_process_btn = tk.Button(self.my_canvas, image = self.logo_info, bg=BG_BTN_COLOR, borderwidth=BORDERWIDTH, command = lambda: helpmsg("button4"), cursor=QUESTION_HAND)
+        #self.my_canvas.create_window(4*x_btn, y_btn1, anchor=tk.CENTER, window=self.info_process_btn)        
 
     def get_page(self):
         return self.root   
@@ -271,20 +272,20 @@ class xnat_pic_gui(tk.Frame):
                 self.params['results_flag'] = self.results_flag.get()
 
             self.conv_popup = tk.Toplevel()
-            self.conv_popup.geometry("%dx%d+%d+%d" % (500, 220, my_width/3, my_height/3))
+            self.conv_popup.geometry("%dx%d+%d+%d" % (650, 250, my_width/3, my_height/3))
             self.conv_popup.title('XNAT-PIC Converter')
             self.conv_popup.protocol("WM_DELETE_WINDOW", close_window)
 
             self.btn_prj = tk.Button(self.conv_popup, text='Convert Project', font=LARGE_FONT, 
-                                    bg="grey", fg="white", height=1, width=15, borderwidth=BORDERWIDTH, 
+                                    bg="grey", fg="white", height=1, width=20, borderwidth=BORDERWIDTH, 
                                     command=lambda: (self.conv_popup.destroy(), self.prj_convertion(master)))
-            self.btn_prj.grid(row=2, column=0, padx=10, pady=5)
+            self.btn_prj.grid(row=2, column=0, padx=10, pady=10)
             self.btn_sbj = tk.Button(self.conv_popup, text='Convert Subject', font=LARGE_FONT, 
-                                    bg="grey", fg="white", height=1, width=15, borderwidth=BORDERWIDTH, 
+                                    bg="grey", fg="white", height=1, width=20, borderwidth=BORDERWIDTH, 
                                     command=lambda: (self.conv_popup.destroy(), self.sbj_convertion(master)))
             self.btn_sbj.grid(row=3, column=0, padx=10, pady=5)
             self.btn_exp = tk.Button(self.conv_popup, text='Convert Experiment', font=LARGE_FONT, 
-                                    bg="grey", fg="white", height=1, width=15, borderwidth=BORDERWIDTH, 
+                                    bg="grey", fg="white", height=1, width=20, borderwidth=BORDERWIDTH, 
                                     command=lambda: (self.conv_popup.destroy(), self.experiment_convertion(master)))
             self.btn_exp.grid(row=4, column=0, padx=10, pady=5)
             self.results_flag = tk.IntVar()
@@ -303,6 +304,15 @@ class xnat_pic_gui(tk.Frame):
                                     command=lambda: messagebox.showinfo("XNAT-PIC","If the project or the subject already exists, it will be overwritten!"))
             self.btn_overwrite_info.grid(row=3, column=2, sticky='W')
             myTipOverwrite = Hovertip(self.btn_overwrite_info,'If the project or the subject already exists, it will be overwritten!')
+
+            # QUIT button
+            def quit_event():
+                self.conv_popup.destroy()
+                enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
+
+            self.button_quit = tk.Button(self.conv_popup, text='Quit', font=SMALL_FONT, width=10, borderwidth=BORDERWIDTH, command=quit_event)
+            self.button_quit.grid(row=4, column=2, padx=10, sticky='E')
+            
 
         def prj_convertion(self, master):
 
@@ -1362,28 +1372,42 @@ class xnat_pic_gui(tk.Frame):
                 # Define the path of the decrypted file
                 decrypted_file = os.path.join(home, "Documents", ".XNAT_login_file00000.txt")
 
-                # Decrypt the encrypted file exploiting the secret key
-                pyAesCrypt.decryptFile(encrypted_file, decrypted_file, os.environ.get('secretKey'), 
-                                        int(os.environ.get('bufferSize1')) * int(os.environ.get('bufferSize2')))
-                # Open decrypted file and read the data stored
-                with open(decrypted_file, 'r') as credentials_file:
-                    data = json.load(credentials_file)
-                # Update the already stored data with the current session parameters
-                data[str(popup.entry_user.get())] = {
-                            "Address": popup.entry_address.var.get(),
-                            "Username": popup.entry_user.get(),
-                            "Password": popup.entry_psw.var.get(),
-                            "HTTP": popup.http.get()
-                    }
-                # Remove the decrypted file
-                os.remove(decrypted_file)
+                if os.path.isfile(encrypted_file):
+
+                    # Decrypt the encrypted file exploiting the secret key
+                    pyAesCrypt.decryptFile(encrypted_file, decrypted_file, os.environ.get('secretKey'), 
+                                            int(os.environ.get('bufferSize1')) * int(os.environ.get('bufferSize2')))
+                    # Open decrypted file and read the data stored
+                    with open(decrypted_file, 'r') as credentials_file:
+                        data = json.load(credentials_file)
+                    # Update the already stored data with the current session parameters
+                    data[str(popup.entry_user.get())] = {
+                                "Address": popup.entry_address.var.get(),
+                                "Username": popup.entry_user.get(),
+                                "Password": popup.entry_psw.var.get(),
+                                "HTTP": popup.http.get()
+                        }
+                    # Remove the decrypted file
+                    os.remove(decrypted_file)
+                
+                else:
+                    # Define empty dictionary for credentials
+                    data = {}
+                    # Add the current credentials to the dictionary
+                    data[str(popup.entry_user.get())] = {
+                                "Address": popup.entry_address.var.get(),
+                                "Username": popup.entry_user.get(),
+                                "Password": popup.entry_psw.var.get(),
+                                "HTTP": popup.http.get()
+                        }
+
                 # Define the path of the file
                 file = os.path.join(home, "Documents", ".XNAT_login_file.txt")
                 # Open the file to write in the data to be stored
                 with open(file, 'w+') as login_file:
                     json.dump(data, login_file)
                 # Clear data variable
-                data = ''
+                data = {}
                 # Encrypt the file
                 pyAesCrypt.encryptFile(file, encrypted_file, os.environ.get('secretKey'), 
                                         int(os.environ.get('bufferSize1')) * int(os.environ.get('bufferSize2')))
