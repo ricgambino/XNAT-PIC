@@ -39,11 +39,14 @@ from credential_manager import CredentialManager
 
 PATH_IMAGE = "images\\"
 PERCENTAGE_SCREEN = 1  # Defines the size of the canvas. If equal to 1 (100%) ,it takes the whole screen
-BACKGROUND_COLOR = "#31C498"
-THEME_COLOR = "black"
+BACKGROUND_COLOR = "#E5EAF0"
+THEME_COLOR = "#E5EAF0"
+THEME_COLOR_2 = '#0070C0'
 TEXT_BTN_COLOR = "black"
-TEXT_LBL_COLOR = "white"
-BG_BTN_COLOR = "#80FFE6"
+TEXT_BTN_COLOR_2 = "white"
+TEXT_LBL_COLOR = "black"
+BG_BTN_COLOR = "#E5EAF0"
+BG_BTN_COLOR_2 = '#0070C0'
 BG_LBL_COLOR = "black"
 DISABLE_LBL_COLOR = '#D3D3D3'
 LARGE_FONT = ("Calibri", 22, "bold")
@@ -61,61 +64,61 @@ def check_credentials():
         CredentialManager()
 
 class SplashScreen(tk.Toplevel):
-     def __init__(self, master, timeout=1000):
-         """(master, image, timeout=1000) -> create a splash screen
-         from specified image file.  Keep splashscreen up for timeout
-         milliseconds"""
-         tk.Toplevel.__init__(self, master)
-         self.main = master
-         self.main.withdraw()
-         self.overrideredirect(1)
-         im = Image.open(PATH_IMAGE + "logo-xnat-pic.png")
-         self.image = ImageTk.PhotoImage(im)
-         self.after_idle(self.centerOnScreen)
+    def __init__(self, master, timeout=1000):
+        """(master, image, timeout=1000) -> create a splash screen
+        from specified image file.  Keep splashscreen up for timeout
+        milliseconds"""
+        tk.Toplevel.__init__(self, master)
+        self.main = master
+        self.main.withdraw()
+        self.overrideredirect(1)
+        im = Image.open(PATH_IMAGE + "logo-xnat-pic.png")
+        self.image = ImageTk.PhotoImage(im)
+        self.after_idle(self.centerOnScreen)
 
-         self.update()
-         self.after(timeout, self.destroy)
+        self.update()
+        self.after(timeout, self.destroy)
 
-     def centerOnScreen(self):
-         self.update_idletasks()
-         if (platform.system()=='Linux'):
+    def centerOnScreen(self):
+        self.update_idletasks()
+        if (platform.system()=='Linux'):
                 cmd_show_screen_resolution = subprocess.Popen("xrandr --query | grep -oG 'primary [0-9]*x[0-9]*'",\
                                                             stdout=subprocess.PIPE, shell=True)
                 screen_output =str(cmd_show_screen_resolution.communicate()).split()[1]
                 self.screenwidth, self.root.screenheight = re.findall("[0-9]+",screen_output)
             ###
             ###
-         else :
+        else :
                 self.screenwidth=self.winfo_screenwidth()
                 self.screenheight=self.winfo_screenheight()
 
-         # Adjust size based on screen resolution
-         self.w = int(self.screenwidth/2)
-         self.h = int(self.screenheight/6)
-         x = int(self.screenwidth/2)-int(self.w/2)
-         y =  int(self.screenheight/2)-int(self.h/2)
-         self.geometry("%dx%d+%d+%d" % (self.w, self.h, x, y))
-         self.createWidgets()
+        # Adjust size based on screen resolution
+        self.w = int(self.screenwidth/2)
+        self.h = int(self.screenheight/6)
+        x = int(self.screenwidth/2)-int(self.w/2)
+        y =  int(self.screenheight/2)-int(self.h/2)
+        self.geometry("%dx%d+%d+%d" % (self.w, self.h, x, y))
+        self.createWidgets()
 
-     def createWidgets(self):
-         # Need to fill in here
-         im = Image.open(PATH_IMAGE + "logo-xnat-pic.png")
-         width = int(self.w)
-         wpercent = (width/float(im.size[0]))
-         height = int((float(im.size[1])*float(wpercent)))
-         self.my_canvas = tk.Canvas(self, height=height, width=width, bg="white", highlightthickness=1, highlightbackground=THEME_COLOR)
-         self.my_canvas.pack()
-        
-         # Adapt the size of the logo to the size of the canvas
-         im = im.resize((self.w, height), Image.ANTIALIAS)  
-         self.im = ImageTk.PhotoImage(im)
-         self.my_canvas.create_image(2, 0, anchor=tk.NW, image=self.im)
+    def createWidgets(self):
+        # Need to fill in here
+        im = Image.open(PATH_IMAGE + "logo-xnat-pic.png")
+        width = int(self.w)
+        wpercent = (width/float(im.size[0]))
+        height = int((float(im.size[1])*float(wpercent)))
+        self.my_canvas = tk.Canvas(self, height=height, width=width, bg="white", highlightthickness=1, highlightbackground=THEME_COLOR)
+        self.my_canvas.pack()
+    
+        # Adapt the size of the logo to the size of the canvas
+        im = im.resize((self.w, height), Image.ANTIALIAS)  
+        self.im = ImageTk.PhotoImage(im)
+        self.my_canvas.create_image(2, 0, anchor=tk.NW, image=self.im)
 
-     def destroy(self):
-         self.main.update()
-         self.main.state('zoomed')
-         self.main.deiconify()
-         self.withdraw()
+    def destroy(self):
+        self.main.update()
+        self.main.state('zoomed')
+        self.main.deiconify()
+        self.withdraw()
 
 class xnat_pic_gui(tk.Frame):
 
@@ -147,17 +150,19 @@ class xnat_pic_gui(tk.Frame):
         # Define Canvas and logo in background
         global my_width
         my_width = int(w*PERCENTAGE_SCREEN)
-        logo = Image.open(PATH_IMAGE + "logo41.png")
+        logo = Image.open(PATH_IMAGE + "Euro-Bioimaging_logo.png")
         wpercent = (my_width/float(logo.size[0]))
         global my_height
-        my_height = int((float(logo.size[1])*float(wpercent))*PERCENTAGE_SCREEN)
+        # my_height = int((float(logo.size[1])*float(wpercent))*PERCENTAGE_SCREEN)
+        my_height = int(h*PERCENTAGE_SCREEN)
         self.my_canvas = tk.Canvas(self.root, width=my_width, height=my_height, bg=BACKGROUND_COLOR, highlightthickness=3, highlightbackground=THEME_COLOR)
         self.my_canvas.place(x=int((w-my_width)/2), y=int((h-my_height)/2), anchor=tk.NW)
         
         # Adapt the size of the logo to the size of the canvas
-        logo = logo.resize((my_width, my_height), Image.ANTIALIAS)  
+        logo = logo.resize((int(logo.size[0]/2), int(logo.size[1]/2)), Image.ANTIALIAS)  
         self.logo = ImageTk.PhotoImage(logo)
-        self.my_canvas.create_image(0, 0, anchor=tk.NW, image=self.logo)
+        self.my_img_background = self.my_canvas.create_image(int((my_width - my_width/6)/2), int(my_height*30/100), anchor=tk.CENTER, image=self.logo)
+        self.rect_bg = self.my_canvas.create_rectangle(0, 0, int(my_width/6), my_height, fill=BG_BTN_COLOR_2)
         
         # Open the image for the logo
         logo_info = Image.open(PATH_IMAGE + "info.png")
@@ -182,36 +187,41 @@ class xnat_pic_gui(tk.Frame):
 
         # Button to enter
         enter_text = tk.StringVar()
-        self.enter_btn = tk.Button(self.my_canvas, textvariable=enter_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, command=lambda: (self.enter_btn.destroy(), xnat_pic_gui.choose_you_action(self)), cursor=CURSOR_HAND)
+        self.enter_btn = tk.Button(self.my_canvas, textvariable=enter_text, font=LARGE_FONT, bg=BG_BTN_COLOR_2, fg=TEXT_BTN_COLOR_2, borderwidth=BORDERWIDTH, command=lambda: (self.enter_btn.destroy(), xnat_pic_gui.choose_you_action(self)), cursor=CURSOR_HAND)
         enter_text.set("ENTER")
-        self.my_canvas.create_window(int(my_width/2), int(my_height*0.7), width = int(my_width/5), anchor = tk.CENTER, window = self.enter_btn)
+        self.my_canvas.create_window(int((my_width - my_width/6)/2), int(my_height*0.7), width = int(my_width/7), anchor = tk.CENTER, window = self.enter_btn)
             
     # Choose to upload files, fill in the info, convert files, process images
     def choose_you_action(self):
         ##########################################
         # Action buttons           
         # Positions for action button parametric with respect to the size of the canvas
-        x_btn = int(my_width/4) # /5 if there is the processing button
-        y_btn = int(my_height*60/100)
-        width_btn = int(my_width/7)
+        x_btn = int(2*my_width/3) # /5 if there is the processing button
+        y_btn = int(my_height/100)
+        width_btn = int(my_width/5)
+
+        self.my_canvas.delete(self.my_img_background)
 
         # Convert files Bruker2DICOM
         convert_text = tk.StringVar()
-        self.convert_btn = tk.Button(self.my_canvas, textvariable=convert_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, command=partial(self.bruker2dicom_conversion, self), cursor=CURSOR_HAND)
+        self.convert_btn = tk.Button(self.my_canvas, textvariable=convert_text, font=LARGE_FONT, bg=BG_BTN_COLOR_2, fg=TEXT_BTN_COLOR_2, borderwidth=BORDERWIDTH, 
+                                    command=partial(self.bruker2dicom_conversion, self), cursor=CURSOR_HAND)
         convert_text.set("DICOM Converter")
-        self.my_canvas.create_window(2*x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.convert_btn)
+        self.my_canvas.create_window(x_btn, 50*y_btn, width = width_btn, anchor = tk.CENTER, window = self.convert_btn)
         
         # Fill in the info
         info_text = tk.StringVar()
-        self.info_btn = tk.Button(self.my_canvas, textvariable=info_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, command=partial(self.metadata, self), cursor=CURSOR_HAND)
+        self.info_btn = tk.Button(self.my_canvas, textvariable=info_text, font=LARGE_FONT, bg=BG_BTN_COLOR_2, fg=TEXT_BTN_COLOR_2, borderwidth=BORDERWIDTH, 
+                                    command=partial(self.metadata, self), cursor=CURSOR_HAND)
         info_text.set("Fill in the info")
-        self.my_canvas.create_window(1*x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.info_btn)
+        self.my_canvas.create_window(x_btn, 60*y_btn, width = width_btn, anchor = tk.CENTER, window = self.info_btn)
 
         # Upload files
         upload_text = tk.StringVar()
-        self.upload_btn = tk.Button(self.my_canvas, textvariable=upload_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, command=partial(self.XNATUploader, self), cursor=CURSOR_HAND)
+        self.upload_btn = tk.Button(self.my_canvas, textvariable=upload_text, font=LARGE_FONT, bg=BG_BTN_COLOR_2, fg=TEXT_BTN_COLOR_2, borderwidth=BORDERWIDTH, 
+                                        command=partial(self.XNATUploader, self), cursor=CURSOR_HAND)
         upload_text.set("Uploader")
-        self.my_canvas.create_window(3*x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.upload_btn)
+        self.my_canvas.create_window(x_btn, 70*y_btn, width = width_btn, anchor = tk.CENTER, window = self.upload_btn)
     
         # Processing your files
         #process_text = tk.StringVar()
