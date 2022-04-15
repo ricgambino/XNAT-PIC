@@ -17,7 +17,6 @@ import os.path
 from functools import partial
 import subprocess
 import platform
-from matplotlib import image
 from progress_bar import ProgressBar
 from dicom_converter import Bruker2DicomConverter
 from glob import glob
@@ -36,6 +35,7 @@ from accessory_functions import *
 from idlelib.tooltip import Hovertip
 from multiprocessing import Pool, cpu_count
 from credential_manager import CredentialManager
+from win32api import GetMonitorInfo, MonitorFromPoint
 
 PATH_IMAGE = "images\\"
 PERCENTAGE_SCREEN = 1  # Defines the size of the canvas. If equal to 1 (100%) ,it takes the whole screen
@@ -51,7 +51,7 @@ BG_LBL_COLOR = "black"
 DISABLE_LBL_COLOR = '#D3D3D3'
 LARGE_FONT = ("Calibri", 22, "bold")
 SMALL_FONT = ("Calibri", 16, "bold")
-SMALL_FONT_2 = ("Calibri", 10, "bold")
+SMALL_FONT_2 = ("Calibri", 10)
 CURSOR_HAND = "hand2"
 QUESTION_HAND = "question_arrow"
 BORDERWIDTH = 3
@@ -142,6 +142,9 @@ class xnat_pic_gui(tk.Frame):
         # Adjust size based on screen resolution
         w = self.root.screenwidth
         h = self.root.screenheight
+        monitor_info = GetMonitorInfo(MonitorFromPoint((0,0)))
+        work_area = monitor_info.get("Work")
+        work_height = work_area[3]
         self.root.geometry("%dx%d+0+0" % (w, h))
         self.root.title("   XNAT-PIC   ~   Molecular Imaging Center   ~   University of Torino   ")
         # If you want the logo 
@@ -149,31 +152,34 @@ class xnat_pic_gui(tk.Frame):
 
         # Define Canvas and logo in background
         global my_width
-        my_width = int(w*PERCENTAGE_SCREEN)
-        logo = Image.open(PATH_IMAGE + "Euro-Bioimaging_logo.png")
-        wpercent = (my_width/float(logo.size[0]))
         global my_height
-        # my_height = int((float(logo.size[1])*float(wpercent))*PERCENTAGE_SCREEN)
-        my_height = int(h*PERCENTAGE_SCREEN)
-        self.my_canvas = tk.Canvas(self.root, width=my_width, height=my_height, bg=BACKGROUND_COLOR, highlightthickness=3, highlightbackground=THEME_COLOR)
-        self.my_canvas.place(x=int((w-my_width)/2), y=int((h-my_height)/2), anchor=tk.NW)
-        
-        # Adapt the size of the logo to the size of the canvas
-        logo = logo.resize((int(logo.size[0]/2), int(logo.size[1]/2)), Image.ANTIALIAS)  
+        my_width = int(w*PERCENTAGE_SCREEN)
+        my_height = int(work_height*PERCENTAGE_SCREEN)
+        self.my_canvas = tk.Canvas(self.root, width=my_width, height=my_height, bg=BACKGROUND_COLOR, highlightthickness=0, 
+                                    highlightbackground=THEME_COLOR)
+        self.my_canvas.place(x=0, y=0, anchor=tk.NW)
+
+        # Logo Panel
+        panel = Image.open(PATH_IMAGE + "logo-panel.png").convert("RGBA")
+        panel = panel.resize((int(my_width/5), my_height), Image.ANTIALIAS)
+        self.panel = ImageTk.PhotoImage(panel)
+        self.panel_image = tk.Button(self.my_canvas, image=self.panel, bg=BG_BTN_COLOR, borderwidth=0, 
+                                    activebackground=BG_BTN_COLOR)
+        self.img1 = self.my_canvas.create_window(0, 0, anchor=tk.NW, window=self.panel_image)
+
+        # XNAT-PIC Logo
+        logo = Image.open(PATH_IMAGE + "XNAT-PIC-logo.png").convert("RGBA")
+        logo = logo.resize((int(logo.size[0]/3), int(logo.size[1]/3)), Image.ANTIALIAS)
         self.logo = ImageTk.PhotoImage(logo)
-        self.my_img_background = self.my_canvas.create_image(int((my_width - my_width/6)/2), int(my_height*30/100), anchor=tk.CENTER, image=self.logo)
-        self.rect_bg = self.my_canvas.create_rectangle(0, 0, int(my_width/6), my_height, fill=BG_BTN_COLOR_2)
+        self.logo_img = tk.Button(self.my_canvas, image=self.logo, bg=BG_BTN_COLOR, borderwidth=0,
+                                    activebackground=BG_BTN_COLOR)
+        self.img2 = self.my_canvas.create_window(int(my_width/5 + ((4*my_width/5)/2)), int(my_height*30/100), 
+                                                anchor=tk.CENTER, window=self.logo_img)
         
         # Open the image for the logo
         logo_info = Image.open(PATH_IMAGE + "info.png")
         self.logo_info = ImageTk.PhotoImage(logo_info)
         width_logo, height_logo = logo_info.size
-
-        # Logo on top
-        #logo3 = Image.open(PATH_IMAGE + "path163.png")
-        #self.logo3 = ImageTk.PhotoImage(logo3)
-        #label1 = tk.Label(self.root, image=self.logo3,  bg="#31C498", width=1715)
-        #self.my_canvas.create_window(3, 20, anchor=tk.NW, window=label1)
 
         # Open the image for the accept icon
         logo_accept = Image.open(PATH_IMAGE + "accept.png")
@@ -186,80 +192,57 @@ class xnat_pic_gui(tk.Frame):
         self.logo_delete = ImageTk.PhotoImage(logo_delete)
 
         # Button to enter
+        def enter_handler(*args):
+            self.enter_btn.destroy()
+            xnat_pic_gui.choose_your_action(self)
+
         enter_text = tk.StringVar()
-        self.enter_btn = tk.Button(self.my_canvas, textvariable=enter_text, font=LARGE_FONT, bg=BG_BTN_COLOR_2, fg=TEXT_BTN_COLOR_2, borderwidth=BORDERWIDTH, command=lambda: (self.enter_btn.destroy(), xnat_pic_gui.choose_you_action(self)), cursor=CURSOR_HAND)
+        self.enter_btn = tk.Button(self.my_canvas, textvariable=enter_text, font=LARGE_FONT, bg=BG_BTN_COLOR_2, 
+                                    fg=TEXT_BTN_COLOR_2, borderwidth=BORDERWIDTH, 
+                                    command=enter_handler, 
+                                    cursor=CURSOR_HAND)
         enter_text.set("ENTER")
-        self.my_canvas.create_window(int((my_width - my_width/6)/2), int(my_height*0.7), width = int(my_width/7), anchor = tk.CENTER, window = self.enter_btn)
+        self.my_canvas.create_window(int(my_width/5 + ((4*my_width/5)/2)), int(my_height*70/100), width = int(logo.size[0]/2), 
+                                    anchor=tk.CENTER, window = self.enter_btn)
             
     # Choose to upload files, fill in the info, convert files, process images
-    def choose_you_action(self):
-        ##########################################
+    def choose_your_action(self):
+
+        if hasattr(xnat_pic_gui, 'img2') == False:
+            self.img2 = self.my_canvas.create_window(int(my_width/5 + ((4*my_width/5)/2)), int(my_height*30/100), 
+                                                anchor=tk.CENTER, window=self.logo_img)
+
         # Action buttons           
         # Positions for action button parametric with respect to the size of the canvas
-        x_btn = int(2*my_width/3) # /5 if there is the processing button
-        y_btn = int(my_height/100)
+        x_btn = int(my_width/5 + ((4*my_width/5)/2))
+        y_btn = int(my_height)
         width_btn = int(my_width/5)
-
-        self.my_canvas.delete(self.my_img_background)
 
         # Convert files Bruker2DICOM
         convert_text = tk.StringVar()
         self.convert_btn = tk.Button(self.my_canvas, textvariable=convert_text, font=LARGE_FONT, bg=BG_BTN_COLOR_2, fg=TEXT_BTN_COLOR_2, borderwidth=BORDERWIDTH, 
                                     command=partial(self.bruker2dicom_conversion, self), cursor=CURSOR_HAND)
         convert_text.set("DICOM Converter")
-        self.my_canvas.create_window(x_btn, 50*y_btn, width = width_btn, anchor = tk.CENTER, window = self.convert_btn)
+        self.my_canvas.create_window(x_btn, y_btn*50/100, width = width_btn, anchor = tk.CENTER, window = self.convert_btn)
+        Hovertip(self.convert_btn,'Convert images from Bruker ParaVision format to DICOM standard')
         
         # Fill in the info
         info_text = tk.StringVar()
         self.info_btn = tk.Button(self.my_canvas, textvariable=info_text, font=LARGE_FONT, bg=BG_BTN_COLOR_2, fg=TEXT_BTN_COLOR_2, borderwidth=BORDERWIDTH, 
                                     command=partial(self.metadata, self), cursor=CURSOR_HAND)
-        info_text.set("Fill in the info")
-        self.my_canvas.create_window(x_btn, 60*y_btn, width = width_btn, anchor = tk.CENTER, window = self.info_btn)
+        info_text.set("Project Data")
+        self.my_canvas.create_window(x_btn, y_btn*65/100, width = width_btn, anchor = tk.CENTER, window = self.info_btn)
+        Hovertip(self.info_btn,'Fill in the information about the acquisition')
 
         # Upload files
+        def upload_callback(*args):
+            self.XNATUploader(self)
         upload_text = tk.StringVar()
         self.upload_btn = tk.Button(self.my_canvas, textvariable=upload_text, font=LARGE_FONT, bg=BG_BTN_COLOR_2, fg=TEXT_BTN_COLOR_2, borderwidth=BORDERWIDTH, 
-                                        command=partial(self.XNATUploader, self), cursor=CURSOR_HAND)
+                                        command=upload_callback, cursor=CURSOR_HAND)
         upload_text.set("Uploader")
-        self.my_canvas.create_window(x_btn, 70*y_btn, width = width_btn, anchor = tk.CENTER, window = self.upload_btn)
-    
-        # Processing your files
-        #process_text = tk.StringVar()
-        #self.process_btn = tk.Button(self.my_canvas, textvariable=process_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, cursor=CURSOR_HAND)
-        #process_text.set("Processing")
-        #self.my_canvas.create_window(4*x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.process_btn)
-
-        ##########################################
-        # Info buttons
-        # Messages displayed when the button is clicked
-        def helpmsg(text):  
-            if text == "button1":
-                msg="Convert images from Bruker ParaVision format to DICOM standard" 
-            elif text == "button2":
-                msg="Fill in the information about the acquisition" 
-            elif text == "button3":
-                msg="Upload DICOM images to XNAT" 
-            elif text == "button4":
-                msg="Process images" 
-
-            messagebox.showinfo("XNAT-PIC",msg)
-                
-        # Positions for info button parametric with respect to the size of the canvas
-        y_btn1 = int(my_height*65/100)
-        
-        self.info_convert_btn = tk.Button(self.my_canvas, image = self.logo_info, bg=BG_BTN_COLOR, borderwidth=0, command = lambda: helpmsg("button1"), cursor=QUESTION_HAND, state = DISABLED)
-        self.my_canvas.create_window(2*x_btn, y_btn1, anchor=tk.CENTER, window=self.info_convert_btn)
-        myTipConvert = Hovertip(self.info_convert_btn,'Convert images from Bruker ParaVision format to DICOM standard')
-
-        self.info_info_btn = tk.Button(self.my_canvas, image = self.logo_info, bg=BG_BTN_COLOR, borderwidth=0, command = lambda: helpmsg("button2"), cursor=QUESTION_HAND, state = DISABLED)
-        self.my_canvas.create_window(1*x_btn, y_btn1, anchor=tk.CENTER, window=self.info_info_btn)
-        myTipInfo = Hovertip(self.info_info_btn,'Fill in the information about the acquisition')
-
-        self.info_upload_btn = tk.Button(self.my_canvas, image = self.logo_info, bg=BG_BTN_COLOR, borderwidth=0, command = lambda: helpmsg("button3"), cursor=QUESTION_HAND, state = DISABLED)
-        self.my_canvas.create_window(3*x_btn, y_btn1, anchor=tk.CENTER, window=self.info_upload_btn)
-        myTipUpload = Hovertip(self.info_upload_btn,'Upload DICOM images to XNAT')
-        #self.info_process_btn = tk.Button(self.my_canvas, image = self.logo_info, bg=BG_BTN_COLOR, borderwidth=BORDERWIDTH, command = lambda: helpmsg("button4"), cursor=QUESTION_HAND)
-        #self.my_canvas.create_window(4*x_btn, y_btn1, anchor=tk.CENTER, window=self.info_process_btn)        
+        self.my_canvas.create_window(x_btn, y_btn*80/100, width = width_btn, anchor = tk.CENTER, window = self.upload_btn)
+        Hovertip(self.upload_btn,'Upload DICOM images to XNAT') 
 
     def get_page(self):
         return self.root   
@@ -1138,7 +1121,7 @@ class xnat_pic_gui(tk.Frame):
  
                     destroy_widgets([menu, label, my_listbox, my_xscrollbar, my_yscrollbar, label_frame_ID, label_frame_CV, modify_btn,
                     confirm_btn, multiple_confirm_btn])
-                    xnat_pic_gui.choose_you_action(master)
+                    xnat_pic_gui.choose_your_action(master)
 
     class XNATUploader():
 
@@ -1505,7 +1488,7 @@ class xnat_pic_gui(tk.Frame):
             else:
                 messagebox.showerror("XNAT-PIC Uploader", "Please enter a subject ID.")
 
-        def check_experiment_name(self):
+        def check_experiment_name(self, *args):
 
             if self.entry_expname.get() != '':
                 if self.prj.get() in self.OPTIONS:
@@ -1564,74 +1547,73 @@ class xnat_pic_gui(tk.Frame):
                            
             #################### Update the frame ####################
             try:
-                destroy_widgets([master.convert_btn, master.info_btn, master.upload_btn,
-                                master.info_convert_btn, master.info_info_btn, master.info_upload_btn])
+                destroy_widgets([master.convert_btn, master.info_btn, master.upload_btn])
+                master.my_canvas.delete(master.img2)
             except:
                 pass
             #################### Create the new frame ####################
 
             #############################################
             ################ Main Buttons ###############
-            x_btn = int(my_width/5) # /5 if there is the processing button
+            x_btn = int(my_width/5)
             y_btn = int(my_height*20/100)
-            width_btn = int(my_width/7)
+            width_btn = int(my_width/5)-30
 
             # Upload project
             prj_text = tk.StringVar()
-            self.prj_btn = tk.Button(master.my_canvas, textvariable=prj_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, 
+            self.prj_btn = tk.Button(master.my_canvas, textvariable=prj_text, font=LARGE_FONT, bg=BG_BTN_COLOR_2, fg=TEXT_BTN_COLOR_2, 
                                     borderwidth=BORDERWIDTH, command=partial(self.check_buttons, master, press_btn=0), cursor=CURSOR_HAND)
             prj_text.set("Upload Project")
-            master.my_canvas.create_window(x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.prj_btn)
+            master.my_canvas.create_window(x_btn + x_btn/2, y_btn, width = width_btn, anchor = tk.CENTER, window = self.prj_btn)
             
             # Upload subject
             sub_text = tk.StringVar()
-            self.sub_btn = tk.Button(master.my_canvas, textvariable=sub_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, 
+            self.sub_btn = tk.Button(master.my_canvas, textvariable=sub_text, font=LARGE_FONT, bg=BG_BTN_COLOR_2, fg=TEXT_BTN_COLOR_2, 
                                     borderwidth=BORDERWIDTH, command=partial(self.check_buttons, master, press_btn=1), cursor=CURSOR_HAND)
             sub_text.set("Upload Subject")
-            master.my_canvas.create_window(2*x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.sub_btn)
+            master.my_canvas.create_window(2*x_btn + x_btn/2, y_btn, width = width_btn, anchor = tk.CENTER, window = self.sub_btn)
 
             # Upload experiment
             exp_text = tk.StringVar()
-            self.exp_btn = tk.Button(master.my_canvas, textvariable=exp_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, 
+            self.exp_btn = tk.Button(master.my_canvas, textvariable=exp_text, font=LARGE_FONT, bg=BG_BTN_COLOR_2, fg=TEXT_BTN_COLOR_2, 
                                     borderwidth=BORDERWIDTH, command=partial(self.check_buttons, master, press_btn=2), cursor=CURSOR_HAND)
             exp_text.set("Upload Experiment")
-            master.my_canvas.create_window(3*x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.exp_btn)       
+            master.my_canvas.create_window(3*x_btn + x_btn/2, y_btn, width = width_btn, anchor = tk.CENTER, window = self.exp_btn)       
             
             # Upload file
             file_text = tk.StringVar()
-            self.file_btn = tk.Button(master.my_canvas, textvariable=file_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, 
+            self.file_btn = tk.Button(master.my_canvas, textvariable=file_text, font=LARGE_FONT, bg=BG_BTN_COLOR_2, fg=TEXT_BTN_COLOR_2, 
                                     borderwidth=BORDERWIDTH, command=partial(self.check_buttons, master, press_btn=3), cursor=CURSOR_HAND)
             file_text.set("Upload File")
-            master.my_canvas.create_window(4*x_btn, y_btn, width = width_btn, anchor = tk.CENTER, window = self.file_btn) 
+            master.my_canvas.create_window(4*x_btn + x_btn/2, y_btn, width = width_btn, anchor = tk.CENTER, window = self.file_btn) 
 
             # Upload additional files
             self.add_file_flag = tk.IntVar()
             self.add_file_btn = tk.Checkbutton(master.my_canvas, variable=self.add_file_flag, onvalue=1, offvalue=0, anchor=tk.CENTER, 
-                                                background=BACKGROUND_COLOR, highlightthickness=0)
+                                                background=BACKGROUND_COLOR, highlightthickness=0, )
             y_ck_btn = int(my_height*30/100)
-            self.check_add_files = master.my_canvas.create_text(3.6*x_btn, int(my_height*30/100), anchor = tk.CENTER, width=width_btn, 
-                                                            fill='white', font=SMALL_FONT, 
-                                                            text="Additional Files")
-            master.my_canvas.create_window(4*x_btn, y_ck_btn, anchor=tk.CENTER, window=self.add_file_btn)
+            self.check_add_files = master.my_canvas.create_text(4*x_btn + x_btn/2, int(my_height*30/100), anchor=tk.CENTER, 
+                                                            width=width_btn/2, fill='black', font=SMALL_FONT_2, text="Additional Files")
+            master.my_canvas.create_window(4*x_btn + x_btn/2 + width_btn/2, y_ck_btn, anchor=tk.E, window=self.add_file_btn)
 
             # Custom Variables
             self.n_custom_var = tk.IntVar()
             custom_var_options = list(range(0, 5))
             self.custom_var_list = ttk.OptionMenu(master.my_canvas, self.n_custom_var, 0, *custom_var_options)
-            self.check_n_custom_var = master.my_canvas.create_text(3.6*x_btn, int(my_height*33/100), anchor = tk.CENTER, width=width_btn, 
-                                                            fill='white', font=SMALL_FONT, 
+            self.check_n_custom_var = master.my_canvas.create_text(4*x_btn + x_btn/2, int(my_height*33/100), anchor = tk.CENTER, width=width_btn, 
+                                                            fill='black', font=SMALL_FONT_2, 
                                                             text="Custom Variables")
-            master.my_canvas.create_window(4*x_btn, int(my_height*33/100), anchor=tk.CENTER, width=width_btn/5, window=self.custom_var_list)
+            master.my_canvas.create_window(4*x_btn + x_btn/2 + width_btn/2, int(my_height*33/100), anchor=tk.E, width=width_btn/5, 
+                                            window=self.custom_var_list)
             #############################################
 
             #############################################
             ################# Project ###################
-            x_label = int(my_width/5)
             width_menu = int(my_width/5)
-            # Label
             y_prj = int(my_height*40/100)
-            self.select_prj = master.my_canvas.create_text(x_label, y_prj, anchor = tk.CENTER, width=width_menu, fill=DISABLE_LBL_COLOR, font=LARGE_FONT, 
-                                                            text="Select Project")
+            # Label
+            self.select_prj = master.my_canvas.create_text(x_btn + x_btn/2, y_prj, anchor=tk.CENTER, width=width_menu, fill=DISABLE_LBL_COLOR, 
+                                                            font=LARGE_FONT, text="Select Project")
             
             # Menu
             def get_subjects(*args):
@@ -1656,43 +1638,41 @@ class xnat_pic_gui(tk.Frame):
             self.project_list.configure(state="disabled")
             self.prj.trace('w', get_subjects)
             self.prj.trace('w', reject_project)
-            master.my_canvas.create_window(2*x_label, y_prj, anchor=tk.CENTER, width=width_menu, window=self.project_list)
+            master.my_canvas.create_window(2*x_btn + x_btn/2 + width_btn/2, y_prj, anchor=tk.E, width=width_menu, window=self.project_list)
             
             # Button to add a new project
             def add_project():
                 enable_buttons([self.entry_prjname, self.confirm_new_prj, self.reject_new_prj])
                 self.entry_prjname.delete(0,tk.END)
             new_prj_text = tk.StringVar()
-            self.new_prj_btn = tk.Button(master.my_canvas, textvariable=new_prj_text, state=tk.DISABLED, font=SMALL_FONT, bg=BG_BTN_COLOR, 
+            self.new_prj_btn = tk.Button(master.my_canvas, textvariable=new_prj_text, state=tk.DISABLED, font=SMALL_FONT_2, bg=BG_BTN_COLOR, 
                                         fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, 
                                         command=add_project, cursor=CURSOR_HAND)
             new_prj_text.set("Add New Project")
-            master.my_canvas.create_window(3*x_btn, y_prj, width = width_btn, anchor = tk.CENTER, window = self.new_prj_btn)
+            master.my_canvas.create_window(3*x_btn + x_btn/2, y_prj, width=width_btn/2, anchor=tk.W, window=self.new_prj_btn)
             
             # Entry to write a new project
-            width_btn_write = int(my_width/9)
             self.entry_prjname = tk.Entry(master.my_canvas, font=SMALL_FONT, state="disabled")
-            master.my_canvas.create_window(4*x_btn, y_prj, width = width_btn_write, anchor = tk.E, window = self.entry_prjname)
+            master.my_canvas.create_window(4*x_btn + x_btn/2 - width_btn/2, y_prj, width=int(width_btn/2), anchor = tk.W, 
+                                            window=self.entry_prjname)
 
             # Button to confirm new project
-            x_btn_confirm = int(my_width*84/100)
             self.confirm_new_prj = tk.Button(master.my_canvas, image = master.logo_accept, bg=BG_BTN_COLOR, borderwidth=BORDERWIDTH, 
                                             command=self.check_project_name, cursor=CURSOR_HAND, state='disabled')
-            master.my_canvas.create_window(x_btn_confirm, y_prj, anchor=tk.CENTER, window=self.confirm_new_prj)
+            master.my_canvas.create_window(4*x_btn + x_btn/2 + width_btn/3 -10, y_prj, anchor=tk.E, window=self.confirm_new_prj)
 
             # Button to reject new project
-            x_btn_reject = int(my_width*86/100)
             self.reject_new_prj = tk.Button(master.my_canvas, image = master.logo_delete, bg=BG_BTN_COLOR, borderwidth=BORDERWIDTH, 
                                             command=reject_project, cursor=CURSOR_HAND, state='disabled')
-            master.my_canvas.create_window(x_btn_reject, y_prj, anchor=tk.CENTER, window=self.reject_new_prj)
+            master.my_canvas.create_window(4*x_btn + x_btn/2 + width_btn/3 +10, y_prj, anchor=tk.W, window=self.reject_new_prj)
             #############################################
 
             #############################################
             ################# Subject ###################
             # Label
             y_sub = int(my_height*50/100)
-            self.select_sub = master.my_canvas.create_text(x_label, y_sub, anchor = tk.CENTER, width = width_menu, fill = DISABLE_LBL_COLOR, font = LARGE_FONT, 
-                                                            text = "Select Subject")
+            self.select_sub = master.my_canvas.create_text(x_btn + x_btn/2, y_sub, anchor=tk.CENTER, width=width_menu, fill=DISABLE_LBL_COLOR, 
+                                                            font=LARGE_FONT, text = "Select Subject")
             # Menu
             def get_experiments(*args):
                 if self.prj.get() != '--' and self.sub.get() != '--' and self.prj.get() in self.OPTIONS and self.sub.get() in self.OPTIONS2:
@@ -1708,7 +1688,6 @@ class xnat_pic_gui(tk.Frame):
                 self.entry_subname.delete(0,tk.END)
                 disable_buttons([self.entry_subname, self.confirm_new_sub, self.reject_new_sub])
 
-            # Menu
             if self.prj.get() != '--':
                 self.OPTIONS2 = list(self.session.projects[self.prj.get()].subjects.key_map.keys())
             else:
@@ -1718,32 +1697,32 @@ class xnat_pic_gui(tk.Frame):
             self.subject_list.configure(state="disabled")
             self.sub.trace('w', get_experiments)
             self.sub.trace('w', reject_subject)
-            master.my_canvas.create_window(2*x_label, y_sub, anchor = tk.CENTER, width = width_menu, window = self.subject_list)
+            master.my_canvas.create_window(2*x_btn + x_btn/2 + width_btn/2, y_sub, anchor=tk.E, width = width_menu, window = self.subject_list)
             
             # Button to add a new subject
             def add_subject():
                 enable_buttons([self.entry_subname, self.confirm_new_sub, self.reject_new_sub])
                 self.entry_subname.delete(0,tk.END)
             new_sub_text = tk.StringVar()
-            self.new_sub_btn = tk.Button(master.my_canvas, textvariable=new_sub_text, state=tk.DISABLED, font=SMALL_FONT, bg=BG_BTN_COLOR, 
+            self.new_sub_btn = tk.Button(master.my_canvas, textvariable=new_sub_text, state=tk.DISABLED, font=SMALL_FONT_2, bg=BG_BTN_COLOR, 
                                         fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, 
                                         command=add_subject, cursor=CURSOR_HAND)
             new_sub_text.set("Add New Subject")
-            master.my_canvas.create_window(3*x_btn, y_sub, width = width_btn, anchor = tk.CENTER, window = self.new_sub_btn)
+            master.my_canvas.create_window(3*x_btn + x_btn/2, y_sub, width=int(width_btn/2), anchor=tk.W, window = self.new_sub_btn)
 
             # Entry to write a new subject
             self.entry_subname = tk.Entry(master.my_canvas, font=SMALL_FONT, state="disabled")
-            master.my_canvas.create_window(4*x_btn, y_sub, width=width_btn_write, anchor=tk.E, window=self.entry_subname)
+            master.my_canvas.create_window(4*x_btn + x_btn/2 - width_btn/2, y_sub, width=int(width_btn/2), anchor=tk.W, window=self.entry_subname)
 
             # Button to confirm new subject
-            self.confirm_new_sub = tk.Button(master.my_canvas, image = master.logo_accept, bg=BG_BTN_COLOR, borderwidth=BORDERWIDTH, 
+            self.confirm_new_sub = tk.Button(master.my_canvas, image=master.logo_accept, bg=BG_BTN_COLOR, borderwidth=BORDERWIDTH, 
                                             command=self.check_subject_name, cursor=CURSOR_HAND, state='disabled')
-            master.my_canvas.create_window(x_btn_confirm, y_sub, anchor=tk.CENTER, window=self.confirm_new_sub)
+            master.my_canvas.create_window(4*x_btn + x_btn/2 + width_btn/3 -10, y_sub, anchor=tk.E, window=self.confirm_new_sub)
 
             # Button to reject new subject
             self.reject_new_sub = tk.Button(master.my_canvas, image = master.logo_delete, bg=BG_BTN_COLOR, borderwidth=BORDERWIDTH, 
                                             command=reject_subject, cursor=CURSOR_HAND, state='disabled')
-            master.my_canvas.create_window(x_btn_reject, y_sub, anchor=tk.CENTER, window=self.reject_new_sub)
+            master.my_canvas.create_window(4*x_btn + x_btn/2 + width_btn/3 +10, y_sub, anchor=tk.W, window=self.reject_new_sub)
             #############################################
 
             #############################################
@@ -1753,7 +1732,7 @@ class xnat_pic_gui(tk.Frame):
                 disable_buttons([self.entry_expname, self.confirm_new_exp, self.reject_new_exp])
             # Label
             y_exp = int(my_height*60/100)
-            self.select_exp = master.my_canvas.create_text(x_label, y_exp, anchor=tk.CENTER, width=width_menu, fill=DISABLE_LBL_COLOR, font=LARGE_FONT, 
+            self.select_exp = master.my_canvas.create_text(x_btn + x_btn/2, y_exp, anchor=tk.CENTER, width=width_menu, fill=DISABLE_LBL_COLOR, font=LARGE_FONT, 
                                                             text="Select Experiment")
             
             # Menu
@@ -1765,32 +1744,32 @@ class xnat_pic_gui(tk.Frame):
             self.experiment_list = ttk.OptionMenu(master.my_canvas, self.exp, default_value, *self.OPTIONS3)
             self.experiment_list.configure(state="disabled")
             self.exp.trace('w', reject_experiment)
-            master.my_canvas.create_window(2*x_label, y_exp, anchor=tk.CENTER, width=width_menu, window=self.experiment_list)
+            master.my_canvas.create_window(2*x_btn + x_btn/2 + width_btn/2, y_exp, anchor=tk.E, width=width_menu, window=self.experiment_list)
             
             # Button to add a new experiment
             def add_experiment():
                 enable_buttons([self.entry_expname, self.confirm_new_exp, self.reject_new_exp])
                 self.entry_expname.delete(0,tk.END)
             new_exp_text = tk.StringVar()
-            self.new_exp_btn = tk.Button(master.my_canvas, textvariable=new_exp_text, state=tk.DISABLED, font=SMALL_FONT, bg=BG_BTN_COLOR, 
+            self.new_exp_btn = tk.Button(master.my_canvas, textvariable=new_exp_text, state=tk.DISABLED, font=SMALL_FONT_2, bg=BG_BTN_COLOR, 
                                         fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, 
                                         command=add_experiment, cursor=CURSOR_HAND)
             new_exp_text.set("Add New Experiment")
-            master.my_canvas.create_window(3*x_btn, y_exp, width = width_btn, anchor = tk.CENTER, window = self.new_exp_btn)
+            master.my_canvas.create_window(3*x_btn + x_btn/2, y_exp, width=int(width_btn/2), anchor=tk.W, window=self.new_exp_btn)
 
             # Entry to write a new experiment
             self.entry_expname = tk.Entry(master.my_canvas, font=SMALL_FONT, state="disabled")
-            master.my_canvas.create_window(4*x_btn, y_exp, width=width_btn_write, anchor=tk.E, window=self.entry_expname)
+            master.my_canvas.create_window(4*x_btn + x_btn/2 - width_btn/2, y_exp, width=int(width_btn/2), anchor=tk.W, window=self.entry_expname)
 
             # Button to confirm new experiment
             self.confirm_new_exp = tk.Button(master.my_canvas, image = master.logo_accept, bg=BG_BTN_COLOR, borderwidth=BORDERWIDTH, 
                                             command=self.check_experiment_name, cursor=CURSOR_HAND, state='disabled')
-            master.my_canvas.create_window(x_btn_confirm, y_exp, anchor=tk.CENTER, window=self.confirm_new_exp)
+            master.my_canvas.create_window(4*x_btn + x_btn/2 + width_btn/3 -10, y_exp, anchor=tk.E, window=self.confirm_new_exp)
 
             # Button to reject new experiment
             self.reject_new_exp = tk.Button(master.my_canvas, image = master.logo_delete, bg=BG_BTN_COLOR, borderwidth=BORDERWIDTH, 
                                             command=reject_experiment, cursor=CURSOR_HAND, state='disabled')
-            master.my_canvas.create_window(x_btn_reject, y_exp, anchor=tk.CENTER, window=self.reject_new_exp)
+            master.my_canvas.create_window(4*x_btn + x_btn/2 + width_btn/3 +10, y_exp, anchor=tk.W, window=self.reject_new_exp)
             #############################################
 
             #############################################
@@ -1816,16 +1795,15 @@ class xnat_pic_gui(tk.Frame):
                     except:
                         pass
                     # Restore the main frame
-                    xnat_pic_gui.choose_you_action(master)
+                    xnat_pic_gui.choose_your_action(master)
 
             self.exit_text = tk.StringVar() 
-            self.exit_btn = tk.Button(master.my_canvas, textvariable=self.exit_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, 
+            self.exit_btn = tk.Button(master.my_canvas, textvariable=self.exit_text, font=LARGE_FONT, bg=BG_BTN_COLOR_2, fg=TEXT_BTN_COLOR_2, 
                                     borderwidth=BORDERWIDTH, cursor=CURSOR_HAND, takefocus=0)
             self.exit_btn.configure(command=exit_uploader)
             self.exit_text.set("Exit")
             y_exit_btn = int(my_height*80/100)
-            width_btn = int(my_width*10/100)
-            master.my_canvas.create_window(x_btn, y_exit_btn, anchor=tk.CENTER, width=width_btn, window=self.exit_btn)
+            master.my_canvas.create_window(x_btn + x_btn/2, y_exit_btn, anchor=tk.CENTER, width=int(width_btn/2), window=self.exit_btn)
             #############################################
 
             #############################################
@@ -1843,10 +1821,10 @@ class xnat_pic_gui(tk.Frame):
                     pass
 
             self.next_text = tk.StringVar() 
-            self.next_btn = tk.Button(master.my_canvas, textvariable=self.next_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, 
+            self.next_btn = tk.Button(master.my_canvas, textvariable=self.next_text, font=LARGE_FONT, bg=BG_BTN_COLOR_2, fg=TEXT_BTN_COLOR_2, 
                                     borderwidth=BORDERWIDTH, command=next, cursor=CURSOR_HAND, takefocus=0, state='disabled')
             self.next_text.set("Next")
-            master.my_canvas.create_window(4*x_btn, y_exit_btn, anchor=tk.CENTER, width=width_btn, window=self.next_btn)
+            master.my_canvas.create_window(4*x_btn + x_btn/2, y_exit_btn, anchor=tk.CENTER, width=int(width_btn/2), window=self.next_btn)
             #############################################
 
         def check_buttons(self, master, press_btn=0):
@@ -1872,12 +1850,14 @@ class xnat_pic_gui(tk.Frame):
             self.exit_text.set("Back")
             self.exit_btn.configure(command=back)
 
+            x_btn = int(my_width/5)
+
             if press_btn == 0:
                 # Disable main buttons
                 disable_buttons([self.prj_btn, self.sub_btn, self.exp_btn, self.file_btn])
                 enable_buttons([self.project_list, self.new_prj_btn])
                 # Insert subtitle
-                self.subtitle = master.my_canvas.create_text(int(my_width/2), int(my_height*30/100), anchor=tk.CENTER, width=int(my_width/7), fill='red', 
+                self.subtitle = master.my_canvas.create_text(3*x_btn, int(my_height*30/100), anchor=tk.CENTER, width=int(my_width/5), fill='red', 
                                                             font=LARGE_FONT, text="Project Uploader")
                 # Highlight the field name
                 master.my_canvas.itemconfig(self.select_prj, fill=TEXT_LBL_COLOR)
@@ -1892,7 +1872,7 @@ class xnat_pic_gui(tk.Frame):
                 disable_buttons([self.prj_btn, self.sub_btn, self.exp_btn, self.file_btn])
                 enable_buttons([self.project_list, self.new_prj_btn])
                 # Insert subtitle
-                self.subtitle = master.my_canvas.create_text(int(my_width/2), int(my_height*30/100), anchor=tk.CENTER, width=int(my_width/7), fill='red', 
+                self.subtitle = master.my_canvas.create_text(3*x_btn, int(my_height*30/100), anchor=tk.CENTER, width=int(my_width/5), fill='red', 
                                                             font=LARGE_FONT, text="Subject Uploader")
                 # Highlight the field name
                 master.my_canvas.itemconfig(self.select_prj, fill=TEXT_LBL_COLOR)
@@ -1907,7 +1887,7 @@ class xnat_pic_gui(tk.Frame):
                 disable_buttons([self.prj_btn, self.sub_btn, self.exp_btn, self.file_btn])
                 enable_buttons([self.project_list, self.new_prj_btn, self.subject_list, self.new_sub_btn])
                 # Insert subtitle
-                self.subtitle = master.my_canvas.create_text(int(my_width/2), int(my_height*30/100), anchor=tk.CENTER, width=int(my_width/7), fill='red', 
+                self.subtitle = master.my_canvas.create_text(3*x_btn, int(my_height*30/100), anchor=tk.CENTER, width=int(my_width/5), fill='red', 
                                                             font=LARGE_FONT, text="Experiment Uploader")
                 # Highlight the field names
                 master.my_canvas.itemconfig(self.select_prj, fill=TEXT_LBL_COLOR)
@@ -1923,7 +1903,7 @@ class xnat_pic_gui(tk.Frame):
                 disable_buttons([self.prj_btn, self.sub_btn, self.exp_btn, self.file_btn, self.add_file_btn, self.add_file_btn, self.custom_var_list])
                 enable_buttons([self.project_list, self.new_prj_btn, self.subject_list, self.new_sub_btn, self.experiment_list, self.new_exp_btn])
                 # Insert subtitle
-                self.subtitle = master.my_canvas.create_text(int(my_width/2), int(my_height*30/100), anchor=tk.CENTER, width=int(my_width/7), fill='red', 
+                self.subtitle = master.my_canvas.create_text(3*x_btn, int(my_height*30/100), anchor=tk.CENTER, width=int(my_width/5), fill='red', 
                                                             font=LARGE_FONT, text="File Uploader")
                 # Highlight the field names
                 master.my_canvas.itemconfig(self.select_prj, fill=TEXT_LBL_COLOR)
