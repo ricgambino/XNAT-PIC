@@ -2219,7 +2219,8 @@ class xnat_pic_gui(tk.Frame):
                     for i, sub in enumerate(list_dirs):
                         sub = os.path.join(project_to_upload, sub)
 
-                        progressbar.show_step(i, len(list_dirs))
+                        progressbar.show_step(i + 1, len(list_dirs))
+                        progressbar.update_progressbar(i, len(list_dirs))
 
                         list_dirs_exp = os.listdir(sub)
                         for exp in list_dirs_exp:
@@ -2263,7 +2264,7 @@ class xnat_pic_gui(tk.Frame):
                                 self.exp.set('_'.join([exp.split('/')[-3].replace('_dcm', ''), exp.split('/')[-2].replace('.', '_')]).replace(' ', '_'))
                                 params['experiment_id'] = self.exp.get()
 
-                            progressbar.set_caption('Uploading ' + str(self.sub.get()) + ' ...')
+                            progressbar.set_caption('Uploading ' + str(self.exp.get()) + ' ...')
                             
                             self.uploader.upload(params)
                             # Check for Results folder
@@ -2284,8 +2285,7 @@ class xnat_pic_gui(tk.Frame):
                                             if file.is_file():
                                                 file_paths.append(file.path)
                                         self.uploader_file.upload(file_paths, vars)
-                        progressbar.update_progressbar(i, len(list_dirs))
-
+                        
                 self.uploader = Dicom2XnatUploader(self.session)
 
                 t = threading.Thread(target=upload_thread, args=())
