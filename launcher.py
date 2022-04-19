@@ -684,8 +684,8 @@ class xnat_pic_gui(tk.Frame):
                                 "Acquisition_date": tmp_acq_date,
                                 "C_V": "",
                                 "Group": "",
-                                "Dose":"",
-                                "Timepoint":""
+                                "Timepoint":"",
+                                "Dose":""
                                 }
                     tmp_dict = {keys: subject_data}
 
@@ -770,14 +770,14 @@ class xnat_pic_gui(tk.Frame):
                 self.my_listbox[-1].config(xscrollcommand = self.my_xscrollbar.set)
                 self.my_xscrollbar.config(command = self.my_listbox[-1].xview)
                 self.my_xscrollbar.pack(fill='x', side='bottom')
-
             self.notebook.enable_traversal()
-            #self.notebook.bind("<<NotebookTabChanged>>", self.select_tab)
 
+            #self.notebook.bind("<<NotebookTabChanged>>", self.select_tab)
+                    
             # y_folder_scrollbar = int(my_height*66/100)
-            # self.my_xscrollbar = tk.Scrollbar(frame, orient="horizontal")
-            # self.my_listbox.config(xscrollcommand = self.my_xscrollbar.set)
-            # self.my_xscrollbar.config(command = self.my_listbox.xview)
+            # self.my_xscrollbar = tk.Scrollbar(master.my_canvas, orient="horizontal")
+            # self.notebook.config(xscrollcommand = self.my_xscrollbar.set)
+            # self.my_xscrollbar.config(command = self.notebook.xview)
             # self.my_xscrollbar.pack(fill='x')
             # master.my_canvas.create_window(x_folder_list, y_folder_scrollbar, width = int(my_width*25/100), anchor = tk.NW, window = self.my_xscrollbar)
   
@@ -860,7 +860,7 @@ class xnat_pic_gui(tk.Frame):
             def OnFrameConfigure(canvas):
                     canvas.configure(scrollregion=canvas.bbox("all"))
 
-            keys_CV = ["Group", "Dose", "Timepoint"]
+            keys_CV = ["Group", "Timepoint", "Dose",]
             # Entry CV  
             self.entries_variable_CV = []  
             self.entries_value_CV = []          
@@ -890,7 +890,7 @@ class xnat_pic_gui(tk.Frame):
             self.dose_menu = ttk.Combobox(self.frame_CV, font = SMALL_FONT, takefocus = 0, textvariable=self.selected_dose, width=10)
             self.dose_menu['values'] = self.OPTIONS_UM
             self.dose_menu['state'] = 'disabled'
-            self.dose_menu.grid(row=1, column=2, padx = 5, pady = 5, sticky=W)
+            self.dose_menu.grid(row=2, column=2, padx = 5, pady = 5, sticky=W)
 
             # Timepoint
             self.OPTIONS = ["pre", "post"]
@@ -898,17 +898,17 @@ class xnat_pic_gui(tk.Frame):
             self.timepoint_menu = ttk.Combobox(self.frame_CV, font = SMALL_FONT, takefocus = 0, textvariable=self.selected_timepoint, width=10)
             self.timepoint_menu['values'] = self.OPTIONS
             self.timepoint_menu['state'] = 'disabled'
-            self.timepoint_menu.grid(row=2, column=2, padx = 5, pady = 5, sticky=W)
+            self.timepoint_menu.grid(row=1, column=2, padx = 5, pady = 5, sticky=W)
 
             self.time_entry = tk.Entry(self.frame_CV, font = SMALL_FONT, state='disabled', takefocus = 0, width=5)
-            self.time_entry.grid(row=2, column=3, padx = 5, pady = 5, sticky=W)
+            self.time_entry.grid(row=1, column=3, padx = 5, pady = 5, sticky=W)
 
             self.OPTIONS1 = ["seconds", "minutes", "hours", "days", "weeks", "months", "years"]
             self.selected_timepoint1 = tk.StringVar()
             self.timepoint_menu1 = ttk.Combobox(self.frame_CV, font = SMALL_FONT, takefocus = 0, textvariable=self.selected_timepoint1, width=7)
             self.timepoint_menu1['values'] = self.OPTIONS1
             self.timepoint_menu1['state'] = 'disabled'
-            self.timepoint_menu1.grid(row=2, column=4, padx = 5, pady = 5, sticky=W)
+            self.timepoint_menu1.grid(row=1, column=4, padx = 5, pady = 5, sticky=W)
 
             #################### Load the info about the selected subject ####################
             def select_tab(event):
@@ -919,26 +919,28 @@ class xnat_pic_gui(tk.Frame):
             self.notebook.bind("<<NotebookTabChanged>>", select_tab)  
             #################### Modify the metadata ####################
             modify_text = tk.StringVar() 
-            self.modify_btn = tk.Button(master.my_canvas, textvariable=modify_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, command = lambda: self.modify_metadata(), cursor=CURSOR_HAND, takefocus = 0)
+            self.modify_btn = tk.Button(master.my_canvas, textvariable=modify_text, font=LARGE_FONT, bg=BG_BTN_COLOR_2, fg=TEXT_BTN_COLOR_2, borderwidth=BORDERWIDTH, command = lambda: self.modify_metadata(), cursor=CURSOR_HAND, takefocus = 0)
             modify_text.set("Modify")
-            x_lbl =x_folder_list
+            #x_lbl =x_folder_list
+            x_lbl = int(my_width*35/100)
             y_btn = int(my_height*78/100)
             width_btn = int(my_width*16/100)
             master.my_canvas.create_window(x_lbl, y_btn, anchor = tk.NW, width = width_btn, window = self.modify_btn)
 
             #################### Confirm the metadata ####################
             confirm_text = tk.StringVar() 
-            self.confirm_btn = tk.Button(master.my_canvas, textvariable=confirm_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, command = lambda: self.confirm_metadata(), cursor=CURSOR_HAND, takefocus = 0)
+            self.confirm_btn = tk.Button(master.my_canvas, textvariable=confirm_text, font=LARGE_FONT, bg=BG_BTN_COLOR_2, fg=TEXT_BTN_COLOR_2, borderwidth=BORDERWIDTH, command = lambda: self.confirm_metadata(), cursor=CURSOR_HAND, takefocus = 0)
             confirm_text.set("Confirm")
-            x_conf_btn = int(my_width*52/100)
+            #x_conf_btn = int(my_width*52/100)
+            x_conf_btn = int(my_width*65/100)
             master.my_canvas.create_window(x_conf_btn, y_btn, anchor = tk.NW, width = width_btn, window = self.confirm_btn)
 
             #################### Confirm multiple metadata ####################
-            multiple_confirm_text = tk.StringVar() 
-            self.multiple_confirm_btn = tk.Button(master.my_canvas, textvariable=multiple_confirm_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, command = lambda: self.confirm_multiple_metadata(), cursor=CURSOR_HAND, takefocus = 0)
-            multiple_confirm_text.set("Multiple Confirm")
-            x_multiple_conf_btn = int(my_width*81/100)
-            master.my_canvas.create_window(x_multiple_conf_btn, y_btn, anchor = tk.NW, width = width_btn, window = self.multiple_confirm_btn)
+            # multiple_confirm_text = tk.StringVar() 
+            # self.multiple_confirm_btn = tk.Button(master.my_canvas, textvariable=multiple_confirm_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, command = lambda: self.confirm_multiple_metadata(), cursor=CURSOR_HAND, takefocus = 0)
+            # multiple_confirm_text.set("Multiple Confirm")
+            # x_multiple_conf_btn = int(my_width*81/100)
+            # master.my_canvas.create_window(x_multiple_conf_btn, y_btn, anchor = tk.NW, width = width_btn, window = self.multiple_confirm_btn)
                        
         def load_info(self, master):
 
@@ -1064,22 +1066,22 @@ class xnat_pic_gui(tk.Frame):
             def dose_changed(event):
                 """ handle the dose changed event """
                 dose_str = ''
-                if self.entries_value_CV[1].get():
-                    for word in filter(str(self.entries_value_CV[1].get()).__contains__, self.OPTIONS_UM):
+                if self.entries_value_CV[2].get():
+                    for word in filter(str(self.entries_value_CV[2].get()).__contains__, self.OPTIONS_UM):
                         # If a unit of measurement is already present, replace it
-                        dose_str = str(self.entries_value_CV[1].get()).replace(word, str(self.selected_dose.get()))
-                        self.entries_value_CV[1].delete(0, tk.END)     
-                        self.entries_value_CV[1].insert(0, dose_str)                    
+                        dose_str = str(self.entries_value_CV[2].get()).replace(word, str(self.selected_dose.get()))
+                        self.entries_value_CV[2].delete(0, tk.END)     
+                        self.entries_value_CV[2].insert(0, dose_str)                    
                         self.my_listbox[self.index_tab].selection_set(self.selected_index)
                         return
                             # If only the number is present, add the unit of measure
-                    dose_str = str(self.entries_value_CV[1].get()) + "-" + str(self.selected_dose.get())
+                    dose_str = str(self.entries_value_CV[2].get()) + "-" + str(self.selected_dose.get())
                 else:
                     # If the entry is empty, enter only the unit of measure
                     dose_str = str(self.selected_dose.get())
 
-                self.entries_value_CV[1].delete(0, tk.END)     
-                self.entries_value_CV[1].insert(0, dose_str)                    
+                self.entries_value_CV[2].delete(0, tk.END)     
+                self.entries_value_CV[2].insert(0, dose_str)                    
                 self.my_listbox[self.index_tab].selection_set(self.selected_index)
 
             self.dose_menu.bind("<<ComboboxSelected>>", dose_changed)
@@ -1090,7 +1092,7 @@ class xnat_pic_gui(tk.Frame):
             self.timepoint_menu['state'] = 'readonly'
 
             def timepoint_changed(event):
-                self.entries_value_CV[2].config(state=tk.NORMAL)
+                self.entries_value_CV[1].config(state=tk.NORMAL)
                 """ handle the timepoint changed event """
                 if str(self.time_entry.get()) or str(self.selected_timepoint1.get()):
                     timepoint_str = str(self.selected_timepoint.get()) + "-" + str(self.time_entry.get()) + "-" + str(self.selected_timepoint1.get())
@@ -1105,9 +1107,9 @@ class xnat_pic_gui(tk.Frame):
                     except Exception as e: 
                         messagebox.showerror("XNAT-PIC", "Insert a number in the timepoint entry")
 
-                self.entries_value_CV[2].delete(0, tk.END)
-                self.entries_value_CV[2].insert(0, timepoint_str)
-                self.entries_value_CV[2].config(state=tk.DISABLED)
+                self.entries_value_CV[1].delete(0, tk.END)
+                self.entries_value_CV[1].insert(0, timepoint_str)
+                self.entries_value_CV[1].config(state=tk.DISABLED)
 
             self.timepoint_menu.bind("<<ComboboxSelected>>", timepoint_changed)
             self.time_entry.bind("<Return>", timepoint_changed)
@@ -1137,15 +1139,15 @@ class xnat_pic_gui(tk.Frame):
                     messagebox.showerror("XNAT-PIC", "Incorrect data format in acquisition date, should be YYYY-MM-DD")
                     raise
 
-            if self.entries_value_CV[2].get() and '-' in  self.entries_value_CV[2].get(): 
-                if not str(self.entries_value_CV[2].get()).split('-')[0] in self.OPTIONS:
+            if self.entries_value_CV[1].get() and '-' in  self.entries_value_CV[1].get(): 
+                if not str(self.entries_value_CV[1].get()).split('-')[0] in self.OPTIONS:
                     messagebox.showerror("XNAT-PIC", "Select pre/post in timepoint")
                     raise
-                if not str(self.entries_value_CV[2].get()).split('-')[2] in self.OPTIONS1:
+                if not str(self.entries_value_CV[1].get()).split('-')[2] in self.OPTIONS1:
                     messagebox.showerror("XNAT-PIC", "Select seconds, minutes, hours, days, weeks, months, years in timepoint")
                     raise
 
-                input_num = str(self.entries_value_CV[2].get()).split('-')[1]
+                input_num = str(self.entries_value_CV[1].get()).split('-')[1]
                 try:
                     float(input_num)
                 except Exception as e: 
@@ -2220,6 +2222,7 @@ class xnat_pic_gui(tk.Frame):
                         sub = os.path.join(project_to_upload, sub)
 
                         progressbar.show_step(i, len(list_dirs))
+                        progressbar.update_progressbar(i+1, len(list_dirs))
 
                         list_dirs_exp = os.listdir(sub)
                         for exp in list_dirs_exp:
@@ -2264,7 +2267,7 @@ class xnat_pic_gui(tk.Frame):
                                 params['experiment_id'] = self.exp.get()
 
                             progressbar.set_caption('Uploading ' + str(self.sub.get()) + ' ...')
-                            
+
                             self.uploader.upload(params)
                             # Check for Results folder
                             if self.add_file_flag.get() == 1:
@@ -2284,7 +2287,6 @@ class xnat_pic_gui(tk.Frame):
                                             if file.is_file():
                                                 file_paths.append(file.path)
                                         self.uploader_file.upload(file_paths, vars)
-                        progressbar.update_progressbar(i, len(list_dirs))
 
                 self.uploader = Dicom2XnatUploader(self.session)
 
