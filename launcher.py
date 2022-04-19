@@ -313,7 +313,8 @@ class xnat_pic_gui(tk.Frame):
             disable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
 
             # Ask for project directory
-            self.project_to_convert = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), 
+            init_dir = os.path.expanduser("~").replace('\\', '/') + '/Desktop/Dataset'
+            self.project_to_convert = filedialog.askdirectory(parent=master.root, initialdir=init_dir, 
                                                             title="XNAT-PIC: Select project directory in Bruker ParaVision format")
             # Check for the chosen directory
             if not self.project_to_convert:
@@ -337,17 +338,20 @@ class xnat_pic_gui(tk.Frame):
             def prj_converter():
 
                 # Get the list of the subject into the project
-                list_sub = os.listdir(self.project_to_convert)
+                list_sub_init = os.listdir(self.project_to_convert)
+                list_sub = [dir for dir in list_sub_init if os.path.isdir(os.path.join(self.project_to_convert, dir).replace('\\', '/'))]
                 # Initialize the list of conversion errors
                 self.conversion_err = []
                 # Loop over subjects
                 for j, dir in enumerate(list_sub, 0):
-                    # Show the current step on the progress bar
-                    progressbar.show_step(j + 1, len(list_sub))
                     # Define the current subject path 
                     current_folder = os.path.join(self.project_to_convert, dir).replace('\\', '/')
-
                     if os.path.isdir(current_folder):
+                        # Show the current step on the progress bar
+                        progressbar.show_step(j + 1, len(list_sub))
+                        # Update the current step of the progress bar
+                        progressbar.update_progressbar(j, len(list_sub))
+
                         current_dst = os.path.join(self.prj_dst, dir).replace('\\', '/')
                         # Check if the current subject folder already exists
                         if os.path.isdir(current_dst):
@@ -387,8 +391,6 @@ class xnat_pic_gui(tk.Frame):
                                 with Pool(processes=int(cpu_count() - 1)) as pool:
                                     pool.map(self.converter.convert, list_scans)
 
-                    # Update the current step of the progress bar
-                    progressbar.update_progressbar(j + 1, len(list_sub))
                     # Set progress bar caption 'done' to the current folder
                     progressbar.set_caption('Converting ' + str(current_folder.split('/')[-1]) + ' ...done!')
             
@@ -2200,7 +2202,8 @@ class xnat_pic_gui(tk.Frame):
 
         def project_uploader(self, master):
 
-            project_to_upload = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), 
+            init_dir = os.path.expanduser("~").replace('\\', '/') + '/Desktop/Dataset'
+            project_to_upload = filedialog.askdirectory(parent=master.root, initialdir=init_dir, 
                                                         title="XNAT-PIC Project Uploader: Select project directory in DICOM format to upload")
             # Check for empty selected folder
             if os.path.isdir(project_to_upload) == False:
