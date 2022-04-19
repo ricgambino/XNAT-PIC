@@ -377,15 +377,15 @@ class xnat_pic_gui(tk.Frame):
                         list_exp = os.listdir(current_folder)
 
                         for k, exp in enumerate(list_exp):
-                            print('Converting ' + str(exp))
                             exp_folder = os.path.join(current_folder, exp).replace('\\', '/')
-                            exp_dst = os.path.join(current_dst, exp).replace('\\','/')
+                            if os.path.isdir(exp_folder):
+                                print('Converting ' + str(exp))
+                                exp_dst = os.path.join(current_dst, exp).replace('\\','/')
+                                list_scans = self.converter.get_list_of_folders(exp_folder, exp_dst)
 
-                            list_scans = self.converter.get_list_of_folders(exp_folder, exp_dst)
-
-                            # Start the multiprocessing conversion: one pool per each scan folder
-                            with Pool(processes=int(cpu_count() - 1)) as pool:
-                                pool.map(self.converter.convert, list_scans)
+                                # Start the multiprocessing conversion: one pool per each scan folder
+                                with Pool(processes=int(cpu_count() - 1)) as pool:
+                                    pool.map(self.converter.convert, list_scans)
 
                     # Update the current step of the progress bar
                     progressbar.update_progressbar(j + 1, len(list_sub))
@@ -402,7 +402,7 @@ class xnat_pic_gui(tk.Frame):
             tp = threading.Thread(target=prj_converter, args=())
             tp.start()
             while tp.is_alive() == True:
-                progressbar.update_bar(0.0001)
+                progressbar.update_bar(0.000001)
             else:
                 progressbar.stop_progress_bar()
             
@@ -2208,7 +2208,7 @@ class xnat_pic_gui(tk.Frame):
             else:
                 # Start progress bar
                 progressbar = ProgressBar(bar_title='XNAT-PIC Uploader')
-                progressbar.start_indeterminate_bar()
+                progressbar.start_determinate_bar()
 
                 list_dirs = os.listdir(project_to_upload)
 
@@ -2216,8 +2216,10 @@ class xnat_pic_gui(tk.Frame):
 
                 def upload_thread():
 
-                    for sub in list_dirs:
+                    for i, sub in enumerate(list_dirs):
                         sub = os.path.join(project_to_upload, sub)
+
+                        progressbar.show_step(i, len(list_dirs))
 
                         list_dirs_exp = os.listdir(sub)
                         for exp in list_dirs_exp:
@@ -2256,13 +2258,13 @@ class xnat_pic_gui(tk.Frame):
                                         params[var] = subject_data[var]
                             except:
                                 # Define the subject_id and the experiment_id if the custom variables file is not available
-                                self.sub.set(exp.split('/')[-2].replace('.','_'))
+                                self.sub.set(exp.split('/')[-3].replace('.','_'))
                                 params['subject_id'] = self.sub.get()
                                 self.exp.set('_'.join([exp.split('/')[-3].replace('_dcm', ''), exp.split('/')[-2].replace('.', '_')]).replace(' ', '_'))
                                 params['experiment_id'] = self.exp.get()
 
                             progressbar.set_caption('Uploading ' + str(self.sub.get()) + ' ...')
-
+                            
                             self.uploader.upload(params)
                             # Check for Results folder
                             if self.add_file_flag.get() == 1:
@@ -2282,6 +2284,7 @@ class xnat_pic_gui(tk.Frame):
                                             if file.is_file():
                                                 file_paths.append(file.path)
                                         self.uploader_file.upload(file_paths, vars)
+                        progressbar.update_progressbar(i, len(list_dirs))
 
                 self.uploader = Dicom2XnatUploader(self.session)
 
@@ -2289,7 +2292,7 @@ class xnat_pic_gui(tk.Frame):
                 t.start()
                 
                 while t.is_alive() == True:
-                    progressbar.update_bar()
+                    progressbar.update_bar(0.00000001)
                 
                 # Stop the progress bar and close the popup
                 progressbar.stop_progress_bar()
