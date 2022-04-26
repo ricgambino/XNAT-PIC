@@ -231,7 +231,7 @@ class xnat_pic_gui(tk.Frame):
         self.info_btn = tk.Button(self.my_canvas, textvariable=info_text, font=LARGE_FONT, bg=BG_BTN_COLOR_2, fg=TEXT_BTN_COLOR_2, borderwidth=BORDERWIDTH, 
                                     command=partial(self.metadata, self), cursor=CURSOR_HAND)
         info_text.set("Project Data")
-        self.my_canvas.create_window(x_btn, y_btn*65/100, width = width_btn, anchor = tk.CENTER, window = self.info_btn)
+        self.my_canvas.create_window(x_btn, y_btn*60/100, width = width_btn, anchor = tk.CENTER, window = self.info_btn)
         Hovertip(self.info_btn,'Fill in the information about the acquisition')
 
         # Upload files
@@ -241,8 +241,15 @@ class xnat_pic_gui(tk.Frame):
         self.upload_btn = tk.Button(self.my_canvas, textvariable=upload_text, font=LARGE_FONT, bg=BG_BTN_COLOR_2, fg=TEXT_BTN_COLOR_2, borderwidth=BORDERWIDTH, 
                                         command=upload_callback, cursor=CURSOR_HAND)
         upload_text.set("Uploader")
-        self.my_canvas.create_window(x_btn, y_btn*80/100, width = width_btn, anchor = tk.CENTER, window = self.upload_btn)
-        Hovertip(self.upload_btn,'Upload DICOM images to XNAT') 
+        self.my_canvas.create_window(x_btn, y_btn*70/100, width = width_btn, anchor = tk.CENTER, window = self.upload_btn)
+        Hovertip(self.upload_btn,'Upload DICOM images to XNAT')
+
+        # Close button
+        def close_window(*args):
+            self.root.destroy()
+        self.close_btn = tk.Button(self.my_canvas, font=LARGE_FONT, bg=BG_BTN_COLOR_2, fg=TEXT_BTN_COLOR_2, borderwidth=BORDERWIDTH, command=close_window,
+                                        cursor=CURSOR_HAND, text="Close")
+        self.my_canvas.create_window(int(4*my_width/5 + ((1*my_width/5)/2)), y_btn*90/100, width = width_btn/3, anchor = tk.CENTER, window = self.close_btn)
 
     def get_page(self):
         return self.root   
