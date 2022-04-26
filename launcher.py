@@ -32,13 +32,9 @@ import pydicom, webbrowser
 from tkcalendar import DateEntry
 from accessory_functions import *
 from idlelib.tooltip import Hovertip
-<<<<<<< HEAD
-import csv
-=======
 from multiprocessing import Pool, cpu_count
 from credential_manager import CredentialManager
 from win32api import GetMonitorInfo, MonitorFromPoint
->>>>>>> origin/RG_gui
 import pandas
 
 PATH_IMAGE = "images\\"
@@ -581,9 +577,6 @@ class xnat_pic_gui(tk.Frame):
             self.project_name = (self.information_folder.rsplit("/",1)[1])
             self.tmp_dict = {}
             self.results_dict = {}
-<<<<<<< HEAD
-
-=======
             
         # Scommenta per la gestione dei due progetti
             self.frame_metadata(master)
@@ -612,73 +605,10 @@ class xnat_pic_gui(tk.Frame):
             #self.my_popup.destroy()
             flag = 1
              
->>>>>>> origin/RG_gui
             # Load the acq. date from visu_pars file for Bruker file or from DICOM
             def read_acq_date(path): 
                 match_date = ''
                 for dirpath, dirnames, filenames in os.walk(path.replace('\\', '/')):
-<<<<<<< HEAD
-
-                    # Check if the visu pars file is in the scans
-                        for filename in [f for f in filenames if f.startswith("visu_pars")]:
-                            acq_date = read_visupars_parameters((dirpath + "\\" + filename).replace('\\', '/'))["VisuAcqDate"]
-                            # Read the date
-                            matches = datefinder.find_dates(str(acq_date))
-                            for match in matches:
-                                match_date = match.strftime('%Y-%m-%d')
-                                return match_date
-                        # Check if the DICOM is in the scans
-                        for filename in [f for f in filenames if f.endswith(".dcm")]:
-                            dataset = pydicom.dcmread((dirpath + "\\" + filename).replace('\\', '/'))
-                            match_date = datetime.datetime.strptime(dataset.AcquisitionDate, '%Y%m%d').strftime('%Y-%m-%d')
-                            return match_date
-                return match_date
-            
-            # Scan all files contained in the folder that the user has provided
-            for item in os.listdir(self.information_folder):
-                        path = str(self.information_folder) + "\\" + str(item)
-                        name = str(item) + "_" + "Custom_Variables.txt"
-                        # Check if the content of the project is a folder and therefore a patient or a file not to be considered
-                        if os.path.isdir(path.replace('\\', '/')):
-                            # Check if the txt file is in folder of the patient
-                            # If the file exists, read le info
-                            if os.path.exists((path + "\\" + name).replace('\\', '/')):
-                                subject_data = read_table((path + "\\" + name).replace('\\', '/'))
-                                tmp_dict = {item: subject_data}
-                            else:
-                            # If the txt file do not exist, load default value
-                            # Project: name of main folder
-                            # Subject: name of internal folders
-                            # Acq date: from visu_pars file for BRUKER, from DICOM from DICOM file
-                            #
-                            # Load the acq. date for BRUKER file
-                                try:
-                                    tmp_acq_date = read_acq_date(path)
-                                except Exception as e:
-                                    tmp_acq_date = ''
-                                
-                                subject_data = {"Project": str(self.project_name),
-                                            "Subject": str(item),
-                                            "Experiment": "",
-                                            "Acquisition_date": tmp_acq_date,
-                                            "C_V": "",
-                                            "Group": "",
-                                            "Dose":"",
-                                            "Timepoint":""
-                                            }
-                                tmp_dict = {item: subject_data}
-
-                            self.results_dict.update(tmp_dict)
-
-            #################### Update the frame ####################
-            #master.process_btn.destroy()
-            destroy_widgets([master.convert_btn.destroy(), master.info_btn.destroy(), master.upload_btn.destroy(),
-                master.info_convert_btn.destroy(),master.info_info_btn.destroy(), master.info_upload_btn.destroy()])
-            #################### Menu ###########################
-            self.menu = tk.Menu(master.root)
-            file_menu = tk.Menu(self.menu, tearoff=0)
-            file_menu.add_command(label="Add ID", command = lambda: self.add_ID())
-=======
                     # Check if the visu pars file is in the scans
                     for filename in [f for f in filenames if f.startswith("visu_pars")]:
                         acq_date = read_visupars_parameters((dirpath + "\\" + filename).replace('\\', '/'))["VisuAcqDate"]
@@ -770,7 +700,6 @@ class xnat_pic_gui(tk.Frame):
             self.menu = tk.Menu(master.root)
             file_menu = tk.Menu(self.menu, tearoff=0)
             file_menu.add_command(label="Add ID", command = lambda: self.add_ID(master))
->>>>>>> origin/RG_gui
             file_menu.add_command(label="Add Custom Variables", command = lambda: self.add_custom_variable(master))
             file_menu.add_command(label="Clear Custom Variables", command = lambda: self.clear_metadata())
             file_menu.add_separator()
@@ -782,33 +711,6 @@ class xnat_pic_gui(tk.Frame):
             master.root.config(menu=self.menu)
 
             #################### Folder list #################### 
-<<<<<<< HEAD
-            x_folder_list = int(my_width*10/100)
-            y_folder_list = int(my_height*18/100)
-            self.label = tk.Label(master.my_canvas, text='List of folders contained in the project: ' + '\n'+ self.project_name, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, font = SMALL_FONT)
-            master.my_canvas.create_window(x_folder_list, y_folder_list, width = int(my_width*25/100), height = int(my_height*5/100), anchor=tk.NW, window=self.label)
-            
-            y_folder_list1 = int(my_height*25/100)
-            self.my_listbox = tk.Listbox(master.my_canvas, selectmode=SINGLE, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, font=SMALL_FONT, takefocus = 0)
-            master.my_canvas.create_window(x_folder_list, y_folder_list1, width = int(my_width*25/100), height = int(my_height*40/100) ,anchor = tk.NW, window = self.my_listbox)
-
-            # List of subject in the project in the listbox
-            self.my_listbox.insert(tk.END, *self.results_dict.keys())
-
-            # Attach listbox to x and y scrollbar ()
-            x_folder_scrollbar = int(my_width*8/100)
-            self.my_yscrollbar = tk.Scrollbar(master.my_canvas, orient="vertical")
-            self.my_listbox.config(yscrollcommand = self.my_yscrollbar.set)
-            self.my_yscrollbar.config(command = self.my_listbox.yview)
-            master.my_canvas.create_window(x_folder_scrollbar, y_folder_list1, height = int(my_height*40/100), anchor = tk.NW, window = self.my_yscrollbar)
-            
-            y_folder_scrollbar = int(my_height*66/100)
-            self.my_xscrollbar = tk.Scrollbar(master.my_canvas, orient="horizontal")
-            self.my_listbox.config(xscrollcommand = self.my_xscrollbar.set)
-            self.my_xscrollbar.config(command = self.my_listbox.xview)
-            master.my_canvas.create_window(x_folder_list, y_folder_scrollbar, width = int(my_width*25/100), anchor = tk.NW, window = self.my_xscrollbar)
-            
-=======
             x_folder_list = int(my_width*23/100)
             y_folder_list = int(my_height*5/100)
             self.label = tk.Label(master.my_canvas, text='Selected Project: ' + self.project_name, bg=BG_BTN_COLOR_2, fg=TEXT_BTN_COLOR, font = LARGE_FONT)
@@ -881,24 +783,16 @@ class xnat_pic_gui(tk.Frame):
             # self.my_xscrollbar.pack(fill='x')
             # master.my_canvas.create_window(x_folder_list, y_folder_scrollbar, width = int(my_width*25/100), anchor = tk.NW, window = self.my_xscrollbar)
   
->>>>>>> origin/RG_gui
             #################### Subject form ####################
             # ID
             # Label frame for ID: folder selected, project, subject and acq. date
             self.label_frame_ID = tk.LabelFrame(master.my_canvas, background = BACKGROUND_COLOR, borderwidth=5, font=SMALL_FONT, relief='solid', text="ID")
 
             #
-<<<<<<< HEAD
-            x_lbl_ID = int(my_width*40/100)
-            y_lbl_ID = int(my_height*24/100)
-            w_lbl_ID = int(my_width*50/100)
-            h_lbl_ID = int(my_height*20/100)
-=======
             x_lbl_ID = int(my_width*44/100)
             y_lbl_ID = y_folder_list1
             w_lbl_ID = int(my_width*51/100)
             h_lbl_ID = int(my_height*32/100)
->>>>>>> origin/RG_gui
             #
             # Scroll bar in the Label frame ID
             self.canvas_ID = tk.Canvas(self.label_frame_ID, borderwidth=0, bg=BACKGROUND_COLOR, highlightbackground=BACKGROUND_COLOR)
@@ -918,35 +812,17 @@ class xnat_pic_gui(tk.Frame):
                     canvas.configure(scrollregion=canvas.bbox("all"))
 
             keys_ID = ["Folder", "Project", "Subject", "Experiment", "Acq. date"]
-<<<<<<< HEAD
-            # Entry CV  
-=======
             # Entry ID 
->>>>>>> origin/RG_gui
             self.entries_variable_ID = []  
             self.entries_value_ID = []          
             count = 0
             for key in keys_ID:
                 # Variable
-<<<<<<< HEAD
-                self.entries_variable_ID.append(tk.Entry(self.frame_ID, disabledbackground= BACKGROUND_COLOR, disabledforeground= "white",bg=BACKGROUND_COLOR, borderwidth=0, highlightthickness=2, highlightbackground="black", highlightcolor="black", font=SMALL_FONT, takefocus = 0, width=15))
-=======
                 self.entries_variable_ID.append(tk.Entry(self.frame_ID, disabledbackground= BACKGROUND_COLOR, disabledforeground= "black",bg=BACKGROUND_COLOR, borderwidth=0, highlightthickness=2, highlightbackground="black", highlightcolor="black", font=SMALL_FONT, takefocus = 0, width=15))
->>>>>>> origin/RG_gui
                 self.entries_variable_ID[-1].insert(0, key)
                 self.entries_variable_ID[-1]['state'] = 'disabled'
                 self.entries_variable_ID[-1].grid(row=count, column=0, padx = 5, pady = 5, sticky=W)
                 # Value
-<<<<<<< HEAD
-                self.entries_value_ID.append(tk.Entry(self.frame_ID, font=SMALL_FONT, state='disabled', takefocus = 0, width=35))
-                self.entries_value_ID[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=W)
-                count += 1
-
-            # Calendar for acq. date
-            self.cal = DateEntry(self.frame_ID, state = tk.DISABLED, width=10, font = SMALL_FONT, background=BACKGROUND_COLOR, date_pattern = 'y-mm-dd', foreground='white', borderwidth=0)
-            self.cal.delete(0, tk.END)
-            self.cal.grid(row=4, column=2, padx = 5, pady = 5, sticky=W)
-=======
                 if key == "Acq. date":
                     self.entries_value_ID.append(tk.Entry(self.frame_ID, font=SMALL_FONT, state='disabled', takefocus = 0, width=20))
                     self.entries_value_ID[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=NW)
@@ -959,7 +835,6 @@ class xnat_pic_gui(tk.Frame):
             self.cal = DateEntry(self.frame_ID, state = tk.DISABLED, width=11, font = SMALL_FONT_3, background=BG_BTN_COLOR_2, date_pattern = 'y-mm-dd', foreground='white', borderwidth=0, selectbackground = BG_BTN_COLOR_2, selectforeground = "black")
             self.cal.delete(0, tk.END)
             self.cal.grid(row=4, column=1, padx = 5, pady = 5, sticky=NE)
->>>>>>> origin/RG_gui
 
             ####################################################################
             # Custom Variables (CV)
@@ -967,17 +842,10 @@ class xnat_pic_gui(tk.Frame):
             self.label_frame_CV = tk.LabelFrame(master.my_canvas, background = BACKGROUND_COLOR, borderwidth=5, font=SMALL_FONT, relief='solid', text="Custom Variables")
             x_lbl_CV = x_lbl_ID
             y_lbl_CV = int(my_height*50/100)
-<<<<<<< HEAD
-            h_lbl_CV = int(my_height*15/100)
-            w_lbl_CV = int(my_width*53/100)
-
-            # Scroll bar in the Label frame ID
-=======
             h_lbl_CV = int(my_height*20/100)
             w_lbl_CV = int(my_width*53/100)
 
             # Scroll bar in the Label frame CV
->>>>>>> origin/RG_gui
             self.canvas_CV = tk.Canvas(self.label_frame_CV, borderwidth=0, bg=BACKGROUND_COLOR, highlightbackground=BACKGROUND_COLOR)
             self.frame_CV = tk.Frame(self.canvas_CV, bg=BACKGROUND_COLOR)
             self.vsb_CV = tk.Scrollbar(self.label_frame_CV, orient="vertical", command=self.canvas_CV.yview)
@@ -994,31 +862,19 @@ class xnat_pic_gui(tk.Frame):
             def OnFrameConfigure(canvas):
                     canvas.configure(scrollregion=canvas.bbox("all"))
 
-<<<<<<< HEAD
-            keys_CV = ["Group", "Dose", "Timepoint"]
-=======
             keys_CV = ["Group", "Timepoint", "Dose",]
->>>>>>> origin/RG_gui
             # Entry CV  
             self.entries_variable_CV = []  
             self.entries_value_CV = []          
             count = 0
             for key in keys_CV:
                 # Variable
-<<<<<<< HEAD
-                self.entries_variable_CV.append(tk.Entry(self.frame_CV, disabledbackground= BACKGROUND_COLOR, disabledforeground= "white",bg=BACKGROUND_COLOR, borderwidth=0, highlightthickness=2, highlightbackground="black", highlightcolor="black", font=SMALL_FONT, takefocus = 0, width=15))
-=======
                 self.entries_variable_CV.append(tk.Entry(self.frame_CV, disabledbackground= BACKGROUND_COLOR, disabledforeground= "black",bg=BACKGROUND_COLOR, borderwidth=0, highlightthickness=2, highlightbackground="black", highlightcolor="black", font=SMALL_FONT, takefocus = 0, width=15))
->>>>>>> origin/RG_gui
                 self.entries_variable_CV[-1].insert(0, key)
                 self.entries_variable_CV[-1]['state'] = 'disabled'
                 self.entries_variable_CV[-1].grid(row=count, column=0, padx = 5, pady = 5, sticky=W)
                 # Value
-<<<<<<< HEAD
-                self.entries_value_CV.append(tk.Entry(self.frame_CV, font=SMALL_FONT, state='disabled', takefocus = 0, width=35))
-=======
                 self.entries_value_CV.append(tk.Entry(self.frame_CV, font=SMALL_FONT, state='disabled', takefocus = 0, width=25))
->>>>>>> origin/RG_gui
                 self.entries_value_CV[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=W)
                 count += 1
 
@@ -1028,11 +884,7 @@ class xnat_pic_gui(tk.Frame):
             self.group_menu = ttk.Combobox(self.frame_CV, font = SMALL_FONT, takefocus = 0, textvariable=self.selected_group, width=10)
             self.group_menu['values'] = OPTIONS
             self.group_menu['state'] = 'disabled'
-<<<<<<< HEAD
-            self.group_menu.grid(row=0, column=3, padx = 5, pady = 5, sticky=W)
-=======
             self.group_menu.grid(row=0, column=2, padx = 5, pady = 5, sticky=W)
->>>>>>> origin/RG_gui
             
             # UM for dose
             self.OPTIONS_UM = ["Mg", "kg", "mg", "µg", "ng"]
@@ -1040,11 +892,7 @@ class xnat_pic_gui(tk.Frame):
             self.dose_menu = ttk.Combobox(self.frame_CV, font = SMALL_FONT, takefocus = 0, textvariable=self.selected_dose, width=10)
             self.dose_menu['values'] = self.OPTIONS_UM
             self.dose_menu['state'] = 'disabled'
-<<<<<<< HEAD
-            self.dose_menu.grid(row=1, column=3, padx = 5, pady = 5, sticky=W)
-=======
             self.dose_menu.grid(row=2, column=2, padx = 5, pady = 5, sticky=W)
->>>>>>> origin/RG_gui
 
             # Timepoint
             self.OPTIONS = ["pre", "post"]
@@ -1052,28 +900,16 @@ class xnat_pic_gui(tk.Frame):
             self.timepoint_menu = ttk.Combobox(self.frame_CV, font = SMALL_FONT, takefocus = 0, textvariable=self.selected_timepoint, width=10)
             self.timepoint_menu['values'] = self.OPTIONS
             self.timepoint_menu['state'] = 'disabled'
-<<<<<<< HEAD
-            self.timepoint_menu.grid(row=2, column=3, padx = 5, pady = 5, sticky=W)
-
-            self.time_entry = tk.Entry(self.frame_CV, font = SMALL_FONT, state='disabled', takefocus = 0, width=5)
-            self.time_entry.grid(row=2, column=4, padx = 5, pady = 5, sticky=W)
-=======
             self.timepoint_menu.grid(row=1, column=2, padx = 5, pady = 5, sticky=W)
 
             self.time_entry = tk.Entry(self.frame_CV, font = SMALL_FONT, state='disabled', takefocus = 0, width=5)
             self.time_entry.grid(row=1, column=3, padx = 5, pady = 5, sticky=W)
->>>>>>> origin/RG_gui
 
             self.OPTIONS1 = ["seconds", "minutes", "hours", "days", "weeks", "months", "years"]
             self.selected_timepoint1 = tk.StringVar()
             self.timepoint_menu1 = ttk.Combobox(self.frame_CV, font = SMALL_FONT, takefocus = 0, textvariable=self.selected_timepoint1, width=7)
             self.timepoint_menu1['values'] = self.OPTIONS1
             self.timepoint_menu1['state'] = 'disabled'
-<<<<<<< HEAD
-            self.timepoint_menu1.grid(row=2, column=5, padx = 5, pady = 5, sticky=W)
-
-            #################### Load the info about the selected subject ####################
-=======
             self.timepoint_menu1.grid(row=1, column=4, padx = 5, pady = 5, sticky=W)
 
             #################### Load the info about the selected subject ####################
@@ -1110,7 +946,6 @@ class xnat_pic_gui(tk.Frame):
                        
         def load_info(self, master):
 
->>>>>>> origin/RG_gui
             def items_selected(event):
                 # Clear all the combobox and the entry
                 self.selected_group.set('')
@@ -1131,16 +966,6 @@ class xnat_pic_gui(tk.Frame):
                     self.entries_value_CV[i].destroy()
                 """ handle item selected event
                 """
-<<<<<<< HEAD
-                # Get selected indices
-                self.selected_index = self.my_listbox.curselection()[0]
-                self.selected_folder = self.my_listbox.get(self.selected_index)
-                
-                ID = True
-                count = 1
-                self.entries_variable_ID = []
-                self.entries_variable_ID.append(tk.Entry(self.frame_ID, disabledbackground= BACKGROUND_COLOR, disabledforeground= "white",bg=BACKGROUND_COLOR, borderwidth=0, highlightthickness=2, highlightbackground="black", highlightcolor="black", font=SMALL_FONT, takefocus = 0, width=15))
-=======
                 # Get selected index
                 self.selected_index = self.my_listbox[self.index_tab].curselection()
                 self.selected_folder_tmp = self.my_listbox[self.index_tab].get(self.selected_index)
@@ -1149,17 +974,12 @@ class xnat_pic_gui(tk.Frame):
                 count = 1
                 self.entries_variable_ID = []
                 self.entries_variable_ID.append(tk.Entry(self.frame_ID, disabledbackground= BACKGROUND_COLOR, disabledforeground= "black",bg=BACKGROUND_COLOR, borderwidth=0, highlightthickness=2, highlightbackground="black", highlightcolor="black", font=SMALL_FONT, takefocus = 0, width=15))
->>>>>>> origin/RG_gui
                 self.entries_variable_ID[-1].insert(0, "Folder")
                 self.entries_variable_ID[-1]['state'] = 'disabled'
                 self.entries_variable_ID[-1].grid(row=0, column=0, padx = 5, pady = 5, sticky=W)
                 self.entries_variable_CV = []
                 self.entries_value_ID = []
-<<<<<<< HEAD
-                self.entries_value_ID.append(tk.Entry(self.frame_ID, font=SMALL_FONT, takefocus = 0, width=35))
-=======
                 self.entries_value_ID.append(tk.Entry(self.frame_ID, font=SMALL_FONT, takefocus = 0, width=44))
->>>>>>> origin/RG_gui
                 self.entries_value_ID[-1].insert(0, self.selected_folder)
                 self.entries_value_ID[-1]['state'] = 'disabled'
                 self.entries_value_ID[-1].grid(row=0, column=1, padx = 5, pady = 5, sticky=W)
@@ -1171,21 +991,11 @@ class xnat_pic_gui(tk.Frame):
                         ID = False
                         count = 0
                     if ID:
-<<<<<<< HEAD
-                        self.entries_variable_ID.append(tk.Entry(self.frame_ID, disabledbackground= BACKGROUND_COLOR, disabledforeground= "white",bg=BACKGROUND_COLOR, borderwidth=0, highlightthickness=2, highlightbackground="black", highlightcolor="black", font=SMALL_FONT, takefocus = 0, width=15))
-=======
                         self.entries_variable_ID.append(tk.Entry(self.frame_ID, disabledbackground= BACKGROUND_COLOR, disabledforeground= "black",bg=BACKGROUND_COLOR, borderwidth=0, highlightthickness=2, highlightbackground="black", highlightcolor="black", font=SMALL_FONT, takefocus = 0, width=15))
->>>>>>> origin/RG_gui
                         self.entries_variable_ID[-1].insert(0, k)
                         self.entries_variable_ID[-1]['state'] = 'disabled'
                         self.entries_variable_ID[-1].grid(row=count, column=0, padx = 5, pady = 5, sticky=W)
                         # Value
-<<<<<<< HEAD
-                        self.entries_value_ID.append(tk.Entry(self.frame_ID, font=SMALL_FONT, takefocus = 0, width=35))
-                        self.entries_value_ID[-1].insert(0, v)
-                        self.entries_value_ID[-1]['state'] = 'disabled'
-                        self.entries_value_ID[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=W)
-=======
                         if k == "Acquisition_date":
                             self.entries_value_ID.append(tk.Entry(self.frame_ID, font=SMALL_FONT, takefocus = 0, width=20))
                             self.entries_value_ID[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=NW)
@@ -1195,62 +1005,24 @@ class xnat_pic_gui(tk.Frame):
                         self.entries_value_ID[-1].insert(0, v)
                         self.entries_value_ID[-1]['state'] = 'disabled'
     
->>>>>>> origin/RG_gui
                         count += 1
                         
                     else:
                         if k != "C_V":
-<<<<<<< HEAD
-                            self.entries_variable_CV.append(tk.Entry(self.frame_CV, disabledbackground= BACKGROUND_COLOR, disabledforeground= "white",bg=BACKGROUND_COLOR, borderwidth=0, highlightthickness=2, highlightbackground="black", highlightcolor="black", font=SMALL_FONT, takefocus = 0, width=15))
-=======
                             self.entries_variable_CV.append(tk.Entry(self.frame_CV, disabledbackground= BACKGROUND_COLOR, disabledforeground= "black",bg=BACKGROUND_COLOR, borderwidth=0, highlightthickness=2, highlightbackground="black", highlightcolor="black", font=SMALL_FONT, takefocus = 0, width=15))
->>>>>>> origin/RG_gui
                             self.entries_variable_CV[-1].insert(0, k)
                             self.entries_variable_CV[-1]['state'] = 'disabled'
                             self.entries_variable_CV[-1].grid(row=count, column=0, padx = 5, pady = 5, sticky=W)
                             # Value
-<<<<<<< HEAD
-                            self.entries_value_CV.append(tk.Entry(self.frame_CV, font=SMALL_FONT, takefocus = 0, width=35))
-=======
                             self.entries_value_CV.append(tk.Entry(self.frame_CV, font=SMALL_FONT, takefocus = 0, width=25))
->>>>>>> origin/RG_gui
                             self.entries_value_CV[-1].insert(0, v)
                             self.entries_value_CV[-1]['state'] = 'disabled'
                             self.entries_value_CV[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=W)
                             count += 1
-<<<<<<< HEAD
-            
-            self.my_listbox.bind('<Tab>', items_selected)
-            
-            #################### Modify the metadata ####################
-            modify_text = tk.StringVar() 
-            self.modify_btn = tk.Button(master.my_canvas, textvariable=modify_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, command = lambda: self.modify_metadata(), cursor=CURSOR_HAND, takefocus = 0)
-            modify_text.set("Modify")
-            x_lbl = x_lbl_ID
-            y_btn = int(my_height*70/100)
-            width_btn = int(my_width*14/100)
-            master.my_canvas.create_window(x_lbl, y_btn, anchor = tk.NW, width = width_btn, window = self.modify_btn)
-
-            #################### Confirm the metadata ####################
-            confirm_text = tk.StringVar() 
-            self.confirm_btn = tk.Button(master.my_canvas, textvariable=confirm_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, command = lambda: self.confirm_metadata(), cursor=CURSOR_HAND, takefocus = 0)
-            confirm_text.set("Confirm")
-            x_conf_btn = int(my_width*59/100)
-            master.my_canvas.create_window(x_conf_btn, y_btn, anchor = tk.NW, width = width_btn, window = self.confirm_btn)
-
-            #################### Confirm multiple metadata ####################
-            multiple_confirm_text = tk.StringVar() 
-            self.multiple_confirm_btn = tk.Button(master.my_canvas, textvariable=multiple_confirm_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, command = lambda: self.confirm_multiple_metadata(), cursor=CURSOR_HAND, takefocus = 0)
-            multiple_confirm_text.set("Multiple Confirm")
-            x_multiple_conf_btn = int(my_width*78/100)
-            master.my_canvas.create_window(x_multiple_conf_btn, y_btn, anchor = tk.NW, width = width_btn, window = self.multiple_confirm_btn)
-                
-=======
 
             self.index_tab = list(self.todos).index(self.tab_name)
             self.my_listbox[self.index_tab].bind('<Tab>', items_selected)
 
->>>>>>> origin/RG_gui
         def modify_metadata(self):
                 # Check before confirming the data
             try:
@@ -1275,11 +1047,7 @@ class xnat_pic_gui(tk.Frame):
                 self.entries_value_ID[4].delete(0, tk.END)
                 self.entries_value_ID[4].insert(0, str(w.get_date()))
                 self.entries_value_ID[4]['state'] = tk.DISABLED
-<<<<<<< HEAD
-                self.my_listbox.selection_set(self.selected_index)
-=======
                 self.my_listbox[self.index_tab].selection_set(self.selected_index)
->>>>>>> origin/RG_gui
 
             self.cal.bind("<<DateEntrySelected>>", date_entry_selected)
 
@@ -1290,11 +1058,7 @@ class xnat_pic_gui(tk.Frame):
                 """ handle the group changed event """
                 self.entries_value_CV[0].delete(0, tk.END)
                 self.entries_value_CV[0].insert(0, str(self.selected_group.get()))                    
-<<<<<<< HEAD
-                self.my_listbox.selection_set(self.selected_index)
-=======
                 self.my_listbox[self.index_tab].selection_set(self.selected_index)
->>>>>>> origin/RG_gui
 
             self.group_menu.bind("<<ComboboxSelected>>", group_changed)
 
@@ -1304,18 +1068,6 @@ class xnat_pic_gui(tk.Frame):
             def dose_changed(event):
                 """ handle the dose changed event """
                 dose_str = ''
-<<<<<<< HEAD
-                if self.entries_value_CV[1].get():
-                    for word in filter(str(self.entries_value_CV[1].get()).__contains__, self.OPTIONS_UM):
-                        # If a unit of measurement is already present, replace it
-                        dose_str = str(self.entries_value_CV[1].get()).replace(word, str(self.selected_dose.get()))
-                        self.entries_value_CV[1].delete(0, tk.END)     
-                        self.entries_value_CV[1].insert(0, dose_str)                    
-                        self.my_listbox.selection_set(self.selected_index)
-                        return
-                            # If only the number is present, add the unit of measure
-                    dose_str = str(self.entries_value_CV[1].get()) + "-" + str(self.selected_dose.get())
-=======
                 if self.entries_value_CV[2].get():
                     for word in filter(str(self.entries_value_CV[2].get()).__contains__, self.OPTIONS_UM):
                         # If a unit of measurement is already present, replace it
@@ -1326,20 +1078,13 @@ class xnat_pic_gui(tk.Frame):
                         return
                             # If only the number is present, add the unit of measure
                     dose_str = str(self.entries_value_CV[2].get()) + "-" + str(self.selected_dose.get())
->>>>>>> origin/RG_gui
                 else:
                     # If the entry is empty, enter only the unit of measure
                     dose_str = str(self.selected_dose.get())
 
-<<<<<<< HEAD
-                self.entries_value_CV[1].delete(0, tk.END)     
-                self.entries_value_CV[1].insert(0, dose_str)                    
-                self.my_listbox.selection_set(self.selected_index)
-=======
                 self.entries_value_CV[2].delete(0, tk.END)     
                 self.entries_value_CV[2].insert(0, dose_str)                    
                 self.my_listbox[self.index_tab].selection_set(self.selected_index)
->>>>>>> origin/RG_gui
 
             self.dose_menu.bind("<<ComboboxSelected>>", dose_changed)
             
@@ -1349,22 +1094,14 @@ class xnat_pic_gui(tk.Frame):
             self.timepoint_menu['state'] = 'readonly'
 
             def timepoint_changed(event):
-<<<<<<< HEAD
-                self.entries_value_CV[2].config(state=tk.NORMAL)
-=======
                 self.entries_value_CV[1].config(state=tk.NORMAL)
->>>>>>> origin/RG_gui
                 """ handle the timepoint changed event """
                 if str(self.time_entry.get()) or str(self.selected_timepoint1.get()):
                     timepoint_str = str(self.selected_timepoint.get()) + "-" + str(self.time_entry.get()) + "-" + str(self.selected_timepoint1.get())
                 else:
                     timepoint_str = str(self.selected_timepoint.get()) 
 
-<<<<<<< HEAD
-                self.my_listbox.selection_set(self.selected_index)
-=======
                 self.my_listbox[self.index_tab].selection_set(self.selected_index)
->>>>>>> origin/RG_gui
 
                 if self.time_entry.get():
                     try:
@@ -1372,15 +1109,9 @@ class xnat_pic_gui(tk.Frame):
                     except Exception as e: 
                         messagebox.showerror("XNAT-PIC", "Insert a number in the timepoint entry")
 
-<<<<<<< HEAD
-                self.entries_value_CV[2].delete(0, tk.END)
-                self.entries_value_CV[2].insert(0, timepoint_str)
-                self.entries_value_CV[2].config(state=tk.DISABLED)
-=======
                 self.entries_value_CV[1].delete(0, tk.END)
                 self.entries_value_CV[1].insert(0, timepoint_str)
                 self.entries_value_CV[1].config(state=tk.DISABLED)
->>>>>>> origin/RG_gui
 
             self.timepoint_menu.bind("<<ComboboxSelected>>", timepoint_changed)
             self.time_entry.bind("<Return>", timepoint_changed)
@@ -1405,26 +1136,11 @@ class xnat_pic_gui(tk.Frame):
 
             if self.entries_value_ID[3].get():
                 try:
-<<<<<<< HEAD
-                    datetime.datetime.strptime(self.entries_value_ID[3].get(), '%Y-%m-%d')
-=======
                     datetime.datetime.strptime(self.entries_value_ID[4].get(), '%Y-%m-%d')
->>>>>>> origin/RG_gui
                 except Exception as e:
                     messagebox.showerror("XNAT-PIC", "Incorrect data format in acquisition date, should be YYYY-MM-DD")
                     raise
 
-<<<<<<< HEAD
-            if self.entries_value_CV[2].get() and '-' in  self.entries_value_CV[2].get(): 
-                if not str(self.entries_value_CV[2].get()).split('-')[0] in self.OPTIONS:
-                    messagebox.showerror("XNAT-PIC", "Select pre/post in timepoint")
-                    raise
-                if not str(self.entries_value_CV[2].get()).split('-')[2] in self.OPTIONS1:
-                    messagebox.showerror("XNAT-PIC", "Select seconds, minutes, hours, days, weeks, months, years in timepoint")
-                    raise
-
-                input_num = str(self.entries_value_CV[2].get()).split('-')[1]
-=======
             if self.entries_value_CV[1].get() and '-' in  self.entries_value_CV[1].get(): 
                 if not str(self.entries_value_CV[1].get()).split('-')[0] in self.OPTIONS:
                     messagebox.showerror("XNAT-PIC", "Select pre/post in timepoint")
@@ -1434,13 +1150,11 @@ class xnat_pic_gui(tk.Frame):
                     raise
 
                 input_num = str(self.entries_value_CV[1].get()).split('-')[1]
->>>>>>> origin/RG_gui
                 try:
                     float(input_num)
                 except Exception as e: 
                     messagebox.showerror("XNAT-PIC", "Insert a number in timepoint between pre/post and seconds, minutes, hours..")  
                     raise
-<<<<<<< HEAD
 
         def confirm_metadata(self):
             self.check_entries()
@@ -1454,21 +1168,6 @@ class xnat_pic_gui(tk.Frame):
             
             tmp_ID.update({"C_V" : ""}) 
 
-=======
-
-        def confirm_metadata(self):
-            self.check_entries()
-            
-            tmp_ID = {}
-            # Update the info in the txt file ID
-            for i in range(1, len(self.entries_variable_ID)):
-                tmp_ID.update({self.entries_variable_ID[i].get() : self.entries_value_ID[i].get()})     
-                self.entries_variable_ID[i]['state'] = tk.DISABLED
-                self.entries_value_ID[i]['state'] = tk.DISABLED 
-            
-            tmp_ID.update({"C_V" : ""}) 
-
->>>>>>> origin/RG_gui
             # Update the info in the txt file CV
             for i in range(0, len(self.entries_variable_CV)):
                 tmp_ID.update({self.entries_variable_CV[i].get() : self.entries_value_CV[i].get()})     
@@ -1486,12 +1185,6 @@ class xnat_pic_gui(tk.Frame):
             self.cal.delete(0, tk.END)
             disable_buttons([self.dose_menu, self.group_menu, self.timepoint_menu, self.time_entry, self.timepoint_menu1, self.cal])
             # Saves the changes made by the user in the txt file
-<<<<<<< HEAD
-            tmp_path = str(self.information_folder) + "\\" + self.selected_folder + "\\" + self.selected_folder + "_" + "Custom_Variables.txt"
-            with open(tmp_path.replace('\\', '/'), 'w+') as meta_file:
-                meta_file.write(tabulate(self.results_dict[self.selected_folder].items(), headers=['Variable', 'Value']))
-            
-=======
             substring = str(self.selected_folder).replace('#','/')
             index = [i for i, s in enumerate(self.path_list) if substring in s]
             name_txt = str(self.selected_folder).rsplit('#', 1)[1] + "_" + "Custom_Variables.txt"
@@ -1502,7 +1195,6 @@ class xnat_pic_gui(tk.Frame):
             except Exception as e: 
                     messagebox.showerror("XNAT-PIC", "Confirmation failed: " + str(e))  
                     raise    
->>>>>>> origin/RG_gui
             #################### Confirm multiple metadata ####################
             # def normal_button():
             #     #clear_btn["state"] = tk.NORMAL
@@ -1537,7 +1229,6 @@ class xnat_pic_gui(tk.Frame):
             #        confirm_metadata(self)
             #     # Get indexes of selected folders
             #     selected_text_list = my_listbox.curselection()
-<<<<<<< HEAD
                 
             #     # Update the list of results
             #     max_lim = len(fields)
@@ -1559,150 +1250,6 @@ class xnat_pic_gui(tk.Frame):
             #     my_listbox.selection_clear(0, 'end')
             #     my_listbox['selectmode'] = SINGLE
                 
-
-            # my_listbox.bind("<Return>", items_selected2)
-            
-            # # The user presses 'esc' to cancel
-            # def items_cancel(event):
-            #         # Clear the focus and the select mode of the listbox is single
-            #     messagebox.showinfo("Metadata","The information was not saved for the selected folders!")
-            #     normal_button()
-            #     my_listbox.selection_clear(0, 'end')
-            #     my_listbox['selectmode'] = SINGLE
-            # my_listbox.bind("<Escape>", items_cancel)
-                
-        #################### Add ID #################
-        def add_ID(self):
-             # Check before confirming the data
-            try:
-                self.selected_folder
-                pass
-            except Exception as e:
-                    messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
-                    raise 
-            # I use len(all_entries) to get nuber of next free row
-            next_row = len(self.entries_variable_ID)
-            
-            # Add entry variable ID
-            ent_variable = tk.Entry(self.frame_ID, bg=BACKGROUND_COLOR, borderwidth=0, highlightthickness=2, highlightbackground="black", highlightcolor="black", font=SMALL_FONT, takefocus = 0, width=15)
-            ent_variable.grid(row=next_row, column=0, padx = 5, pady = 5, sticky=W)
-            self.entries_variable_ID.append(ent_variable)                 
-
-            # Add entry value ID in second col
-            ent_value = tk.Entry(self.frame_ID, font=SMALL_FONT, takefocus = 0, width=35)
-            ent_value.grid(row=next_row, column=1, padx = 5, pady = 5, sticky=W)
-            self.entries_value_ID.append(ent_value)
-
-        #################### Add Custom Variable #################
-        def add_custom_variable(self, master):
-             # Check before confirming the data
-            try:
-                self.selected_folder
-                pass
-            except Exception as e:
-                    messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
-                    raise 
-            # I use len(all_entries) to get nuber of next free row
-            next_row = len(self.entries_variable_CV)
-            
-            # Add entry variable CV
-            ent_variable = tk.Entry(self.frame_CV, bg=BACKGROUND_COLOR, borderwidth=0, highlightthickness=2, highlightbackground="black", highlightcolor="black", font=SMALL_FONT, takefocus = 0, width=15)
-            ent_variable.grid(row=next_row, column=0, padx = 5, pady = 5, sticky=W)
-            self.entries_variable_CV.append(ent_variable)                 
-
-            # add entry value in second col
-            ent_value = tk.Entry(self.frame_CV, font=SMALL_FONT, takefocus = 0, width=35)
-            ent_value.grid(row=next_row, column=1, padx = 5, pady = 5, sticky=W)
-            self.entries_value_CV.append(ent_value)
-            
-            # Confirm
-            def confirm_CV(next_row):
-                tmp_ID = {}
-                tmp_ID = {self.entries_variable_CV[next_row].get() : self.entries_value_CV[next_row].get()}
-                self.results_dict[self.selected_folder].update(tmp_ID)     
-                self.entries_variable_CV[next_row]['state'] = tk.DISABLED
-                self.entries_value_CV[next_row]['state'] = tk.DISABLED
-                btn_confirm_CV.destroy()
-                btn_reject_CV.destroy()
-                 
-            btn_confirm_CV = tk.Button(self.frame_CV, image = master.logo_accept, bg=BG_BTN_COLOR, borderwidth=BORDERWIDTH, 
-                                            command=lambda: confirm_CV(next_row), cursor=CURSOR_HAND)
-            btn_confirm_CV.grid(row=next_row, column=2, padx = 5, pady = 5, sticky=W)
-
-            # Delete
-            def reject_CV(next_row):
-                print(next_row)
-            btn_reject_CV = tk.Button(self.frame_CV, image = master.logo_delete, bg=BG_BTN_COLOR, borderwidth=BORDERWIDTH, 
-                                            command=lambda: reject_CV(next_row), cursor=CURSOR_HAND)
-            btn_reject_CV.grid(row=next_row, column=3, padx = 5, pady = 5, sticky=W)
-
-
-        #################### Clear the metadata ####################              
-        def clear_metadata(self):
-            # Clear all the combobox and the entry
-            self.selected_dose.set('')
-            self.selected_group.set('')
-            self.selected_timepoint.set('')
-            self.selected_timepoint1.set('')
-            self.cal.delete(0, tk.END)
-            self.time_entry.delete(0, tk.END)
-
-            state = self.entries_value_ID[1]['state']
-            # Set empty string in all the entries
-            for i in range(0, len(self.entries_variable_CV)):
-                    self.entries_value_CV[i]['state'] = tk.NORMAL
-                    self.entries_value_CV[i].delete(0, tk.END)
-                    self.entries_value_CV[i]['state'] = state
-
-        #################### Save all the metadata ####################
-        def save_metadata(self):
-            tmp_global_path = str(self.information_folder) + "\\" + self.project_name + '_' + 'Custom_Variables.xlsx'
-            try:
-                df = pandas.DataFrame.from_dict(self.results_dict, orient='index')
-                #df.to_excel(tmp_global_path.replace('\\', '/')) # write dataframe to file
-                writer = pandas.ExcelWriter(tmp_global_path.replace('\\', '/'), engine='xlsxwriter')
-                df.to_excel(writer, sheet_name='Sheet1')
-                writer.save()
-                messagebox.showinfo("XNAT-PIC", "File saved successfully")
-            except Exception as e: 
-                    messagebox.showerror("XNAT-PIC", "Save failed: " + str(e))  
-                    raise
-            
-        #################### Exit the metadata ####################
-        def exit_metadata(self, master):
-            result = messagebox.askquestion("Exit", "Do you want to exit?", icon='warning')
-            if result == 'yes':
-                destroy_widgets([self.menu, self.label, self.my_listbox, self.my_xscrollbar, self.my_yscrollbar, self.label_frame_ID, self.label_frame_CV, self.modify_btn,
-                self.confirm_btn, self.multiple_confirm_btn])
-                xnat_pic_gui.choose_you_action(master)
-
-        def clear_metadata_frame(self, master):
-            destroy_widgets([self.menu, self.label, self.my_listbox, self.my_xscrollbar, self.my_yscrollbar, self.label_frame_ID, self.label_frame_CV, self.modify_btn,
-            self.confirm_btn, self.multiple_confirm_btn])
-            xnat_pic_gui.choose_you_action(master)
-=======
-                
-            #     # Update the list of results
-            #     max_lim = len(fields)
-            #     for i in range(0, len(selected_text_list)):
-            #             for j in range(0, max_lim):
-            #                 results[selected_text_list[i]*max_lim+j] =  entries[j].get()
-
-            #     # Update the txt file
-            #     for i in range(0, len(selected_text_list)):
-            #             with open(path_list[selected_text_list[i]], 'w+') as meta_file:
-            #                                 meta_file.write(tabulate([['Project', str(results[self.selected_folder*max_lim+0])], ['Subject', str(results[self.selected_folder*max_lim+1])], ['Acquisition_date', str(results[self.selected_folder*max_lim+2])], 
-                
-            #                                 ['Group', str(results[self.selected_folder*max_lim+3])], ['Dose', str(results[self.selected_folder*max_lim+4])], ['Timepoint', str(results[self.selected_folder*max_lim+5])]], headers=['Variable', 'Value']))
-                
-            #     messagebox.showinfo("Metadata","The information has been saved for the selected folders!")
-
-            #     # Clear the focus and the select mode of the listbox is single
-            #     normal_button()
-            #     my_listbox.selection_clear(0, 'end')
-            #     my_listbox['selectmode'] = SINGLE
-                
->>>>>>> origin/RG_gui
 
             # my_listbox.bind("<Return>", items_selected2)
             
