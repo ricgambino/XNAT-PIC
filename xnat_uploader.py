@@ -96,8 +96,8 @@ class Dicom2XnatUploader():
                 count = 0
                 for var in params.keys():
                     if count < flag:
-                        if var not in ['project_id', 'subject_id', 'folder_to_upload', 'experiment_id', 'custom_var_flag']:
-                            experiment.fields[var] = params[var]
+                        if var not in ['project_id', 'subject_id', 'folder_to_upload', 'experiment_id', 'custom_var_flag', 'C_V']:
+                            experiment.fields[var.lower()] = params[var]
                             count += 1
                     else: 
                         break

@@ -24,26 +24,32 @@ class ProgressBar():
         self.progress_var = tk.DoubleVar()
         self.bar_length = 400
         self.bar_maximum = 100
-        self.label = tk.Label(self.popup, text='Loading ...', font=("Calibri", 14, "bold")).place(relx=0.5, rely=0.5, anchor = 's')
+        self.label = tk.Label(self.popup, text='Loading ...', font=("Calibri", 14, "bold"))
+        self.label.grid(row=1, column=1)
         self.style = ttk.Style()
         self.style.theme_use('alt')
-        self.style.configure('blue.Horizontal.TProgressbar', troughcolor  = '#4d4d4d', troughrelief = 'flat', background   = '#2f92ff')
+        self.style.configure('blue.Horizontal.TProgressbar', troughcolor='#4d4d4d', troughrelief='flat', background='#2f92ff')
+        self.caption = tk.Label(self.popup, text='', font=("Calibri", 10))
+        self.caption.grid(row=3, column=1)
 
     def show_step(self, index, total):
-        self.label = tk.Label(self.popup, text='Loading ... ' + str(index) + ' / ' + str(total), font=("Calibri", 14, "bold")).place(relx=0.5, rely=0.5, anchor = 's')
+        self.step = tk.Label(self.popup, text=str(index) + ' / ' + str(total), font=("Calibri", 14, "bold"))
+        self.step.grid(row=2, column=2, sticky=tk.W)
         self.popup.update()
 
     def set_caption(self, text):
-        self.caption = tk.Label(self.popup, text=text, font=("Calibri", 10, "bold")).place(relx=0.5, rely=0.5, anchor = 's')
+        self.caption.config(text='')
+        self.caption.config(text=text)
         self.popup.update()
         
     def start_determinate_bar(self):
 
+        print('Starting progress bar...')
+
         self.progressbar = ttk.Progressbar(self.popup, variable=self.progress_var,
                                             style="blue.Horizontal.TProgressbar", orient=HORIZONTAL, 
                                             length=self.bar_length, mode='determinate', maximum=self.bar_maximum)
-        self.progressbar.pack(expand=False, fill="x", side="top")
-        self.progressbar.place(relx=0.5, rely=0.5, anchor = 'n')
+        self.progressbar.grid(row=2, column=1, padx=10)
 
     def start_indeterminate_bar(self):
 
@@ -53,8 +59,7 @@ class ProgressBar():
                                             style="blue.Horizontal.TProgressbar", 
                                             orient=HORIZONTAL, 
                                             length=self.bar_length, mode='indeterminate')
-        self.progressbar.pack(expand=False, fill="x", side="top")
-        self.progressbar.place(relx=0.5, rely=0.5, anchor = 'n')
+        self.progressbar.grid(row=2, column=1, padx=10)
         self.progressbar.start()
 
     def update_bar(self, step=0.001):
