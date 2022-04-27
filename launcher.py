@@ -124,7 +124,13 @@ class xnat_pic_gui(tk.Frame):
 
     def __init__(self, master):
         
-        self.root = master 
+        self.root = master
+        # Define the style of the root screen
+        self.style = ttk.Style(self.root)
+        self.root.tk.call('source', 'azure/azure.tcl')
+        self.style.theme_use('azure')
+        self.style.configure("Accentbutton", font=("Calibri", 20, "bold"), foreground='white')
+        self.style.configure("Togglebutton", foreground='white')
         #self.root.state('zoomed')
         ### GET PRIMARY SCREEN RESOLUTION
         ### MADE FOR MULTISCREEN ENVIRONMENTS
@@ -173,7 +179,7 @@ class xnat_pic_gui(tk.Frame):
         self.logo = ImageTk.PhotoImage(logo)
         self.logo_img = tk.Button(self.my_canvas, image=self.logo, bg=BG_BTN_COLOR, borderwidth=0,
                                     activebackground=BG_BTN_COLOR)
-        self.img2 = self.my_canvas.create_window(int(my_width/5 + ((4*my_width/5)/2)), int(my_height*30/100), 
+        self.img2 = self.my_canvas.create_window(int(my_width/5 + ((4*my_width/5)/2)), int(my_height*10/100), 
                                                 anchor=tk.CENTER, window=self.logo_img)
         
         # Open the image for the logo
@@ -209,12 +215,12 @@ class xnat_pic_gui(tk.Frame):
     def choose_your_action(self):
 
         if hasattr(xnat_pic_gui, 'img2') == False:
-            self.img2 = self.my_canvas.create_window(int(my_width/5 + ((4*my_width/5)/2)), int(my_height*30/100), 
+            self.img2 = self.my_canvas.create_window(int(my_width/5 + ((4*my_width/5)/2)), int(my_height*10/100), 
                                                 anchor=tk.CENTER, window=self.logo_img)
 
         # Action buttons           
         # Positions for action button parametric with respect to the size of the canvas
-        x_btn = int(my_width/5 + ((4*my_width/5)/2))
+        x_btn = int(my_width/5)
         y_btn = int(my_height)
         width_btn = int(my_width/5)
 
@@ -223,7 +229,7 @@ class xnat_pic_gui(tk.Frame):
         self.convert_btn = tk.Button(self.my_canvas, textvariable=convert_text, font=LARGE_FONT, bg=BG_BTN_COLOR_2, fg=TEXT_BTN_COLOR_2, borderwidth=BORDERWIDTH, 
                                     command=partial(self.bruker2dicom_conversion, self), cursor=CURSOR_HAND)
         convert_text.set("DICOM Converter")
-        self.my_canvas.create_window(x_btn, y_btn*50/100, width = width_btn, anchor = tk.CENTER, window = self.convert_btn)
+        self.my_canvas.create_window(3*x_btn, y_btn*50/100, width = width_btn, anchor = tk.CENTER, window = self.convert_btn)
         Hovertip(self.convert_btn,'Convert images from Bruker ParaVision format to DICOM standard')
         
         # Fill in the info
@@ -231,7 +237,7 @@ class xnat_pic_gui(tk.Frame):
         self.info_btn = tk.Button(self.my_canvas, textvariable=info_text, font=LARGE_FONT, bg=BG_BTN_COLOR_2, fg=TEXT_BTN_COLOR_2, borderwidth=BORDERWIDTH, 
                                     command=partial(self.metadata, self), cursor=CURSOR_HAND)
         info_text.set("Project Data")
-        self.my_canvas.create_window(x_btn, y_btn*60/100, width = width_btn, anchor = tk.CENTER, window = self.info_btn)
+        self.my_canvas.create_window(3*x_btn, y_btn*60/100, width = width_btn, anchor = tk.CENTER, window = self.info_btn)
         Hovertip(self.info_btn,'Fill in the information about the acquisition')
 
         # Upload files
@@ -241,15 +247,15 @@ class xnat_pic_gui(tk.Frame):
         self.upload_btn = tk.Button(self.my_canvas, textvariable=upload_text, font=LARGE_FONT, bg=BG_BTN_COLOR_2, fg=TEXT_BTN_COLOR_2, borderwidth=BORDERWIDTH, 
                                         command=upload_callback, cursor=CURSOR_HAND)
         upload_text.set("Uploader")
-        self.my_canvas.create_window(x_btn, y_btn*70/100, width = width_btn, anchor = tk.CENTER, window = self.upload_btn)
+        self.my_canvas.create_window(3*x_btn, y_btn*70/100, width = width_btn, anchor = tk.CENTER, window = self.upload_btn)
         Hovertip(self.upload_btn,'Upload DICOM images to XNAT')
 
         # Close button
         def close_window(*args):
             self.root.destroy()
         self.close_btn = tk.Button(self.my_canvas, font=LARGE_FONT, bg=BG_BTN_COLOR_2, fg=TEXT_BTN_COLOR_2, borderwidth=BORDERWIDTH, command=close_window,
-                                        cursor=CURSOR_HAND, text="Close")
-        self.my_canvas.create_window(int(4*my_width/5 + ((1*my_width/5)/2)), y_btn*90/100, width = width_btn/3, anchor = tk.CENTER, window = self.close_btn)
+                                        cursor=CURSOR_HAND, text="Quit")
+        self.my_canvas.create_window(4*x_btn + x_btn/2, y_btn*90/100, width = width_btn/2, anchor = tk.CENTER, window = self.close_btn)
 
     def get_page(self):
         return self.root   
@@ -259,61 +265,90 @@ class xnat_pic_gui(tk.Frame):
         def __init__(self, master):
 
             self.params = {}
-            
-            # Disable the buttons
-            disable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
-            
-            def close_window():
-                self.conv_popup.destroy()
-                #Enable all buttons
-                enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
 
-            def isChecked():
-                self.params['results_flag'] = self.results_flag.get()
+            try:
+                destroy_widgets([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn])
+                master.my_canvas.delete(master.img2)
+            except:
+                pass
 
-            self.conv_popup = tk.Toplevel()
-            self.conv_popup.geometry("%dx%d+%d+%d" % (650, 250, my_width/3, my_height/3))
-            self.conv_popup.title('XNAT-PIC Converter')
-            self.conv_popup.protocol("WM_DELETE_WINDOW", close_window)
+            # Create new frame
+            x_btn = int(my_width/5)
+            y_btn = int(my_height)
+            width_btn = int(my_width/5)
 
-            self.btn_prj = tk.Button(self.conv_popup, text='Convert Project', font=LARGE_FONT, 
-                                    bg="grey", fg="white", height=1, width=20, borderwidth=BORDERWIDTH, 
-                                    command=lambda: (self.conv_popup.destroy(), self.prj_convertion(master)))
-            self.btn_prj.grid(row=2, column=0, padx=10, pady=10)
-            self.btn_sbj = tk.Button(self.conv_popup, text='Convert Subject', font=LARGE_FONT, 
-                                    bg="grey", fg="white", height=1, width=20, borderwidth=BORDERWIDTH, 
-                                    command=lambda: (self.conv_popup.destroy(), self.sbj_convertion(master)))
-            self.btn_sbj.grid(row=3, column=0, padx=10, pady=5)
-            self.btn_exp = tk.Button(self.conv_popup, text='Convert Experiment', font=LARGE_FONT, 
-                                    bg="grey", fg="white", height=1, width=20, borderwidth=BORDERWIDTH, 
-                                    command=lambda: (self.conv_popup.destroy(), self.experiment_convertion(master)))
-            self.btn_exp.grid(row=4, column=0, padx=10, pady=5)
-            self.results_flag = tk.IntVar()
-            self.btn_results = tk.Checkbutton(self.conv_popup, text='Copy additional files', variable=self.results_flag,
-                                onvalue=1, offvalue=0, command=isChecked)
-            self.btn_results.grid(row=2, column=1, sticky='W')
+            # Frame Title
+            self.frame_title = master.my_canvas.create_text(3*x_btn, int(y_btn*0.1), anchor=tk.CENTER, fill='black', font=("Ink Free", 36, "bold"),
+                                         text="XNAT-PIC Converter")
+
+            # Convert Project
+            def convert_project_handler(*args):
+                self.prj_convertion(master)
+            prj_conv = tk.StringVar()
+            self.prj_conv_btn = tk.Button(master.my_canvas, textvariable=prj_conv, font=LARGE_FONT, bg=BG_BTN_COLOR_2, fg=TEXT_BTN_COLOR_2,
+                                            borderwidth=BORDERWIDTH, command=convert_project_handler, cursor=CURSOR_HAND)
+            prj_conv.set("Convert Project")
+            master.my_canvas.create_window(3*x_btn, int(y_btn*0.5), width=width_btn, anchor=tk.CENTER, window=self.prj_conv_btn)
+            Hovertip(self.prj_conv_btn, "Convert a project from Bruker format to DICOM standard")
+
+            # Convert Subject
+            def convert_subject_handler(*args):
+                self.sbj_convertion(master)
+            sbj_conv = tk.StringVar()
+            self.sbj_conv_btn = tk.Button(master.my_canvas, textvariable=sbj_conv, font=LARGE_FONT, bg=BG_BTN_COLOR_2, fg=TEXT_BTN_COLOR_2,
+                                            borderwidth=BORDERWIDTH, command=convert_subject_handler, cursor=CURSOR_HAND)
+            sbj_conv.set("Convert Subject")
+            master.my_canvas.create_window(3*x_btn, int(y_btn*0.6), width=width_btn, anchor=tk.CENTER, window=self.sbj_conv_btn)
+            Hovertip(self.sbj_conv_btn, "Convert a subject from Bruker format to DICOM standard")
+
+            # Convert Experiment
+            def convert_experiment_handler(*args):
+                self.experiment_convertion(master)
+            exp_conv = tk.StringVar()
+            self.exp_conv_btn = tk.Button(master.my_canvas, textvariable=exp_conv, font=LARGE_FONT, bg=BG_BTN_COLOR_2, fg=TEXT_BTN_COLOR_2,
+                                            borderwidth=BORDERWIDTH, command=convert_experiment_handler, cursor=CURSOR_HAND)
+            exp_conv.set("Convert Experiment")
+            master.my_canvas.create_window(3*x_btn, int(y_btn*0.7), width=width_btn, anchor=tk.CENTER, window=self.exp_conv_btn)
+            Hovertip(self.exp_conv_btn, "Convert an experiment from Bruker format to DICOM standard")
+
+            # Label Frame for Checkbuttons
+            self.label_frame_checkbtn = tk.LabelFrame(master.my_canvas, text="Options", background=BACKGROUND_COLOR)
+            master.my_canvas.create_window(4*x_btn, int(y_btn*0.5), anchor=tk.W, window=self.label_frame_checkbtn)
+
+            # Overwrite button
             self.overwrite_flag = tk.IntVar()
-            self.btn_overwrite = tk.Checkbutton(self.conv_popup, text="Overwrite existing folders", variable=self.overwrite_flag,
-                                onvalue=1, offvalue=0)
-            self.btn_overwrite.grid(row=3, column=1, sticky='W')
-            self.btn_results_info = tk.Button(self.conv_popup, image=master.logo_info, state = 'disabled', bg=BG_BTN_COLOR, borderwidth=0, cursor=QUESTION_HAND,
-                                    command=lambda: messagebox.showinfo("XNAT-PIC","Copy additional files info"))
-            self.btn_results_info.grid(row=2, column=2, sticky='W')
-            myTipResults = Hovertip(self.btn_results_info,'Copy additional files')
-            self.btn_overwrite_info = tk.Button(self.conv_popup, image=master.logo_info, state = 'disabled', bg=BG_BTN_COLOR, borderwidth=0, cursor=QUESTION_HAND,
-                                    command=lambda: messagebox.showinfo("XNAT-PIC","If the project or the subject already exists, it will be overwritten!"))
-            self.btn_overwrite_info.grid(row=3, column=2, sticky='W')
-            myTipOverwrite = Hovertip(self.btn_overwrite_info,'If the project or the subject already exists, it will be overwritten!')
+            self.btn_overwrite = tk.Checkbutton(self.label_frame_checkbtn, text="Overwrite existing folders", variable=self.overwrite_flag,
+                                onvalue=1, offvalue=0, background=BACKGROUND_COLOR)
+            self.btn_overwrite.grid(row=1, column=1, sticky=tk.W)
+            Hovertip(self.btn_overwrite, "Overwrite already existent folders if they occur")
 
-            # QUIT button
-            def quit_event():
-                self.conv_popup.destroy()
-                enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
+            # Results button
+            def add_results_handler(*args):
+                self.params['results_flag'] = self.results_flag.get()
+            self.results_flag = tk.IntVar()
+            self.btn_results = tk.Checkbutton(self.label_frame_checkbtn, text='Copy additional files', variable=self.results_flag,
+                                onvalue=1, offvalue=0, background=BACKGROUND_COLOR, command=add_results_handler)
+            self.btn_results.grid(row=2, column=1, sticky=tk.W)
+            Hovertip(self.btn_results, "Copy additional files (results, parametric maps, graphs, ...)\ninto converted folders")
 
-            self.button_quit = tk.Button(self.conv_popup, text='Quit', font=SMALL_FONT, width=10, borderwidth=BORDERWIDTH, command=quit_event)
-            self.button_quit.grid(row=4, column=2, padx=10, sticky='E')
+            # EXIT Button 
+            def exit_converter():
+                result = messagebox.askquestion("XNAT-PIC Converter", "Do you want to exit?", icon='warning')
+                if result == 'yes':
+                    # Destroy all the existent widgets (Button, Checkbutton, ...)
+                    destroy_widgets([self.prj_conv_btn, self.sbj_conv_btn, self.exp_conv_btn, self.exit_btn,
+                                        self.label_frame_checkbtn])
+                    delete_widgets(master.my_canvas, [self.frame_title])
+                    # Restore the main frame
+                    xnat_pic_gui.choose_your_action(master)
+
+            self.exit_text = tk.StringVar() 
+            self.exit_btn = tk.Button(master.my_canvas, textvariable=self.exit_text, font=LARGE_FONT, bg=BG_BTN_COLOR_2, fg=TEXT_BTN_COLOR_2, 
+                                    borderwidth=BORDERWIDTH, cursor=CURSOR_HAND, takefocus=0)
+            self.exit_btn.configure(command=exit_converter)
+            self.exit_text.set("Exit")
+            master.my_canvas.create_window(4*x_btn + x_btn/2, y_btn*0.9, anchor=tk.CENTER, width=int(width_btn/2), window=self.exit_btn)
             
-
         def prj_convertion(self, master):
 
             # Disable the buttons
@@ -1846,41 +1881,45 @@ class xnat_pic_gui(tk.Frame):
             #############################################
             ################ Main Buttons ###############
             x_btn = int(my_width/5)
-            y_btn = int(my_height*20/100)
+            y_btn = int(my_height)
             width_btn = int(my_width/5)-30
+
+            # Frame Title
+            self.frame_title = master.my_canvas.create_text(3*x_btn, int(y_btn*0.1), anchor=tk.CENTER, fill='black', font=("Ink Free", 36, "bold"),
+                                         text="XNAT-PIC Uploader")
 
             # Upload project
             prj_text = tk.StringVar()
             self.prj_btn = tk.Button(master.my_canvas, textvariable=prj_text, font=LARGE_FONT, bg=BG_BTN_COLOR_2, fg=TEXT_BTN_COLOR_2, 
                                     borderwidth=BORDERWIDTH, command=partial(self.check_buttons, master, press_btn=0), cursor=CURSOR_HAND)
             prj_text.set("Upload Project")
-            master.my_canvas.create_window(x_btn + x_btn/2, y_btn, width = width_btn, anchor = tk.CENTER, window = self.prj_btn)
+            master.my_canvas.create_window(x_btn + x_btn/2, int(y_btn*0.2), width = width_btn, anchor = tk.CENTER, window = self.prj_btn)
             
             # Upload subject
             sub_text = tk.StringVar()
             self.sub_btn = tk.Button(master.my_canvas, textvariable=sub_text, font=LARGE_FONT, bg=BG_BTN_COLOR_2, fg=TEXT_BTN_COLOR_2, 
                                     borderwidth=BORDERWIDTH, command=partial(self.check_buttons, master, press_btn=1), cursor=CURSOR_HAND)
             sub_text.set("Upload Subject")
-            master.my_canvas.create_window(2*x_btn + x_btn/2, y_btn, width = width_btn, anchor = tk.CENTER, window = self.sub_btn)
+            master.my_canvas.create_window(2*x_btn + x_btn/2, int(y_btn*0.2), width = width_btn, anchor = tk.CENTER, window = self.sub_btn)
 
             # Upload experiment
             exp_text = tk.StringVar()
             self.exp_btn = tk.Button(master.my_canvas, textvariable=exp_text, font=LARGE_FONT, bg=BG_BTN_COLOR_2, fg=TEXT_BTN_COLOR_2, 
                                     borderwidth=BORDERWIDTH, command=partial(self.check_buttons, master, press_btn=2), cursor=CURSOR_HAND)
             exp_text.set("Upload Experiment")
-            master.my_canvas.create_window(3*x_btn + x_btn/2, y_btn, width = width_btn, anchor = tk.CENTER, window = self.exp_btn)       
+            master.my_canvas.create_window(3*x_btn + x_btn/2, int(y_btn*0.2), width = width_btn, anchor = tk.CENTER, window = self.exp_btn)       
             
             # Upload file
             file_text = tk.StringVar()
             self.file_btn = tk.Button(master.my_canvas, textvariable=file_text, font=LARGE_FONT, bg=BG_BTN_COLOR_2, fg=TEXT_BTN_COLOR_2, 
                                     borderwidth=BORDERWIDTH, command=partial(self.check_buttons, master, press_btn=3), cursor=CURSOR_HAND)
             file_text.set("Upload File")
-            master.my_canvas.create_window(4*x_btn + x_btn/2, y_btn, width = width_btn, anchor = tk.CENTER, window = self.file_btn) 
+            master.my_canvas.create_window(4*x_btn + x_btn/2, int(y_btn*0.2), width = width_btn, anchor = tk.CENTER, window = self.file_btn) 
 
             # Upload additional files
             self.add_file_flag = tk.IntVar()
             self.add_file_btn = tk.Checkbutton(master.my_canvas, variable=self.add_file_flag, onvalue=1, offvalue=0, anchor=tk.CENTER, 
-                                                background=BACKGROUND_COLOR, highlightthickness=0, )
+                                                background=BACKGROUND_COLOR, highlightthickness=0)
             y_ck_btn = int(my_height*30/100)
             self.check_add_files = master.my_canvas.create_text(4*x_btn + x_btn/2, int(my_height*30/100), anchor=tk.CENTER, 
                                                             width=width_btn/2, fill='black', font=SMALL_FONT_2, text="Additional Files")
@@ -2065,7 +2104,7 @@ class xnat_pic_gui(tk.Frame):
             #############################################
             ################ EXIT Button ################
             def exit_uploader():
-                result = messagebox.askquestion("XNAT-PIC Uploader", "Do you want to exit anyway?", icon='warning')
+                result = messagebox.askquestion("XNAT-PIC Uploader", "Do you want to exit?", icon='warning')
                 if result == 'yes':
                     # Destroy all the existent widgets (Button, OptionMenu, ...)
                     destroy_widgets([self.prj_btn, self.sub_btn, self.exp_btn, self.file_btn, self.add_file_btn, self.custom_var_list,
@@ -2077,7 +2116,7 @@ class xnat_pic_gui(tk.Frame):
                                     self.next_btn, self.exit_btn])
                     # Delete all widgets that cannot be destroyed
                     delete_widgets(master.my_canvas, [self.select_prj, self.select_sub, self.select_exp, self.check_add_files,
-                                                    self.check_n_custom_var])
+                                                    self.check_n_custom_var, self.frame_title])
                     # Perform disconnection of the session if it is alive
                     try:
                         self.session.disconnect()
