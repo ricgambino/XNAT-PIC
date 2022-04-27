@@ -39,7 +39,6 @@ import pandas
 
 PATH_IMAGE = "images\\"
 PERCENTAGE_SCREEN = 1  # Defines the size of the canvas. If equal to 1 (100%) ,it takes the whole screen
-# BACKGROUND_COLOR = "#E5EAF0"
 BACKGROUND_COLOR = "#ffffff"
 THEME_COLOR = "#E5EAF0"
 THEME_COLOR_2 = '#0070C0'
@@ -230,13 +229,13 @@ class xnat_pic_gui():
         self.convert_btn = ttk.Button(self.my_canvas, text="DICOM Converter", style="Accentbutton",
                                     command=partial(self.bruker2dicom_conversion, self), cursor=CURSOR_HAND)
 
-        self.my_canvas.create_window(3*x_btn, y_btn*50/100, width = width_btn, anchor = tk.CENTER, window = self.convert_btn)
+        self.my_canvas.create_window(3*x_btn, y_btn*50/100, width = width_btn, anchor = tk.CENTER, window=self.convert_btn)
         Hovertip(self.convert_btn,'Convert images from Bruker ParaVision format to DICOM standard')
         
         # Fill in the info
         self.info_btn = ttk.Button(self.my_canvas, text="Project Data", style="Accentbutton", 
                                     command=partial(self.metadata, self), cursor=CURSOR_HAND)
-        self.my_canvas.create_window(3*x_btn, y_btn*60/100, width = width_btn, anchor = tk.CENTER, window = self.info_btn)
+        self.my_canvas.create_window(3*x_btn, y_btn*60/100, width = width_btn, anchor = tk.CENTER, window=self.info_btn)
         Hovertip(self.info_btn,'Fill in the information about the acquisition')
 
         # Upload files
@@ -244,7 +243,7 @@ class xnat_pic_gui():
             self.XNATUploader(self)
         self.upload_btn = ttk.Button(self.my_canvas, text="Uploader", style="Accentbutton", 
                                         command=upload_callback, cursor=CURSOR_HAND)
-        self.my_canvas.create_window(3*x_btn, y_btn*70/100, width = width_btn, anchor = tk.CENTER, window = self.upload_btn)
+        self.my_canvas.create_window(3*x_btn, y_btn*70/100, width = width_btn, anchor = tk.CENTER, window=self.upload_btn)
         Hovertip(self.upload_btn,'Upload DICOM images to XNAT')
 
         # Close button
@@ -252,7 +251,7 @@ class xnat_pic_gui():
             self.root.destroy()
         self.close_btn = ttk.Button(self.my_canvas, text="Quit", style="Accentbutton", command=close_window,
                                         cursor=CURSOR_HAND)
-        self.my_canvas.create_window(4*x_btn + x_btn/2, y_btn*90/100, width = width_btn/2, anchor = tk.CENTER, window = self.close_btn)
+        self.my_canvas.create_window(4*x_btn + x_btn/2, y_btn*90/100, width = width_btn/2, anchor=tk.CENTER, window=self.close_btn)
 
     def get_page(self):
         return self.root   
@@ -1446,7 +1445,7 @@ class xnat_pic_gui():
             # Start with a popup to get credentials
             login_popup = tk.Toplevel()
             login_popup.title("XNAT-PIC ~ Login")
-            login_popup.geometry("%dx%d+%d+%d" % (440, 190, my_width/3, my_height/4))
+            login_popup.geometry("%dx%d+%d+%d" % (540, 220, my_width/3, my_height/4))
 
             # Closing window event: if it occurs, the popup must be destroyed and the main frame buttons must be enabled
             def closed_window():
@@ -1466,7 +1465,8 @@ class xnat_pic_gui():
             def enable_address_modification(*args):
                 login_popup.entry_address.configure(state='normal')
 
-            login_popup.modify_address_btn = tk.Checkbutton(login_popup, text="Change address", command=enable_address_modification, state='disabled')
+            login_popup.modify_address_btn = ttk.Radiobutton(login_popup, text="Change address", command=enable_address_modification, 
+                                                            state='disabled')
             login_popup.modify_address_btn.grid(row=1, column=2, padx=1, ipadx=1, sticky=tk.W)
            
             # XNAT USER 
@@ -1548,7 +1548,7 @@ class xnat_pic_gui():
             login_popup.entry_psw.var = tk.StringVar()
             login_popup.entry_psw["textvariable"] = login_popup.entry_psw.var
             login_popup.entry_psw.grid(row=3, column=1, padx=1, ipadx=1)
-            login_popup.toggle_btn = tk.Button(login_popup, text='Show Password', command=toggle_password, font=("Calibri", 10))
+            login_popup.toggle_btn = ttk.Button(login_popup, text='Show Password', command=toggle_password, style="Togglebutton")
             login_popup.toggle_btn.grid(row=3, column=2)
 
             # Forgot password button
@@ -1567,21 +1567,23 @@ class xnat_pic_gui():
             login_popup.register_btn.grid(row=4, column=2, padx=1, ipadx=1)
             login_popup.register_btn.bind("<Button-1>", register)
 
+            # Label Frame for HTTP buttons
+
             # HTTP/HTTPS 
             login_popup.http = tk.StringVar()
-            login_popup.button_http = tk.Radiobutton(login_popup, text=" http:// ", variable=login_popup.http, value="http://", font=("Calibri", 10))
+            login_popup.button_http = ttk.Radiobutton(login_popup, text=" http:// ", variable=login_popup.http, value="http://")
             login_popup.button_http.grid(row=5, column=0, sticky=tk.E)
-            login_popup.button_http.select()
-            login_popup.button_https = tk.Radiobutton(login_popup, text=" https:// ", variable=login_popup.http, value="https://", font=("Calibri", 10))
+            login_popup.http.set("http://")
+            login_popup.button_https = ttk.Radiobutton(login_popup, text=" https:// ", variable=login_popup.http, value="https://")
             login_popup.button_https.grid(row=5, column=1)
 
             # SAVE CREDENTIALS CHECKBUTTON
             login_popup.remember = tk.IntVar()
-            login_popup.btn_remember = tk.Checkbutton(login_popup, text="Remember me", variable=login_popup.remember, state='disabled', font=("Calibri", 10))
+            login_popup.btn_remember = ttk.Checkbutton(login_popup, text="Remember me", variable=login_popup.remember, state='disabled')
             login_popup.btn_remember.grid(row=5, column=2, padx=1, ipadx=1, sticky=tk.W)
 
             # CONNECTION
-            login_popup.button_connect = tk.Button(login_popup, text="Login", font=SMALL_FONT, width=10, borderwidth=BORDERWIDTH,
+            login_popup.button_connect = ttk.Button(login_popup, text="Login", style="Accentbutton",
                                                     command=partial(self.login, login_popup, master))
             login_popup.button_connect.grid(row=6, column=2, padx=1, ipadx=1, sticky=tk.W)
 
@@ -1590,7 +1592,7 @@ class xnat_pic_gui():
                 login_popup.destroy()
                 enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
 
-            login_popup.button_quit = tk.Button(login_popup, text='Quit', font=SMALL_FONT, width=10, borderwidth=BORDERWIDTH, command=quit_event)
+            login_popup.button_quit = ttk.Button(login_popup, text='Quit', style="Accentbutton", command=quit_event)
             login_popup.button_quit.grid(row=6, column=0, padx=10, ipadx=1, sticky=tk.E)
 
         def load_saved_credentials(self, popup):
