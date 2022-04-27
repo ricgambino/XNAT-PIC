@@ -571,7 +571,7 @@ class xnat_pic_gui(tk.Frame):
         def __init__(self, master):
 
             # Disable all buttons
-            disable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
+            disable_buttons([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn])
 
             # Choose your directory
             self.information_folder = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC: Select project directory!")
@@ -1418,7 +1418,7 @@ class xnat_pic_gui(tk.Frame):
         def __init__(self, master):
             
             # Disable main frame buttons
-            disable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
+            disable_buttons([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn])
 
             # Start with a popup to get credentials
             login_popup = tk.Toplevel()
@@ -1837,7 +1837,7 @@ class xnat_pic_gui(tk.Frame):
                            
             #################### Update the frame ####################
             try:
-                destroy_widgets([master.convert_btn, master.info_btn, master.upload_btn])
+                destroy_widgets([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn])
                 master.my_canvas.delete(master.img2)
             except:
                 pass
