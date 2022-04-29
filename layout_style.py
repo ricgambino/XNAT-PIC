@@ -29,11 +29,24 @@ class MyStyle():
 
         self.style.theme_use("alt")
 
+        self.style.configure("TLabel", background="#ffffff", foreground="black")
+        self.style.configure("Popup.TLabel", background="#ffffff", foreground="black", font=SMALL_FONT_2)
+        self.style.configure("Attach.TLabel", background="#ffffff", foreground="blue", font=("Calibri", 8, "underline"))
+
         self.style.configure("TButton", background="#0080FF", foreground="white", borderwidth=0, font=("Calibri", 20, "bold"),
-                                anchor=tk.CENTER, relief=tk.FLAT, padding=10)
-        self.style.map("TButton", background=[('active', '#0066cc')], foreground=[('active', '!disabled', 'white')])
+                                anchor=tk.CENTER, relief=tk.FLAT, padding=10, cursor=CURSOR_HAND)
+        self.style.map("TButton", background=[('active', '#0066cc'), ('disabled', '#d5dde7')], foreground=[('active', 'white'), ('disabled', "#E5EAF0")])
+
+        self.style.configure("MainPopup.TButton", background="#0080FF", foreground="white", borderwidth=0, font=("Calibri", 16, "bold"),
+                                anchor=tk.CENTER, relief=tk.FLAT, padding=5)
+
+        self.style.configure("Popup.TButton", background="#d5dde7", foreground="black", borderwidth=0, font=("Calibri", 8),
+                                anchor=tk.CENTER, relief=tk.FLAT, padding=2)
+        self.style.map("Popup.TButton", background=[('disabled', '#b4c3d4'), ('active', '#d5dde7')], foreground=[('disabled', 'white'), ('active', "black")])
+
         self.style.configure("TCheckbutton", background="#ffffff", borderwidth=0, font=("Calibri", 12),
                                 anchor=tk.CENTER, relief=tk.FLAT)
+<<<<<<< HEAD
         self.style.map("TCheckbutton", background=[('active', "#ffffff")], highlightcolor=[('focus', "#ffffff")])
         self.style.configure("TLabelframe", background="#ffffff", borderwidth=1,
                                 anchor=tk.CENTER, highlightcolor="#0080FF")
@@ -46,6 +59,39 @@ class MyStyle():
         self.style.configure("TNotebook.Tab", padding = [1, 1], background = THEME_COLOR, font = ("Calibri", 12))
         self.style.map("TNotebook.Tab", background = [("selected", BG_BTN_COLOR_2)], foreground = [("selected", "white")], expand = [("selected", [1, 1, 1, 0])])
 
+=======
+        self.style.map("TCheckbutton", background=[('active', "#ffffff")])
+
+        self.style.configure("Popup.TCheckbutton", background="#ffffff", borderwidth=0, font=("Calibri", 8),
+                                anchor=tk.CENTER, relief=tk.FLAT)
+
+        self.style.configure("TRadiobutton", background="#ffffff", borderwidth=0, anchor=tk.CENTER)
+        self.style.map("TRadiobutton", background=[('active', "#ffffff")])
+
+        self.style.configure("TEntry", background="white", foreground="black", borderwidth=0, relief=tk.FLAT)
+        self.style.map("TEntry", background=[('disabled', "white")], foreground=[('disabled', 'white')])
+
+        self.style.configure("TMenubutton", background="white", foreground="black", borderwidth=0, relief=tk.FLAT)
+
+        self.style.configure("TCombobox", background="#ffffff", foreground="black", borderwidth=0, relief=tk.FLAT)
+
+        self.style.configure("TLabelframe", background="#ffffff", borderwidth=2,
+                                anchor=tk.CENTER, highlightcolor="#0080FF")
+        self.style.configure("TLabelframe.Label", font=("Calibri", 12), background="#ffffff")
+
+        self.style.configure("Popup.TLabelframe", background="#ffffff", borderwidth=2,
+                                anchor=tk.CENTER, highlightcolor="#0080FF")
+        self.style.configure("Popup.TLabelframe.Label", font=("Calibri", 12), background="#ffffff")
+        
+        self.style.configure("TNotebook", tabmargins = [2, 5, 2, 0], background = 'white')
+        self.style.configure("TNotebook.Tab", padding = [1, 1], background=THEME_COLOR, font=SMALL_FONT_2)
+        self.style.map("TNotebook.Tab", background = [("selected", BG_BTN_COLOR_2)], foreground = [("selected", "white")], expand = [("selected", [1, 1, 1, 0])])
+
+        self.style.configure("Treeview", background="white", foreground="black", relief=tk.FLAT, anchor=tk.CENTER, font=SMALL_FONT_2,
+                                        highlightthickness=0, borderwidth=3)
+        self.style.configure("Treeview.Heading", background="white", foreground="black", relief=tk.FLAT, anchor=tk.CENTER, font=SMALL_FONT_2,
+                                        highlightthickness=0, borderwidth=3)
+>>>>>>> origin/master
 
     def get_style(self):
         return self.style
