@@ -714,7 +714,7 @@ class xnat_pic_gui():
                 self.results_dict.update(tmp_dict)
 
             #################### Update the frame ####################
-            destroy_widgets([master.convert_btn.destroy(), master.info_btn.destroy(), master.upload_btn.destroy()])
+            destroy_widgets([master.convert_btn.destroy(), master.info_btn.destroy(), master.upload_btn.destroy(), master.close_btn])
             master.my_canvas.delete(master.img2)
             x_btn = int(my_width/5)
             y_btn = int(my_height)
@@ -738,6 +738,7 @@ class xnat_pic_gui():
             master.root.config(menu=self.menu)
 
             #################### Folder list #################### 
+            s = ttk.Style()
             ### Selected folder label
             x_folder_list = int(my_width*23/100)
             name_selected_project = master.my_canvas.create_text(3*x_btn, int(y_btn*0.11), anchor=tk.CENTER, fill='black', font=("Ink Free", 22),
@@ -748,19 +749,19 @@ class xnat_pic_gui():
             w_notebook = int(my_width*20.5/100)
 
             ### Tab Notebook
-            canvas_notebook = tk.Canvas(master.my_canvas, borderwidth = 0, highlightbackground="white")
-            master.my_canvas.create_window(x_folder_list, y_folder_list1, width = w_notebook, height = h_notebook, anchor = tk.NW, window=canvas_notebook)
+            self.canvas_notebook = tk.Canvas(master.my_canvas, borderwidth = 0, highlightbackground="white")
+            master.my_canvas.create_window(x_folder_list, y_folder_list1, width = w_notebook, height = h_notebook, anchor = tk.NW, window=self.canvas_notebook)
             
-            frame_nb = tk.Frame(canvas_notebook, background=THEME_COLOR)
-            canvas_notebook.create_window((0,0), window=frame_nb, anchor="nw", tags="frame")
+            self.frame_nb = tk.Frame(self.canvas_notebook)
+            self.canvas_notebook.create_window((0,0), window=self.frame_nb, anchor="nw", tags="frame")
 
             # Create an object of horizontal scrollbar to scroll tab
-            hscrollbar = tk.Scrollbar(master.root, orient="horizontal", command=canvas_notebook.xview, activebackground = 'white', bg = 'white')
+            self.hscrollbar = tk.Scrollbar(master.root, orient="horizontal", command=self.canvas_notebook.xview, activebackground = 'white', bg = 'white')
             y_scrollbar = int(my_height*74/100)
             x_scrollbar = int(my_width*32/100)
-            master.my_canvas.create_window(x_scrollbar, y_scrollbar, anchor = tk.NW, window=hscrollbar)
+            master.my_canvas.create_window(x_scrollbar, y_scrollbar, anchor = tk.NW, window=self.hscrollbar)
 
-            self.notebook = ttk.Notebook(frame_nb) 
+            self.notebook = ttk.Notebook(self.frame_nb) 
             self.notebook.config(width = w_notebook, height = h_notebook)
             self.notebook.pack()
             
@@ -773,21 +774,22 @@ class xnat_pic_gui():
             master.my_canvas.create_window(x_listbox, y_listbox, width = w_listbox, height = h_listbox, anchor = tk.NW, window=self.my_listbox)
             
             # # Yscrollbar for listbox
-            self.my_yscrollbar = ttk.Scrollbar(master.my_canvas, orient="vertical")
+            self.my_yscrollbar = tk.Scrollbar(master.my_canvas, orient="vertical")
             self.my_listbox.config(yscrollcommand = self.my_yscrollbar.set)
             self.my_yscrollbar.config(command = self.my_listbox.yview)
-            x_my_yscrollbar = int(my_width*22.3/100)
-            y_my_yscrollbar = int(my_height*18.5/100)
-            h_yscrollbar = int(my_height*52.5/100)
+            x_my_yscrollbar = int(my_width*22/100)
+            y_my_yscrollbar = int(my_height*18.8/100)
+            h_yscrollbar = int(my_height*52.4/100)
             master.my_canvas.create_window(x_my_yscrollbar, y_my_yscrollbar, height = h_yscrollbar, anchor = tk.NW, window=self.my_yscrollbar)
 
             # Xscrollbar for listbox
-            self.my_xscrollbar = ttk.Scrollbar(master.my_canvas, orient="horizontal")
+            self.my_xscrollbar = tk.Scrollbar(master.my_canvas, orient="horizontal")
             self.my_listbox.config(xscrollcommand = self.my_xscrollbar.set)
             self.my_xscrollbar.config(command = self.my_listbox.xview)
+            x_my_xscrollbar = int(my_width*23.1/100)
             y_my_xscrollbar = int(my_height*71/100)
-            master.my_canvas.create_window(x_folder_list, y_my_xscrollbar, width = w_notebook, anchor = tk.NW, window=self.my_xscrollbar)
-
+            w_my_xscrollbar = int(my_width*20.4/100)
+            master.my_canvas.create_window(x_my_xscrollbar, y_my_xscrollbar, width = w_my_xscrollbar, anchor = tk.NW, window=self.my_xscrollbar)
 
             # Sorts the tabs first by length and then alphabetically
             for key in sorted(self.todos, key=len):
@@ -796,17 +798,14 @@ class xnat_pic_gui():
             self.notebook.enable_traversal()
             
             def frame_configure(event):
-                canvas_notebook.configure(scrollregion=canvas_notebook.bbox("all"))
+                self.canvas_notebook.configure(scrollregion=self.canvas_notebook.bbox("all"))
 
-            frame_nb.bind("<Configure>", frame_configure)
+            self.frame_nb.bind("<Configure>", frame_configure)
            
             #################### Subject form ####################
             # ID
             # Label frame for ID: folder selected, project, subject and acq. date
-            s = ttk.Style()
-            s.configure('TLabelframe.Label', font=SMALL_FONT)
-            s.configure("TLabelframe", borderwidth=10)
-            self.label_frame_ID = ttk.LabelFrame(master.my_canvas, text="ID", style = "TLabelframe")
+            self.label_frame_ID = ttk.LabelFrame(master.my_canvas, text="ID", style = "Metadata.TLabelframe")
 
             #
             x_lbl_ID = int(my_width*48/100)
@@ -815,9 +814,9 @@ class xnat_pic_gui():
             h_lbl_ID = int(my_height*32/100)
             #
             # Scroll bar in the Label frame ID
-            self.canvas_ID = tk.Canvas(self.label_frame_ID)
-            self.frame_ID = tk.Frame(self.canvas_ID)
-            self.vsb_ID = ttk.Scrollbar(self.label_frame_ID, orient="vertical", command=self.canvas_ID.yview)
+            self.canvas_ID = tk.Canvas(self.label_frame_ID, bg='white')
+            self.frame_ID = tk.Frame(self.canvas_ID, bg='white')
+            self.vsb_ID = tk.Scrollbar(self.label_frame_ID, orient="vertical", command=self.canvas_ID.yview)
             self.canvas_ID.configure(yscrollcommand=self.vsb_ID.set, width=w_lbl_ID, height=h_lbl_ID)       
 
             self.vsb_ID.pack(side="right", fill="y")
@@ -859,16 +858,16 @@ class xnat_pic_gui():
             ####################################################################
             # Custom Variables (CV)
             # Label frame for Custom Variables: group, dose, timepoint
-            self.label_frame_CV = ttk.LabelFrame(master.my_canvas, text="Custom Variables", style = "TLabelframe")
+            self.label_frame_CV = ttk.LabelFrame(master.my_canvas, text="Custom Variables", style = "Metadata.TLabelframe")
             x_lbl_CV = x_lbl_ID
             y_lbl_CV = int(my_height*50/100)
             h_lbl_CV = int(my_height*20/100)
             w_lbl_CV = int(my_width*45/100)
 
             # Scroll bar in the Label frame CV
-            self.canvas_CV = tk.Canvas(self.label_frame_CV)
-            self.frame_CV = tk.Frame(self.canvas_CV)
-            self.vsb_CV = ttk.Scrollbar(self.label_frame_CV, orient="vertical", command=self.canvas_CV.yview)
+            self.canvas_CV = tk.Canvas(self.label_frame_CV, bg='white')
+            self.frame_CV = tk.Frame(self.canvas_CV, bg='white')
+            self.vsb_CV = tk.Scrollbar(self.label_frame_CV, orient="vertical", command=self.canvas_CV.yview)
             self.canvas_CV.configure(yscrollcommand=self.vsb_CV.set, width=w_lbl_CV, height=h_lbl_CV)       
 
             self.vsb_CV.pack(side="right", fill="y")
@@ -1419,8 +1418,9 @@ class xnat_pic_gui():
         def exit_metadata(self, master):
             result = messagebox.askquestion("Exit", "Do you want to exit?", icon='warning')
             if result == 'yes':
-                destroy_widgets([self.menu, self.label, self.notebook, self.label_frame_ID, self.label_frame_CV, self.modify_btn,
-                self.confirm_btn, self.rightArrow, self.leftArrow])
+                destroy_widgets([self.menu, self.notebook, self.label_frame_ID, self.label_frame_CV, self.modify_btn,
+                self.confirm_btn, self.hscrollbar, self.my_xscrollbar, self.my_yscrollbar, self.my_listbox, self.canvas_notebook])
+
                 xnat_pic_gui.choose_your_action(master)
     
     class XNATUploader():
