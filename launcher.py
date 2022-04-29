@@ -746,13 +746,12 @@ class xnat_pic_gui():
             y_folder_list1 = int(my_height*15/100)
             h_notebook = int(my_height*56/100)
             w_notebook = int(my_width*20.5/100)
-            master.style.configure('Frame2.TFrame', background=THEME_COLOR)
 
             ### Tab Notebook
             canvas_notebook = tk.Canvas(master.my_canvas, borderwidth = 0, highlightbackground="white")
             master.my_canvas.create_window(x_folder_list, y_folder_list1, width = w_notebook, height = h_notebook, anchor = tk.NW, window=canvas_notebook)
             
-            frame_nb = ttk.Frame(canvas_notebook, style='Frame2.TFrame')
+            frame_nb = tk.Frame(canvas_notebook, background=THEME_COLOR)
             canvas_notebook.create_window((0,0), window=frame_nb, anchor="nw", tags="frame")
 
             # Create an object of horizontal scrollbar to scroll tab
@@ -792,7 +791,7 @@ class xnat_pic_gui():
 
             # Sorts the tabs first by length and then alphabetically
             for key in sorted(self.todos, key=len):
-                self.notebook.add(ttk.Frame(self.notebook, style='Frame2.TFrame'), text=key, underline=0, sticky=tk.NE + tk.SW)
+                self.notebook.add(tk.Frame(self.notebook, background=THEME_COLOR), text=key, underline=0, sticky=tk.NE + tk.SW)
 
             self.notebook.enable_traversal()
             
