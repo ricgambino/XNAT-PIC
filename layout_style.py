@@ -46,20 +46,6 @@ class MyStyle():
 
         self.style.configure("TCheckbutton", background="#ffffff", borderwidth=0, font=("Calibri", 12),
                                 anchor=tk.CENTER, relief=tk.FLAT)
-<<<<<<< HEAD
-        self.style.map("TCheckbutton", background=[('active', "#ffffff")], highlightcolor=[('focus', "#ffffff")])
-        self.style.configure("TLabelframe", background="#ffffff", borderwidth=1,
-                                anchor=tk.CENTER, highlightcolor="#0080FF")
-        self.style.configure("TLabelframe.Label", font=("Calibri", 12, 'bold'), background="#ffffff")
-
-        self.style.configure("Metadata.TLabelframe", background="#ffffff", anchor=tk.CENTER, highlightbackground = "#0080FF", highlightcolor="#ffffff", borderwidth=3, relief='solid')
-        self.style.configure("Metadata.TLabelframe.Label", font=("Calibri", 12, 'bold'), background="#ffffff")
-
-        self.style.configure("TNotebook", tabmargins = [2, 5, 2, 0], background = 'white')
-        self.style.configure("TNotebook.Tab", padding = [1, 1], background = THEME_COLOR, font = ("Calibri", 12))
-        self.style.map("TNotebook.Tab", background = [("selected", BG_BTN_COLOR_2)], foreground = [("selected", "white")], expand = [("selected", [1, 1, 1, 0])])
-
-=======
         self.style.map("TCheckbutton", background=[('active', "#ffffff")])
 
         self.style.configure("Popup.TCheckbutton", background="#ffffff", borderwidth=0, font=("Calibri", 8),
@@ -91,7 +77,6 @@ class MyStyle():
                                         highlightthickness=0, borderwidth=3)
         self.style.configure("Treeview.Heading", background="white", foreground="black", relief=tk.FLAT, anchor=tk.CENTER, font=SMALL_FONT_2,
                                         highlightthickness=0, borderwidth=3)
->>>>>>> origin/master
 
     def get_style(self):
         return self.style
