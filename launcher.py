@@ -37,7 +37,7 @@ from multiprocessing import Pool, cpu_count
 from credential_manager import CredentialManager
 from win32api import GetMonitorInfo, MonitorFromPoint
 import pandas
-from layout_style import AzureStyle
+from layout_style import MyStyle
 
 PATH_IMAGE = "images\\"
 PERCENTAGE_SCREEN = 1  # Defines the size of the canvas. If equal to 1 (100%) ,it takes the whole screen
@@ -128,15 +128,8 @@ class xnat_pic_gui():
         
         self.root = tk.Tk()
         self.root.state('zoomed')
-        # self.root = master
-        self.style = AzureStyle()
-        self.style.apply_theme()
-        # # Define the style of the root screen
-        # self.style = ttk.Style(self.root)
-        # self.root.tk.call('source', 'azure/azure.tcl')
-        # self.style.theme_use('azure')
-        # self.style.configure("Accentbutton", font=("Calibri", 20, "bold"), foreground='white')
-        # self.style.configure("Togglebutton", foreground='white')
+
+        self.style = MyStyle().get_style
         #self.root.state('zoomed')
         ### GET PRIMARY SCREEN RESOLUTION
         ### MADE FOR MULTISCREEN ENVIRONMENTS
@@ -207,12 +200,9 @@ class xnat_pic_gui():
             self.enter_btn.destroy()
             xnat_pic_gui.choose_your_action(self)
 
-        # enter_text = tk.StringVar()
-        self.enter_btn = ttk.Button(self.my_canvas, text="ENTER", 
-                                    style="Main.TButton",
+        self.enter_btn = ttk.Button(self.my_canvas, text="ENTER",
                                     command=enter_handler, 
                                     cursor=CURSOR_HAND)
-        # enter_text.set("ENTER")
         self.my_canvas.create_window(int(my_width/5 + ((4*my_width/5)/2)), int(my_height*70/100), width = int(logo.size[0]/2), 
                                     anchor=tk.CENTER, window = self.enter_btn)
         self.root.mainloop()
@@ -231,14 +221,14 @@ class xnat_pic_gui():
         width_btn = int(my_width/5)
 
         # Convert files Bruker2DICOM
-        self.convert_btn = ttk.Button(self.my_canvas, text="DICOM Converter", style="Main.TButton",
+        self.convert_btn = ttk.Button(self.my_canvas, text="DICOM Converter", style="TButton",
                                     command=partial(self.bruker2dicom_conversion, self), cursor=CURSOR_HAND)
 
         self.my_canvas.create_window(3*x_btn, y_btn*50/100, width = width_btn, anchor = tk.CENTER, window=self.convert_btn)
         Hovertip(self.convert_btn,'Convert images from Bruker ParaVision format to DICOM standard')
         
         # Fill in the info
-        self.info_btn = ttk.Button(self.my_canvas, text="Project Data", style="Main.TButton",
+        self.info_btn = ttk.Button(self.my_canvas, text="Project Data", style="TButton",
                                     command=partial(self.metadata, self), cursor=CURSOR_HAND)
         self.my_canvas.create_window(3*x_btn, y_btn*60/100, width = width_btn, anchor = tk.CENTER, window=self.info_btn)
         Hovertip(self.info_btn,'Fill in the information about the acquisition')
@@ -246,7 +236,7 @@ class xnat_pic_gui():
         # Upload files
         def upload_callback(*args):
             self.XNATUploader(self)
-        self.upload_btn = ttk.Button(self.my_canvas, text="Uploader", style="Main.TButton",
+        self.upload_btn = ttk.Button(self.my_canvas, text="Uploader", style="TButton",
                                         command=upload_callback, cursor=CURSOR_HAND)
         self.my_canvas.create_window(3*x_btn, y_btn*70/100, width = width_btn, anchor = tk.CENTER, window=self.upload_btn)
         Hovertip(self.upload_btn,'Upload DICOM images to XNAT')
@@ -254,7 +244,7 @@ class xnat_pic_gui():
         # Close button
         def close_window(*args):
             self.root.destroy()
-        self.close_btn = ttk.Button(self.my_canvas, text="Quit", command=close_window, style="Main.TButton",
+        self.close_btn = ttk.Button(self.my_canvas, text="Quit", command=close_window, style="TButton",
                                         cursor=CURSOR_HAND)
         self.my_canvas.create_window(4*x_btn + x_btn/2, y_btn*90/100, width = width_btn/2, anchor=tk.CENTER, window=self.close_btn)
 
@@ -285,7 +275,7 @@ class xnat_pic_gui():
             # Convert Project
             def convert_project_handler(*args):
                 self.prj_convertion(master)
-            self.prj_conv_btn = ttk.Button(master.my_canvas, text="Convert Project", 
+            self.prj_conv_btn = ttk.Button(master.my_canvas, text="Convert Project", style="TButton",
                                         command=convert_project_handler, cursor=CURSOR_HAND)
             master.my_canvas.create_window(3*x_btn, int(y_btn*0.5), width=width_btn, anchor=tk.CENTER, window=self.prj_conv_btn)
             Hovertip(self.prj_conv_btn, "Convert a project from Bruker format to DICOM standard")
@@ -293,7 +283,7 @@ class xnat_pic_gui():
             # Convert Subject
             def convert_subject_handler(*args):
                 self.sbj_convertion(master)
-            self.sbj_conv_btn = ttk.Button(master.my_canvas, text="Convert Subject",
+            self.sbj_conv_btn = ttk.Button(master.my_canvas, text="Convert Subject", style="TButton",
                                          command=convert_subject_handler, cursor=CURSOR_HAND)
             master.my_canvas.create_window(3*x_btn, int(y_btn*0.6), width=width_btn, anchor=tk.CENTER, window=self.sbj_conv_btn)
             Hovertip(self.sbj_conv_btn, "Convert a subject from Bruker format to DICOM standard")
@@ -301,19 +291,19 @@ class xnat_pic_gui():
             # Convert Experiment
             def convert_experiment_handler(*args):
                 self.experiment_convertion(master)
-            self.exp_conv_btn = ttk.Button(master.my_canvas, text="Convert Experiment",
+            self.exp_conv_btn = ttk.Button(master.my_canvas, text="Convert Experiment", style="TButton",
                                          command=convert_experiment_handler, cursor=CURSOR_HAND)
             master.my_canvas.create_window(3*x_btn, int(y_btn*0.7), width=width_btn, anchor=tk.CENTER, window=self.exp_conv_btn)
             Hovertip(self.exp_conv_btn, "Convert an experiment from Bruker format to DICOM standard")
 
             # Label Frame for Checkbuttons
-            self.label_frame_checkbtn = ttk.LabelFrame(master.my_canvas, text="Options")
+            self.label_frame_checkbtn = ttk.LabelFrame(master.my_canvas, text="Options", style="TLabelframe")
             master.my_canvas.create_window(4*x_btn, int(y_btn*0.5), anchor=tk.W, window=self.label_frame_checkbtn)
 
             # Overwrite button
             self.overwrite_flag = tk.IntVar()
             self.btn_overwrite = ttk.Checkbutton(self.label_frame_checkbtn, text="Overwrite existing folders", variable=self.overwrite_flag,
-                                onvalue=1, offvalue=0, style="Switch")
+                                onvalue=1, offvalue=0, style='Mini.TCheckbutton')
             self.btn_overwrite.grid(row=1, column=1, sticky=tk.W, padx=10, pady=10)
             Hovertip(self.btn_overwrite, "Overwrite already existent folders if they occur")
 
@@ -322,7 +312,7 @@ class xnat_pic_gui():
                 self.params['results_flag'] = self.results_flag.get()
             self.results_flag = tk.IntVar()
             self.btn_results = ttk.Checkbutton(self.label_frame_checkbtn, text='Copy additional files', variable=self.results_flag,
-                                onvalue=1, offvalue=0, command=add_results_handler)
+                                onvalue=1, offvalue=0, command=add_results_handler, style="Mini.TCheckbutton")
             self.btn_results.grid(row=2, column=1, sticky=tk.W, padx=10, pady=10)
             Hovertip(self.btn_results, "Copy additional files (results, parametric maps, graphs, ...)\ninto converted folders")
 
