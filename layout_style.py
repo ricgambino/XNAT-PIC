@@ -56,10 +56,14 @@ class MyStyle():
 
         self.style.configure("TEntry", background="white", foreground="black", borderwidth=0, relief=tk.FLAT)
         self.style.map("TEntry", background=[('disabled', "white")], foreground=[('disabled', 'white')])
+        
+        self.style.map("Metadata.TEntry",fieldbackground=[("active", "white"), ("disabled", THEME_COLOR)],
+                                        foreground=[("active", "white"), ("disabled", 'black')])
 
         self.style.configure("TMenubutton", background="white", foreground="black", borderwidth=0, relief=tk.FLAT)
 
         self.style.configure("TCombobox", background="#ffffff", foreground="black", borderwidth=0, relief=tk.FLAT)
+        self.style.map("TCombobox", fieldbackground=[("active", "white"), ("disabled", THEME_COLOR)])
 
         self.style.configure("TLabelframe", background="#ffffff", borderwidth=2,
                                 anchor=tk.CENTER, highlightcolor="#0080FF")
@@ -69,8 +73,11 @@ class MyStyle():
                                 anchor=tk.CENTER, highlightcolor="#0080FF")
         self.style.configure("Popup.TLabelframe.Label", font=("Calibri", 12), background="#ffffff")
         
+        self.style.configure("Metadata.TLabelframe", background="#ffffff", anchor=tk.CENTER, highlightbackground = "#0080FF", highlightcolor="#ffffff", borderwidth=3, relief='solid')
+        self.style.configure("Metadata.TLabelframe.Label", font=("Calibri", 12, 'bold'), background="#ffffff")
+
         self.style.configure("TNotebook", tabmargins = [2, 5, 2, 0], background = 'white')
-        self.style.configure("TNotebook.Tab", padding = [1, 1], background=THEME_COLOR, font=SMALL_FONT_2)
+        self.style.configure("TNotebook.Tab", padding = [1, 1], background=THEME_COLOR, font=("Calibri", 12))
         self.style.map("TNotebook.Tab", background = [("selected", BG_BTN_COLOR_2)], foreground = [("selected", "white")], expand = [("selected", [1, 1, 1, 0])])
 
         self.style.configure("Treeview", background="white", foreground="black", relief=tk.FLAT, anchor=tk.CENTER, font=SMALL_FONT_2,

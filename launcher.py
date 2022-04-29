@@ -745,7 +745,7 @@ class xnat_pic_gui():
             s = ttk.Style()
             ### Selected folder label
             x_folder_list = int(my_width*23/100)
-            name_selected_project = master.my_canvas.create_text(3*x_btn, int(y_btn*0.11), anchor=tk.CENTER, fill='black', font=("Ink Free", 22),
+            self.name_selected_project = master.my_canvas.create_text(3*x_btn, int(y_btn*0.11), anchor=tk.CENTER, fill='black', font=("Ink Free", 22),
                                          text='Selected Project: ' + self.project_name)
             
             y_folder_list1 = int(my_height*15/100)
@@ -841,16 +841,16 @@ class xnat_pic_gui():
             count = 0
             for key in keys_ID:
                 # Variable
-                self.entries_variable_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT, takefocus = 0, width=15))
+                self.entries_variable_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT, takefocus = 0, width=15, style = 'Metadata.TEntry'))
                 self.entries_variable_ID[-1].insert(0, key)
                 self.entries_variable_ID[-1]['state'] = 'disabled'
                 self.entries_variable_ID[-1].grid(row=count, column=0, padx = 5, pady = 5, sticky=W)
                 # Value
                 if key == "Acq. date":
-                    self.entries_value_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT, state='disabled', takefocus = 0, width=20))
+                    self.entries_value_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT, state='disabled', takefocus = 0, width=20, style = 'Metadata.TEntry'))
                     self.entries_value_ID[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=NW)
                 else:
-                    self.entries_value_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT, state='disabled', takefocus = 0, width=44))
+                    self.entries_value_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT, state='disabled', takefocus = 0, width=44, style = 'Metadata.TEntry'))
                     self.entries_value_ID[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=W)
                 count += 1
 
@@ -892,12 +892,12 @@ class xnat_pic_gui():
             count = 0
             for key in keys_CV:
                 # Variable
-                self.entries_variable_CV.append(ttk.Entry(self.frame_CV, font=SMALL_FONT, takefocus = 0, width=15))
+                self.entries_variable_CV.append(ttk.Entry(self.frame_CV, font=SMALL_FONT, takefocus = 0, width=15, style = 'Metadata.TEntry'))
                 self.entries_variable_CV[-1].insert(0, key)
                 self.entries_variable_CV[-1]['state'] = 'disabled'
                 self.entries_variable_CV[-1].grid(row=count, column=0, padx = 5, pady = 5, sticky=W)
                 # Value
-                self.entries_value_CV.append(ttk.Entry(self.frame_CV, font=SMALL_FONT, state='disabled', takefocus = 0, width=25))
+                self.entries_value_CV.append(ttk.Entry(self.frame_CV, font=SMALL_FONT, state='disabled', takefocus = 0, width=25, style = 'Metadata.TEntry'))
                 self.entries_value_CV[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=W)
                 count += 1
 
@@ -925,7 +925,7 @@ class xnat_pic_gui():
             self.timepoint_menu['state'] = 'disabled'
             self.timepoint_menu.grid(row=1, column=2, padx = 5, pady = 5, sticky=W)
 
-            self.time_entry = ttk.Entry(self.frame_CV, font = SMALL_FONT, state='disabled', takefocus = 0, width=5)
+            self.time_entry = ttk.Entry(self.frame_CV, font = SMALL_FONT, state='disabled', takefocus = 0, width=5, style = 'Metadata.TEntry')
             self.time_entry.grid(row=1, column=3, padx = 5, pady = 5, sticky=W)
 
             self.OPTIONS1 = ["seconds", "minutes", "hours", "days", "weeks", "months", "years"]
@@ -994,13 +994,13 @@ class xnat_pic_gui():
                 ID = True
                 count = 1
                 self.entries_variable_ID = []
-                self.entries_variable_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT, takefocus = 0, width=15))
+                self.entries_variable_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT, takefocus = 0, width=15, style = 'Metadata.TEntry'))
                 self.entries_variable_ID[-1].insert(0, "Folder")
                 self.entries_variable_ID[-1]['state'] = 'disabled'
                 self.entries_variable_ID[-1].grid(row=0, column=0, padx = 5, pady = 5, sticky=W)
                 self.entries_variable_CV = []
                 self.entries_value_ID = []
-                self.entries_value_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT, takefocus = 0, width=44))
+                self.entries_value_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT, takefocus = 0, width=44, style = 'Metadata.TEntry'))
                 self.entries_value_ID[-1].insert(0, self.selected_folder)
                 self.entries_value_ID[-1]['state'] = 'disabled'
                 self.entries_value_ID[-1].grid(row=0, column=1, padx = 5, pady = 5, sticky=W)
@@ -1012,16 +1012,16 @@ class xnat_pic_gui():
                         ID = False
                         count = 0
                     if ID:
-                        self.entries_variable_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT, takefocus = 0, width=15))
+                        self.entries_variable_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT, takefocus = 0, width=15, style = 'Metadata.TEntry'))
                         self.entries_variable_ID[-1].insert(0, k)
                         self.entries_variable_ID[-1]['state'] = 'disabled'
                         self.entries_variable_ID[-1].grid(row=count, column=0, padx = 5, pady = 5, sticky=W)
                         # Value
                         if k == "Acquisition_date":
-                            self.entries_value_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT, takefocus = 0, width=20))
+                            self.entries_value_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT, takefocus = 0, width=20, style = 'Metadata.TEntry'))
                             self.entries_value_ID[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=NW)
                         else:
-                            self.entries_value_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT, takefocus = 0, width=44))
+                            self.entries_value_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT, takefocus = 0, width=44, style = 'Metadata.TEntry'))
                             self.entries_value_ID[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=W)
                         self.entries_value_ID[-1].insert(0, v)
                         self.entries_value_ID[-1]['state'] = 'disabled'
@@ -1030,12 +1030,12 @@ class xnat_pic_gui():
                         
                     else:
                         if k != "C_V":
-                            self.entries_variable_CV.append(ttk.Entry(self.frame_CV, font=SMALL_FONT, takefocus = 0, width=15))
+                            self.entries_variable_CV.append(ttk.Entry(self.frame_CV, font=SMALL_FONT, takefocus = 0, width=15, style = 'Metadata.TEntry'))
                             self.entries_variable_CV[-1].insert(0, k)
                             self.entries_variable_CV[-1]['state'] = 'disabled'
                             self.entries_variable_CV[-1].grid(row=count, column=0, padx = 5, pady = 5, sticky=W)
                             # Value
-                            self.entries_value_CV.append(ttk.Entry(self.frame_CV, font=SMALL_FONT, takefocus = 0, width=25))
+                            self.entries_value_CV.append(ttk.Entry(self.frame_CV, font=SMALL_FONT, takefocus = 0, width=25, style = 'Metadata.TEntry'))
                             self.entries_value_CV[-1].insert(0, v)
                             self.entries_value_CV[-1]['state'] = 'disabled'
                             self.entries_value_CV[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=W)
@@ -1297,12 +1297,12 @@ class xnat_pic_gui():
             next_row = len(self.entries_variable_ID)
             
             # Add entry variable ID
-            ent_variable = ttk.Entry(self.frame_ID, font=SMALL_FONT, takefocus = 0, width=15)
+            ent_variable = ttk.Entry(self.frame_ID, font=SMALL_FONT, takefocus = 0, width=15, style = 'Metadata.TEntry')
             ent_variable.grid(row=next_row, column=0, padx = 5, pady = 5, sticky=W)
             self.entries_variable_ID.append(ent_variable)                 
 
             # Add entry value ID in second col
-            ent_value = ttk.Entry(self.frame_ID, font=SMALL_FONT, takefocus = 0, width=44)
+            ent_value = ttk.Entry(self.frame_ID, font=SMALL_FONT, takefocus = 0, width=44, style = 'Metadata.TEntry')
             ent_value.grid(row=next_row, column=1, padx = 5, pady = 5, sticky=W)
             self.entries_value_ID.append(ent_value)
 
@@ -1350,12 +1350,12 @@ class xnat_pic_gui():
             next_row = len(self.entries_variable_CV)
             
             # Add entry variable CV
-            ent_variable = ttk.Entry(self.frame_CV, font=SMALL_FONT, takefocus = 0, width=15)
+            ent_variable = ttk.Entry(self.frame_CV, font=SMALL_FONT, takefocus = 0, width=15, style = 'Metadata.TEntry')
             ent_variable.grid(row=next_row, column=0, padx = 5, pady = 5, sticky=W)
             self.entries_variable_CV.append(ent_variable)                 
 
             # add entry value in second col
-            ent_value = ttk.Entry(self.frame_CV, font=SMALL_FONT, takefocus = 0, width=25)
+            ent_value = ttk.Entry(self.frame_CV, font=SMALL_FONT, takefocus = 0, width=25, style = 'Metadata.TEntry')
             ent_value.grid(row=next_row, column=1, padx = 5, pady = 5, sticky=W)
             self.entries_value_CV.append(ent_value)
             
@@ -1424,6 +1424,7 @@ class xnat_pic_gui():
             if result == 'yes':
                 destroy_widgets([self.menu, self.notebook, self.label_frame_ID, self.label_frame_CV, self.modify_btn,
                 self.confirm_btn, self.hscrollbar, self.my_xscrollbar, self.my_yscrollbar, self.my_listbox, self.canvas_notebook])
+                delete_widgets(master.my_canvas, [self.frame_title, self.name_selected_project])
 
                 xnat_pic_gui.choose_your_action(master)
     
