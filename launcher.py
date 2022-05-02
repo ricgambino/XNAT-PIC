@@ -938,7 +938,10 @@ class xnat_pic_gui():
             #################### Load the info about the selected subject ####################
             def select_tab(event):
                tab_id = self.notebook.select()
-               self.tab_name = self.notebook.tab(tab_id, "text")
+               try:
+                  self.tab_name = self.notebook.tab(tab_id, "text")
+               except:
+                   pass
                # Update the listbox
                self.my_listbox.delete(0, END)
                self.my_listbox.insert(tk.END, *self.todos[self.tab_name])
@@ -958,7 +961,7 @@ class xnat_pic_gui():
             master.my_canvas.create_window(x_conf_btn, y_btn, anchor = tk.NW, width = width_btn, window = self.confirm_btn)
 
             #################### Confirm multiple metadata ####################
-            self.multiple_confirm_btn = ttk.Button(master.my_canvas, text="Multiple Confirm", command = lambda: self.confirm_multiple_metadata(), cursor=CURSOR_HAND, takefocus = 0)
+            self.multiple_confirm_btn = ttk.Button(master.my_canvas, text="Multiple Confirm", command = lambda: self.confirm_multiple_metadata(master), cursor=CURSOR_HAND, takefocus = 0)
             x_multiple_conf_btn = int(my_width*70/100)
             master.my_canvas.create_window(x_multiple_conf_btn, y_btn, anchor = tk.NW, width = width_btn, window = self.multiple_confirm_btn)
                        
@@ -1173,10 +1176,8 @@ class xnat_pic_gui():
                 except Exception as e: 
                     messagebox.showerror("XNAT-PIC", "Insert a number in timepoint between pre/post and seconds, minutes, hours..")  
                     raise
-
-        def confirm_metadata(self):
-            self.check_entries()
-            
+        # Update the values and save the values in a txt file        
+        def save_entries(self, my_key):
             tmp_ID = {}
             # Update the info in the txt file ID
             for i in range(1, len(self.entries_variable_ID)):
@@ -1192,7 +1193,7 @@ class xnat_pic_gui():
                 self.entries_variable_CV[i]['state'] = tk.DISABLED
                 self.entries_value_CV[i]['state'] = tk.DISABLED 
 
-            self.results_dict[self.selected_folder].update(tmp_ID)
+            self.results_dict[my_key].update(tmp_ID)
             
             # Clear all 
             self.selected_group.set('')
@@ -1203,29 +1204,78 @@ class xnat_pic_gui():
             self.cal.delete(0, tk.END)
             disable_buttons([self.dose_menu, self.group_menu, self.timepoint_menu, self.time_entry, self.timepoint_menu1, self.cal])
             # Saves the changes made by the user in the txt file
-            substring = str(self.selected_folder).replace('#','/')
+            substring = str(my_key).replace('#','/')
             index = [i for i, s in enumerate(self.path_list) if substring in s]
-            name_txt = str(self.selected_folder).rsplit('#', 1)[1] + "_" + "Custom_Variables.txt"
+            name_txt = str(my_key).rsplit('#', 1)[1] + "_" + "Custom_Variables.txt"
             tmp_path = self.path_list[index[0]] + "\\" + name_txt
             try:
                 with open(tmp_path.replace('\\', '/'), 'w+') as meta_file:
-                    meta_file.write(tabulate(self.results_dict[self.selected_folder].items(), headers=['Variable', 'Value']))
+                    meta_file.write(tabulate(self.results_dict[my_key].items(), headers=['Variable', 'Value']))
             except Exception as e: 
                     messagebox.showerror("XNAT-PIC", "Confirmation failed: " + str(e))  
                     raise    
-            #################### Confirm multiple metadata ####################
-        def confirm_multiple_metadata(self):
-            disable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn])
-                       
+        def confirm_metadata(self):
+            try:
+                self.check_entries()
+            except Exception as e: 
+                messagebox.showerror("XNAT-PIC", "Error in checking fields" + str(e))  
+                raise
+
+            try:
+                self.save_entries(self.selected_folder)
+            except Exception as e: 
+                messagebox.showerror("XNAT-PIC", "Error in saving" + str(e))  
+                raise
+
+        #################### Confirm multiple metadata ####################
+        def confirm_multiple_metadata(self, master):
+            disable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.my_listbox])
+            tab_names = [self.notebook.tab(i, state='disable') for i in self.notebook.tabs()]  
+                     
             try:
                 self.selected_folder
                 pass
             except Exception as e:
-                enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn])
+                enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.my_listbox])
                 messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
                 raise
 
-            messagebox.showinfo("Metadata","1. Select the folders from the box on the left for which to copy the info entered!\n 2. Always remaining in the box on the left, press ENTER to confirm or ESC to cancel!")
+            #messagebox.showinfo("Metadata","1. Select the folders from the box on the left for which to copy the info entered!\n 2. Always remaining in the box on the left, press ENTER to confirm or ESC to cancel!")
+            messagebox.showinfo("Project Data","Select the fields you want to copy and then click continue")
+
+            # Select the fields that you want to copy
+            list_ID = []
+            # Confirm ID
+            def multiple_confirm_ID(row):
+                list_ID.append(row)
+                print(list_ID)
+                btn_multiple_confirm_ID[row].destroy()
+                btn_multiple_delete_ID[row].destroy()
+                count_list.pop()
+                if len(count_list) == 1:
+                    print('finish')
+
+            # Delete ID
+            def multiple_delete_ID(row):
+                btn_multiple_confirm_ID[row].destroy()
+                btn_multiple_delete_ID[row].destroy()
+                count_list.pop()
+                if len(count_list) == 1:
+                    print('finish')
+
+            btn_multiple_confirm_ID = []
+            btn_multiple_delete_ID = []
+            count_list = []
+            for i in range(0, len(self.entries_variable_ID)):
+                btn_multiple_confirm_ID.append(ttk.Button(self.frame_ID, image = master.logo_accept, 
+                                                command=lambda row=i: multiple_confirm_ID(row), cursor=CURSOR_HAND))
+                btn_multiple_confirm_ID[-1].grid(row=i, column=2, padx = 5, pady = 5, sticky=NW)
+                btn_multiple_confirm_ID[0].destroy()
+                btn_multiple_delete_ID.append(ttk.Button(self.frame_ID, image = master.logo_delete, 
+                                                command=lambda row=i: multiple_delete_ID(row), cursor=CURSOR_HAND))
+                btn_multiple_delete_ID[-1].grid(row=i, column=3, padx = 5, pady = 5, sticky=NW)
+                btn_multiple_delete_ID[0].destroy()
+                count_list = btn_multiple_confirm_ID.copy()
 
             self.my_listbox.selection_set(self.selected_index)    
             self.my_listbox['selectmode'] = MULTIPLE
@@ -1252,37 +1302,20 @@ class xnat_pic_gui():
                 result = messagebox.askquestion("Multiple Confirm", "Are you sure you want to save data for the selected folders?\n", icon='warning')
                 
                 if result == 'yes':
-                    self.check_entries()
-
-                tmp_ID = {}
-                # Update the info in the txt file ID
-                for i in range(1, len(self.entries_variable_ID)):
-                    tmp_ID.update({self.entries_variable_ID[i].get() : self.entries_value_ID[i].get()})     
-                    self.entries_variable_ID[i]['state'] = tk.DISABLED
-                    self.entries_value_ID[i]['state'] = tk.DISABLED 
-                    
-                    tmp_ID.update({"C_V" : ""}) 
-
-                # Update the info in the txt file CV
-                for i in range(0, len(self.entries_variable_CV)):
-                    tmp_ID.update({self.entries_variable_CV[i].get() : self.entries_value_CV[i].get()})     
-                    self.entries_variable_CV[i]['state'] = tk.DISABLED
-                    self.entries_value_CV[i]['state'] = tk.DISABLED 
-                
+                    try:
+                        self.check_entries()
+                    except Exception as e: 
+                        messagebox.showerror("XNAT-PIC", "Error in checking fields" + str(e))  
+                        raise
+               
                 for x in range(len(self.list_tab_listbox)):
                     for y in range(len(self.list_tab_listbox[x])):
-                        self.results_dict[self.list_tab_listbox[x][y]].update(tmp_ID)
-                         # Saves the changes made by the user in the txt file
-                        substring = str(self.list_tab_listbox[x][y]).replace('#','/')
-                        index = [i for i, s in enumerate(self.path_list) if substring in s]
-                        name_txt = str(self.list_tab_listbox[x][y]).rsplit('#', 1)[1] + "_" + "Custom_Variables.txt"
-                        tmp_path = self.path_list[index[0]] + "\\" + name_txt
                         try:
-                            with open(tmp_path.replace('\\', '/'), 'w+') as meta_file:
-                                meta_file.write(tabulate(self.results_dict[self.list_tab_listbox[x][y]].items(), headers=['Variable', 'Value']))
+
+                            self.save_entries(self.list_tab_listbox[x][y])
                         except Exception as e: 
-                                messagebox.showerror("XNAT-PIC", "Confirmation failed: " + str(e))  
-                                raise  
+                            messagebox.showerror("XNAT-PIC", "Error in saving" + str(e))  
+                            raise
                 
                 # Clear all 
                 self.selected_group.set('')
