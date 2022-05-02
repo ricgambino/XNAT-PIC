@@ -749,7 +749,7 @@ class xnat_pic_gui():
                                          text='Selected Project: ' + self.project_name)
             
             y_folder_list1 = int(my_height*15/100)
-            h_notebook = int(my_height*56/100)
+            h_notebook = int(my_height*52/100)
             w_notebook = int(my_width*20.5/100)
 
             ### Tab Notebook
@@ -761,7 +761,7 @@ class xnat_pic_gui():
 
             # Create an object of horizontal scrollbar to scroll tab
             self.hscrollbar = tk.Scrollbar(master.root, orient="horizontal", command=self.canvas_notebook.xview, activebackground = 'white', bg = 'white')
-            y_scrollbar = int(my_height*74/100)
+            y_scrollbar = int(my_height*70/100)
             x_scrollbar = int(my_width*32/100)
             master.my_canvas.create_window(x_scrollbar, y_scrollbar, anchor = tk.NW, window=self.hscrollbar)
 
@@ -773,7 +773,7 @@ class xnat_pic_gui():
             self.my_listbox = tk.Listbox(master.my_canvas, borderwidth=0, highlightbackground = BACKGROUND_COLOR, highlightcolor= BACKGROUND_COLOR, font=SMALL_FONT_3, selectmode=SINGLE, takefocus = 0)
             x_listbox = int(my_width*23.5/100)
             y_listbox = int(my_height*19/100)
-            h_listbox = int(my_height*51/100)
+            h_listbox = int(my_height*47/100)
             w_listbox = int(my_width*19.5/100)
             master.my_canvas.create_window(x_listbox, y_listbox, width = w_listbox, height = h_listbox, anchor = tk.NW, window=self.my_listbox)
             
@@ -782,8 +782,8 @@ class xnat_pic_gui():
             self.my_listbox.config(yscrollcommand = self.my_yscrollbar.set)
             self.my_yscrollbar.config(command = self.my_listbox.yview)
             x_my_yscrollbar = int(my_width*22/100)
-            y_my_yscrollbar = int(my_height*18.8/100)
-            h_yscrollbar = int(my_height*52.4/100)
+            y_my_yscrollbar = int(my_height*19/100)
+            h_yscrollbar = int(my_height*48/100)
             master.my_canvas.create_window(x_my_yscrollbar, y_my_yscrollbar, height = h_yscrollbar, anchor = tk.NW, window=self.my_yscrollbar)
 
             # Xscrollbar for listbox
@@ -791,7 +791,7 @@ class xnat_pic_gui():
             self.my_listbox.config(xscrollcommand = self.my_xscrollbar.set)
             self.my_xscrollbar.config(command = self.my_listbox.xview)
             x_my_xscrollbar = int(my_width*23.1/100)
-            y_my_xscrollbar = int(my_height*71/100)
+            y_my_xscrollbar = int(my_height*67/100)
             w_my_xscrollbar = int(my_width*20.4/100)
             master.my_canvas.create_window(x_my_xscrollbar, y_my_xscrollbar, width = w_my_xscrollbar, anchor = tk.NW, window=self.my_xscrollbar)
 
@@ -812,10 +812,10 @@ class xnat_pic_gui():
             self.label_frame_ID = ttk.LabelFrame(master.my_canvas, text="ID", style = "Metadata.TLabelframe")
 
             #
-            x_lbl_ID = int(my_width*48/100)
-            y_lbl_ID = y_folder_list1
-            w_lbl_ID = int(my_width*45/100)
-            h_lbl_ID = int(my_height*32/100)
+            x_lbl_ID = int(my_width*46/100)
+            y_lbl_ID = int(my_height*18/100)
+            w_lbl_ID = int(my_width*42/100)
+            h_lbl_ID = int(my_height*25/100)
             #
             # Scroll bar in the Label frame ID
             self.canvas_ID = tk.Canvas(self.label_frame_ID, bg='white')
@@ -864,9 +864,9 @@ class xnat_pic_gui():
             # Label frame for Custom Variables: group, dose, timepoint
             self.label_frame_CV = ttk.LabelFrame(master.my_canvas, text="Custom Variables", style = "Metadata.TLabelframe")
             x_lbl_CV = x_lbl_ID
-            y_lbl_CV = int(my_height*50/100)
-            h_lbl_CV = int(my_height*20/100)
-            w_lbl_CV = int(my_width*45/100)
+            y_lbl_CV = int(my_height*47/100)
+            h_lbl_CV = int(my_height*18/100)
+            w_lbl_CV = int(my_width*43/100)
 
             # Scroll bar in the Label frame CV
             self.canvas_CV = tk.Canvas(self.label_frame_CV, bg='white')
