@@ -184,7 +184,7 @@ class xnat_pic_gui():
         # # Open the image for the logo
         # logo_info = Image.open(PATH_IMAGE + "info.png")
         # self.logo_info = ImageTk.PhotoImage(logo_info)
-        width_logo, height_logo = 15, 15
+        width_logo, height_logo = 10, 10
 
         # Open the image for the accept icon
         logo_accept = Image.open(PATH_IMAGE + "accept.png").convert("RGBA")
@@ -1971,7 +1971,9 @@ class xnat_pic_gui():
                     main_folder = self.tree.insert("", "end", iid=0, text=self.folder_to_upload.get().split('/')[-1], values=(), open=True)
                     subdirectories = os.listdir(self.folder_to_upload.get())
                     for i, sub in enumerate(subdirectories, 1):
-                        self.tree.insert(main_folder, "end", iid=i, text=sub, values=(i))
+                        modification_time = str(time.strftime("%d/%m/%Y,%H:%M:%S", time.localtime(os.path.getmtime(os.path.join(self.folder_to_upload.get(), sub)))))
+                        folder_size = round(get_dir_size(os.path.join(self.folder_to_upload.get(), sub))/1000/1000, 1)
+                        self.tree.insert(main_folder, "end", iid=i, text=sub, values=(modification_time, str(folder_size) + 'MB'))
                 else:
                     pass
 
@@ -1982,16 +1984,15 @@ class xnat_pic_gui():
 
             self.tree = ttk.Treeview(self.folder_selection_label_frame, selectmode='none')
             self.tree.grid(row=1, column=0, padx=10, pady=10, sticky=tk.NW)
-            self.tree["columns"] = ("#1")
+            self.tree["columns"] = ("#1", "#2")
             self.tree.heading("#0", text="Selected folder", anchor=tk.NW)
-            self.tree.heading("#1", text="Size", anchor=tk.NW)
+            self.tree.heading("#1", text="Last Update", anchor=tk.NW)
+            self.tree.heading("#2", text="Size", anchor=tk.NW)
             self.tree.column("#0", stretch=tk.YES)
             self.tree.column("#1", stretch=tk.YES)
+            self.tree.column("#2", stretch=tk.YES)
 
             self.folder_to_upload.trace('w', folder_selected_handler)
-
-            # self.tree.insert(main_folder, "end", "", text="photo1.png", values=("23-Jun-17 11:28"))
-            # self.tree.insert(main_folder, "end", "", text="photo2.png", values=("23-Jun-17 11:29"))
 
             # Label Frame Uploader Options
             self.uploader_options = ttk.LabelFrame(master.my_canvas, text="Options")
