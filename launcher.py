@@ -947,22 +947,20 @@ class xnat_pic_gui():
             self.notebook.bind("<<NotebookTabChanged>>", select_tab)  
             #################### Modify the metadata ####################
             self.modify_btn = ttk.Button(master.my_canvas, text="Modify", command = lambda: self.modify_metadata(), cursor=CURSOR_HAND, takefocus = 0)
-            x_lbl = int(my_width*35/100)
+            x_lbl = int(my_width*30/100)
             y_btn = int(my_height*78/100)
             width_btn = int(my_width*16/100)
             master.my_canvas.create_window(x_lbl, y_btn, anchor = tk.NW, width = width_btn, window = self.modify_btn)
 
             #################### Confirm the metadata ####################
             self.confirm_btn = ttk.Button(master.my_canvas, text="Confirm", command = lambda: self.confirm_metadata(), cursor=CURSOR_HAND, takefocus = 0)
-            x_conf_btn = int(my_width*65/100)
+            x_conf_btn = int(my_width*50/100)
             master.my_canvas.create_window(x_conf_btn, y_btn, anchor = tk.NW, width = width_btn, window = self.confirm_btn)
 
             #################### Confirm multiple metadata ####################
-            # multiple_confirm_text = tk.StringVar() 
-            # self.multiple_confirm_btn = tk.Button(master.my_canvas, textvariable=multiple_confirm_text, font=LARGE_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH, command = lambda: self.confirm_multiple_metadata(), cursor=CURSOR_HAND, takefocus = 0)
-            # multiple_confirm_text.set("Multiple Confirm")
-            # x_multiple_conf_btn = int(my_width*81/100)
-            # master.my_canvas.create_window(x_multiple_conf_btn, y_btn, anchor = tk.NW, width = width_btn, window = self.multiple_confirm_btn)
+            self.multiple_confirm_btn = ttk.Button(master.my_canvas, text="Multiple Confirm", command = lambda: self.confirm_multiple_metadata(), cursor=CURSOR_HAND, takefocus = 0)
+            x_multiple_conf_btn = int(my_width*70/100)
+            master.my_canvas.create_window(x_multiple_conf_btn, y_btn, anchor = tk.NW, width = width_btn, window = self.multiple_confirm_btn)
                        
         def load_info(self, master):
 
@@ -1154,7 +1152,7 @@ class xnat_pic_gui():
                 messagebox.showerror("XNAT-PIC", "Insert the name of the subject")
                 raise
 
-            if self.entries_value_ID[3].get():
+            if self.entries_value_ID[4].get():
                 try:
                     datetime.datetime.strptime(self.entries_value_ID[4].get(), '%Y-%m-%d')
                 except Exception as e:
@@ -1216,71 +1214,100 @@ class xnat_pic_gui():
                     messagebox.showerror("XNAT-PIC", "Confirmation failed: " + str(e))  
                     raise    
             #################### Confirm multiple metadata ####################
-            # def normal_button():
-            #     #clear_btn["state"] = tk.NORMAL
-            #     #save_btn["state"] = tk.NORMAL
-            #     enable_buttons([modify_btn, confirm_btn, multiple_confirm_btn])
-
         def confirm_multiple_metadata(self):
-            #clear_btn["state"] = tk.DISABLED
-            print("TODO")
-            #disable_buttons([modify_btn, confirm_btn, multiple_confirm_btn])
-            #save_btn["state"] = tk.DISABLED
+            disable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn])
+                       
+            try:
+                self.selected_folder
+                pass
+            except Exception as e:
+                enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn])
+                messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
+                raise
+
+            messagebox.showinfo("Metadata","1. Select the folders from the box on the left for which to copy the info entered!\n 2. Always remaining in the box on the left, press ENTER to confirm or ESC to cancel!")
+
+            self.my_listbox.selection_set(self.selected_index)    
+            self.my_listbox['selectmode'] = MULTIPLE
             
-            # try:
-            #     self.selected_folder
-            #     pass
-            # except Exception as e:
-            #         normal_button()
-            #         messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
-            #         raise
+            # Obtain the subject-experiment list to be modified
+            self.list_tab_listbox = []
+            def select_listbox(event):
+                self.seltext = [self.tab_name + '#' + self.my_listbox.get(index) for index in self.my_listbox.curselection()]
+            self.my_listbox.bind("<<ListboxSelect>>", select_listbox)
 
-            # messagebox.showinfo("Metadata","1. Select the folders from the box on the left for which to copy the info entered!\n 2. Always remaining in the box on the left, press ENTER to confirm or ESC to cancel!")
+            def select_tab_listbox(event):
+               tab_id = self.notebook.select()
+               self.tab_name = self.notebook.tab(tab_id, "text")
+               # Update the listbox
+               self.my_listbox.delete(0, END)
+               self.my_listbox.insert(tk.END, *self.todos[self.tab_name])
+               self.list_tab_listbox.append(self.seltext)
+               
+            self.notebook.bind("<<NotebookTabChanged>>", select_tab_listbox)  
 
-            # my_listbox.selection_set(self.selected_folder)    
-            # my_listbox['selectmode'] = MULTIPLE
+            # The user presses 'enter' to confirm 
+            def items_selected2(event):
+                self.list_tab_listbox.append(self.seltext)
+                result = messagebox.askquestion("Multiple Confirm", "Are you sure you want to save data for the selected folders?\n", icon='warning')
+                
+                if result == 'yes':
+                    self.check_entries()
+
+                tmp_ID = {}
+                # Update the info in the txt file ID
+                for i in range(1, len(self.entries_variable_ID)):
+                    tmp_ID.update({self.entries_variable_ID[i].get() : self.entries_value_ID[i].get()})     
+                    self.entries_variable_ID[i]['state'] = tk.DISABLED
+                    self.entries_value_ID[i]['state'] = tk.DISABLED 
+                    
+                    tmp_ID.update({"C_V" : ""}) 
+
+                # Update the info in the txt file CV
+                for i in range(0, len(self.entries_variable_CV)):
+                    tmp_ID.update({self.entries_variable_CV[i].get() : self.entries_value_CV[i].get()})     
+                    self.entries_variable_CV[i]['state'] = tk.DISABLED
+                    self.entries_value_CV[i]['state'] = tk.DISABLED 
+                
+                for x in range(len(self.list_tab_listbox)):
+                    for y in range(len(self.list_tab_listbox[x])):
+                        self.results_dict[self.list_tab_listbox[x][y]].update(tmp_ID)
+                         # Saves the changes made by the user in the txt file
+                        substring = str(self.list_tab_listbox[x][y]).replace('#','/')
+                        index = [i for i, s in enumerate(self.path_list) if substring in s]
+                        name_txt = str(self.list_tab_listbox[x][y]).rsplit('#', 1)[1] + "_" + "Custom_Variables.txt"
+                        tmp_path = self.path_list[index[0]] + "\\" + name_txt
+                        try:
+                            with open(tmp_path.replace('\\', '/'), 'w+') as meta_file:
+                                meta_file.write(tabulate(self.results_dict[self.list_tab_listbox[x][y]].items(), headers=['Variable', 'Value']))
+                        except Exception as e: 
+                                messagebox.showerror("XNAT-PIC", "Confirmation failed: " + str(e))  
+                                raise  
+                
+                # Clear all 
+                self.selected_group.set('')
+                self.selected_dose.set('')
+                self.selected_timepoint.set('')
+                self.selected_timepoint1.set('')
+                self.time_entry.delete(0, tk.END)
+                self.cal.delete(0, tk.END)
+                disable_buttons([self.dose_menu, self.group_menu, self.timepoint_menu, self.time_entry, self.timepoint_menu1, self.cal])
+                # Clear the focus and the select mode of the listbox is single
+                enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn])
+                self.my_listbox.selection_clear(0, 'end')
+                self.my_listbox['selectmode'] = SINGLE
+                
+
+            self.my_listbox.bind("<Return>", items_selected2)
             
-            # # The user presses 'enter' to confirm 
-            # def items_selected2(event):
-                
-            #     seltext = [my_listbox.get(index) for index in my_listbox.curselection()]
-            #     result = messagebox.askquestion("Multiple Confirm", "Are you sure you want to save data for the following folders?\n" + '\n'.join(seltext), icon='warning')
-            #     if result == 'yes':
-            #        confirm_metadata(self)
-            #     # Get indexes of selected folders
-            #     selected_text_list = my_listbox.curselection()
-                
-            #     # Update the list of results
-            #     max_lim = len(fields)
-            #     for i in range(0, len(selected_text_list)):
-            #             for j in range(0, max_lim):
-            #                 results[selected_text_list[i]*max_lim+j] =  entries[j].get()
-
-            #     # Update the txt file
-            #     for i in range(0, len(selected_text_list)):
-            #             with open(path_list[selected_text_list[i]], 'w+') as meta_file:
-            #                                 meta_file.write(tabulate([['Project', str(results[self.selected_folder*max_lim+0])], ['Subject', str(results[self.selected_folder*max_lim+1])], ['Acquisition_date', str(results[self.selected_folder*max_lim+2])], 
-                
-            #                                 ['Group', str(results[self.selected_folder*max_lim+3])], ['Dose', str(results[self.selected_folder*max_lim+4])], ['Timepoint', str(results[self.selected_folder*max_lim+5])]], headers=['Variable', 'Value']))
-                
-            #     messagebox.showinfo("Metadata","The information has been saved for the selected folders!")
-
-            #     # Clear the focus and the select mode of the listbox is single
-            #     normal_button()
-            #     my_listbox.selection_clear(0, 'end')
-            #     my_listbox['selectmode'] = SINGLE
-                
-
-            # my_listbox.bind("<Return>", items_selected2)
-            
-            # # The user presses 'esc' to cancel
-            # def items_cancel(event):
-            #         # Clear the focus and the select mode of the listbox is single
-            #     messagebox.showinfo("Metadata","The information was not saved for the selected folders!")
-            #     normal_button()
-            #     my_listbox.selection_clear(0, 'end')
-            #     my_listbox['selectmode'] = SINGLE
-            # my_listbox.bind("<Escape>", items_cancel)
+            # The user presses 'esc' to cancel
+            def items_cancel(event):
+                    # Clear the focus and the select mode of the listbox is single
+                messagebox.showinfo("Metadata","The information was not saved for the selected folders!")
+                enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn])
+                self.my_listbox.selection_clear(0, 'end')
+                self.my_listbox['selectmode'] = SINGLE
+            self.my_listbox.bind("<Escape>", items_cancel)
                 
         #################### Add ID #################
         def add_ID(self, master):
@@ -1423,7 +1450,7 @@ class xnat_pic_gui():
             result = messagebox.askquestion("Exit", "Do you want to exit?", icon='warning')
             if result == 'yes':
                 destroy_widgets([self.menu, self.notebook, self.label_frame_ID, self.label_frame_CV, self.modify_btn,
-                self.confirm_btn, self.hscrollbar, self.my_xscrollbar, self.my_yscrollbar, self.my_listbox, self.canvas_notebook])
+                self.confirm_btn, self.multiple_confirm_btn, self.hscrollbar, self.my_xscrollbar, self.my_yscrollbar, self.my_listbox, self.canvas_notebook])
                 delete_widgets(master.my_canvas, [self.frame_title, self.name_selected_project])
 
                 xnat_pic_gui.choose_your_action(master)
