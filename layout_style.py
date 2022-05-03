@@ -32,7 +32,7 @@ class MyStyle():
 
         self.style.theme_use("alt")
 
-        self.style.configure("TLabel", background=LIGHT_GREY, foreground="black")
+        self.style.configure("TLabel", background=LIGHT_GREY, foreground="black", font=SMALL_FONT_2)
         self.style.configure("Popup.TLabel", background=WHITE, foreground="black", font=SMALL_FONT_2)
         self.style.configure("Attach.TLabel", background=WHITE, foreground="blue", font=("Calibri", 8, "underline"))
 
@@ -94,8 +94,15 @@ class MyStyle():
         self.style.configure("Treeview.Heading", background=LIGHT_GREY, foreground="black", relief=tk.FLAT, anchor=tk.CENTER, font=SMALL_FONT_2,
                                         highlightthickness=0, borderwidth=3)
 
-        self.style.configure("Vertical.TScrollbar", background=LIGHT_GREY, foreground="black", relief=tk.FLAT, anchor=tk.CENTER,
-                                        highlightthickness=0, borderwidth=3)
+        self.style.configure("Vertical.TScrollbar", background=AZURE_DISABLED, anchor=tk.CENTER, width=6,
+                                        highlightthickness=3, borderwidth=3, activerelief=LIGHT_GREY)
+        self.style.map("Vertical.TScrollbar", background=[('active', AZURE), ('disabled', AZURE_DISABLED)],
+                                                activebackground=[('active', LIGHT_GREY), ('disabled', LIGHT_GREY)])
+        self.style.layout('TScrollbar', 
+         [('Scrollbar.trough',
+           {'children': [('Scrollbar.thumb', 
+                          {'expand': '1', 'sticky': 'nswe'})],
+            'sticky': 'ns'})])
 
     def get_style(self):
         return self.style
