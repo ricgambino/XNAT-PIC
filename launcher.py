@@ -604,26 +604,7 @@ class xnat_pic_gui():
             
         # Scommenta per la gestione dei due progetti
             self.frame_metadata(master)
-        #     # Ask about the architecture of the project
-        #     self.my_popup = tk.Toplevel()
-        #     self.my_popup.title("XNAT-PIC ~ Metadata")
-        #     self.my_popup.geometry("%dx%d+%d+%d" % (550, 200, my_width/3, my_height/4))
-
-        #    # Closing window event: if it occurs, the popup must be destroyed and the main frame buttons must be enabled
-        #     def closed_window():
-        #         self.my_popup.destroy()
-        #         #Enable all buttons
-        #         enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
-        #     self.my_popup.protocol("WM_DELETE_WINDOW", closed_window)
-
-        #     self.radioValue = tk.IntVar() 
-        #     rdioOne = tk.Radiobutton(self.my_popup, text='P-S', variable=self.radioValue, value=0) 
-        #     rdioTwo = tk.Radiobutton(self.my_popup, text='P-S-E', variable=self.radioValue, value=1)
-        #     next_btn = tk.Button(self.my_popup, text="Next", font=SMALL_FONT, bg=BG_BTN_COLOR, fg=TEXT_BTN_COLOR, borderwidth=BORDERWIDTH,  command=partial(self.frame_metadata, master), cursor=CURSOR_HAND, takefocus = 0) 
-        #     rdioOne.grid(column=0, row=0, sticky="W")
-        #     rdioTwo.grid(column=0, row=1, sticky="W")
-        #     next_btn.grid(column=0, row=2, sticky="W")
-        
+                   
         def frame_metadata(self, master):   
             #flag = self.radioValue.get()
             #self.my_popup.destroy()
@@ -866,7 +847,7 @@ class xnat_pic_gui():
             x_lbl_CV = x_lbl_ID
             y_lbl_CV = int(my_height*47/100)
             h_lbl_CV = int(my_height*18/100)
-            w_lbl_CV = int(my_width*43/100)
+            w_lbl_CV = int(my_width*47/100)
 
             # Scroll bar in the Label frame CV
             self.canvas_CV = tk.Canvas(self.label_frame_CV, bg='white')
@@ -1177,10 +1158,20 @@ class xnat_pic_gui():
                     messagebox.showerror("XNAT-PIC", "Insert a number in timepoint between pre/post and seconds, minutes, hours..")  
                     raise
         # Update the values and save the values in a txt file        
-        def save_entries(self, my_key):
+        def save_entries(self, my_key, multiple):
+            
+            if multiple == 0:
+            # Single confirm
+                array_ID = range(1, len(self.entries_variable_ID))
+                array_CV = range(0, len(self.entries_variable_CV))
+            elif multiple ==1:
+            # Multple confirm
+                array_ID = self.list_ID
+                array_CV = self.list_CV
+                
             tmp_ID = {}
             # Update the info in the txt file ID
-            for i in range(1, len(self.entries_variable_ID)):
+            for i in array_ID:
                 tmp_ID.update({self.entries_variable_ID[i].get() : self.entries_value_ID[i].get()})     
                 self.entries_variable_ID[i]['state'] = tk.DISABLED
                 self.entries_value_ID[i]['state'] = tk.DISABLED 
@@ -1188,13 +1179,13 @@ class xnat_pic_gui():
             tmp_ID.update({"C_V" : ""}) 
 
             # Update the info in the txt file CV
-            for i in range(0, len(self.entries_variable_CV)):
+            for i in array_CV:
                 tmp_ID.update({self.entries_variable_CV[i].get() : self.entries_value_CV[i].get()})     
                 self.entries_variable_CV[i]['state'] = tk.DISABLED
                 self.entries_value_CV[i]['state'] = tk.DISABLED 
 
             self.results_dict[my_key].update(tmp_ID)
-            
+           
             # Clear all 
             self.selected_group.set('')
             self.selected_dose.set('')
@@ -1222,13 +1213,14 @@ class xnat_pic_gui():
                 raise
 
             try:
-                self.save_entries(self.selected_folder)
+                self.save_entries(self.selected_folder, multiple=0)
             except Exception as e: 
                 messagebox.showerror("XNAT-PIC", "Error in saving" + str(e))  
                 raise
 
         #################### Confirm multiple metadata ####################
         def confirm_multiple_metadata(self, master):
+
             disable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.my_listbox])
             tab_names = [self.notebook.tab(i, state='disable') for i in self.notebook.tabs()]  
                      
@@ -1240,28 +1232,28 @@ class xnat_pic_gui():
                 messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
                 raise
 
-            #messagebox.showinfo("Metadata","1. Select the folders from the box on the left for which to copy the info entered!\n 2. Always remaining in the box on the left, press ENTER to confirm or ESC to cancel!")
-            messagebox.showinfo("Project Data","Select the fields you want to copy and then click continue")
+            messagebox.showinfo("Project Data","Select the ID fields you want to copy.")
 
             # Select the fields that you want to copy
-            list_ID = []
+            self.list_ID = []
             # Confirm ID
             def multiple_confirm_ID(row):
-                list_ID.append(row)
-                print(list_ID)
+                self.list_ID.append(row)
                 btn_multiple_confirm_ID[row].destroy()
                 btn_multiple_delete_ID[row].destroy()
                 count_list.pop()
+                # If the user has finished all the selections of the ID, he moves on to the selection of CV
                 if len(count_list) == 1:
-                    print('finish')
+                    self.select_CV(master)
 
             # Delete ID
             def multiple_delete_ID(row):
                 btn_multiple_confirm_ID[row].destroy()
                 btn_multiple_delete_ID[row].destroy()
                 count_list.pop()
+                # If the user has finished all the selections of the ID, he moves on to the selection of CV
                 if len(count_list) == 1:
-                    print('finish')
+                    self.select_CV(master)
 
             btn_multiple_confirm_ID = []
             btn_multiple_delete_ID = []
@@ -1276,7 +1268,47 @@ class xnat_pic_gui():
                 btn_multiple_delete_ID[-1].grid(row=i, column=3, padx = 5, pady = 5, sticky=NW)
                 btn_multiple_delete_ID[0].destroy()
                 count_list = btn_multiple_confirm_ID.copy()
+            
+        def select_CV(self, master):
+            messagebox.showinfo("Project Data","Select the Custom Variables you want to copy.")
 
+            # Select the fields that you want to copy
+            self.list_CV = []
+            # Confirm ID
+            def multiple_confirm_CV(row):
+                self.list_CV.append(row)
+                btn_multiple_confirm_CV[row].destroy()
+                btn_multiple_delete_CV[row].destroy()
+                count_list.pop()
+                # If the user has finished all the selections of the CV, he moves on to the selection of experiments
+                if len(count_list) == 0:
+                    self.select_exp(master)
+
+            # Delete ID
+            def multiple_delete_CV(row):
+                btn_multiple_confirm_CV[row].destroy()
+                btn_multiple_delete_CV[row].destroy()
+                count_list.pop()
+                # If the user has finished all the selections of the CV, he moves on to the selection of experiments
+                if len(count_list) == 0:
+                    self.select_exp(master)
+
+            btn_multiple_confirm_CV = []
+            btn_multiple_delete_CV = []
+            count_list = []
+            for i in range(0, len(self.entries_variable_CV)):
+                btn_multiple_confirm_CV.append(ttk.Button(self.frame_CV, image = master.logo_accept, 
+                                                command=lambda row=i: multiple_confirm_CV(row), cursor=CURSOR_HAND))
+                btn_multiple_confirm_CV[-1].grid(row=i, column=5, padx = 5, pady = 5, sticky=NW)
+                btn_multiple_delete_CV.append(ttk.Button(self.frame_CV, image = master.logo_delete, 
+                                                command=lambda row=i: multiple_delete_CV(row), cursor=CURSOR_HAND))
+                btn_multiple_delete_CV[-1].grid(row=i, column=6, padx = 5, pady = 5, sticky=NW)
+                count_list = btn_multiple_confirm_CV.copy()
+            
+        def select_exp(self, master):
+            messagebox.showinfo("Metadata","1. Select the folders from the box on the left for which to copy the info!\n 2. Always remaining in the box on the left, press ENTER to confirm or ESC to cancel!")
+            enable_buttons([self.my_listbox])
+            tab_names = [self.notebook.tab(i, state='normal') for i in self.notebook.tabs()]
             self.my_listbox.selection_set(self.selected_index)    
             self.my_listbox['selectmode'] = MULTIPLE
             
@@ -1287,13 +1319,13 @@ class xnat_pic_gui():
             self.my_listbox.bind("<<ListboxSelect>>", select_listbox)
 
             def select_tab_listbox(event):
-               tab_id = self.notebook.select()
-               self.tab_name = self.notebook.tab(tab_id, "text")
-               # Update the listbox
-               self.my_listbox.delete(0, END)
-               self.my_listbox.insert(tk.END, *self.todos[self.tab_name])
-               self.list_tab_listbox.append(self.seltext)
-               
+                tab_id = self.notebook.select()
+                self.tab_name = self.notebook.tab(tab_id, "text")
+                # Update the listbox
+                self.my_listbox.delete(0, END)
+                self.my_listbox.insert(tk.END, *self.todos[self.tab_name])
+                self.list_tab_listbox.append(self.seltext)
+                
             self.notebook.bind("<<NotebookTabChanged>>", select_tab_listbox)  
 
             # The user presses 'enter' to confirm 
@@ -1307,12 +1339,11 @@ class xnat_pic_gui():
                     except Exception as e: 
                         messagebox.showerror("XNAT-PIC", "Error in checking fields" + str(e))  
                         raise
-               
+                
                 for x in range(len(self.list_tab_listbox)):
                     for y in range(len(self.list_tab_listbox[x])):
                         try:
-
-                            self.save_entries(self.list_tab_listbox[x][y])
+                            self.save_entries(self.list_tab_listbox[x][y], multiple=1)
                         except Exception as e: 
                             messagebox.showerror("XNAT-PIC", "Error in saving" + str(e))  
                             raise
