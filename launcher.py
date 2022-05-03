@@ -147,12 +147,23 @@ class xnat_pic_gui():
             self.root.screenwidth=self.root.winfo_screenwidth()
             self.root.screenheight=self.root.winfo_screenheight()
 
+        # Toolbar Menu
+        self.toolbar_menu = tk.Menu(self.root)
+        fileMenu = tk.Menu(self.toolbar_menu, tearoff=0)
+        fileMenu.add_separator()
+        fileMenu.add_command(label="Exit", command=lambda: self.root.destroy())
+
+        self.toolbar_menu.add_cascade(label="File", menu=fileMenu)
+        self.toolbar_menu.add_cascade(label="Edit")
+        self.toolbar_menu.add_cascade(label="Options")
+        self.root.config(menu=self.toolbar_menu)
+
         # Adjust size based on screen resolution
         w = self.root.screenwidth
         h = self.root.screenheight
         monitor_info = GetMonitorInfo(MonitorFromPoint((0,0)))
         work_area = monitor_info.get("Work")
-        work_height = work_area[3]
+        work_height = work_area[3] - 10
         self.root.geometry("%dx%d+0+0" % (w, h))
         self.root.title("   XNAT-PIC   ~   Molecular Imaging Center   ~   University of Torino   ")
         # If you want the logo 
@@ -1666,10 +1677,6 @@ class xnat_pic_gui():
                     except FileNotFoundError:
                         pass
                 popup.destroy()
-                # Start a thread to keep updated the current session
-                # self.session_thread = threading.Thread(target=self.refresh_session, args=())
-                # self.session_thread.start()
-
                 # Go to the overall uploader
                 self.overall_uploader(master)
 
@@ -1677,14 +1684,6 @@ class xnat_pic_gui():
                 messagebox.showerror("Error!", error)
                 popup.destroy()
                 enable_buttons([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn])
-
-        def refresh_session(self):
-            # Keep updated the current session
-            while self.session != '':
-                self.session.clearcache()
-                print('Session updated')
-                time.sleep(60)
-            print('Refresh thread stopped')
 
         def save_credentials(self, popup):
 
@@ -2038,7 +2037,7 @@ class xnat_pic_gui():
             # Scrollbar for Treeview widget
             self.tree_scrollbar = ttk.Scrollbar(self.folder_selection_label_frame, orient='vertical', command=self.tree.yview)
 
-            self.tree_scrollbar.grid(row=1, column=1, padx=0, pady=10, sticky=tk.NS)
+            self.tree_scrollbar.grid(row=1, column=1, padx=0, pady=10, ipadx=0, sticky=tk.NS)
             self.tree.configure(yscrollcommand=self.tree_scrollbar.set)
             self.tree["columns"] = ("#1", "#2", "#3")
             self.tree.heading("#0", text="Selected folder", anchor=tk.NW)
@@ -2054,7 +2053,7 @@ class xnat_pic_gui():
 
             # Label Frame Uploader Options
             self.uploader_options = ttk.LabelFrame(master.my_canvas, text="Options")
-            master.my_canvas.create_window(3*x_btn + x_btn/2, int(y_btn*0.25), window=self.uploader_options, anchor=tk.NW)
+            master.my_canvas.create_window(int(3*x_btn + 2*x_btn/3), int(y_btn*0.25), window=self.uploader_options, anchor=tk.NW)
 
             # Upload additional files
             self.add_file_flag = tk.IntVar()
@@ -2096,7 +2095,7 @@ class xnat_pic_gui():
                 disable_buttons([self.entry_prjname, self.confirm_new_prj, self.reject_new_prj])
 
             self.project_list_label = ttk.Label(self.uploader_data, text="Select Project")
-            self.project_list_label.grid(row=0, column=0, padx=2, pady=5, sticky=tk.NW)
+            self.project_list_label.grid(row=0, column=0, padx=2, pady=10, sticky=tk.NW)
             self.OPTIONS = list(self.session.projects)
             self.prj = tk.StringVar()
             default_value = "--"
@@ -2104,7 +2103,7 @@ class xnat_pic_gui():
             self.project_list.configure(state="disabled", width=30)
             self.prj.trace('w', get_subjects)
             self.prj.trace('w', reject_project)
-            self.project_list.grid(row=0, column=1, padx=2, pady=5, sticky=tk.NW)
+            self.project_list.grid(row=0, column=1, padx=2, pady=10, sticky=tk.NW)
             
             # Button to add a new project
             def add_project():
@@ -2112,22 +2111,22 @@ class xnat_pic_gui():
                 self.entry_prjname.delete(0,tk.END)
             self.new_prj_btn = ttk.Button(self.uploader_data, state=tk.DISABLED, width=20, style="Popup.TButton",
                                         command=add_project, cursor=CURSOR_HAND, text="Add New Project")
-            self.new_prj_btn.grid(row=0, column=2, padx=10, pady=5, sticky=tk.NW)
+            self.new_prj_btn.grid(row=0, column=2, padx=20, pady=10, sticky=tk.NW)
             
             # Entry to write a new project
             self.entry_prjname = ttk.Entry(self.uploader_data)
             self.entry_prjname.configure(state="disabled", width=30)
-            self.entry_prjname.grid(row=0, column=3, padx=2, pady=5, sticky=tk.NW)
+            self.entry_prjname.grid(row=0, column=3, padx=2, pady=10, sticky=tk.NW)
 
             # Button to confirm new project
             self.confirm_new_prj = ttk.Button(self.uploader_data, image=master.logo_accept, style="Popup.TButton",
                                             command=self.check_project_name, cursor=CURSOR_HAND, state='disabled')
-            self.confirm_new_prj.grid(row=0, column=4, padx=10, pady=5, sticky=tk.NW)
+            self.confirm_new_prj.grid(row=0, column=4, padx=10, pady=10, sticky=tk.NW)
 
             # Button to reject new project
             self.reject_new_prj = ttk.Button(self.uploader_data, image=master.logo_delete, style="Popup.TButton",
                                             command=reject_project, cursor=CURSOR_HAND, state='disabled')
-            self.reject_new_prj.grid(row=0, column=5, padx=2, pady=5, sticky=tk.NW)
+            self.reject_new_prj.grid(row=0, column=5, padx=2, pady=10, sticky=tk.NW)
             
             #############################################
 
@@ -2153,7 +2152,7 @@ class xnat_pic_gui():
             else:
                 self.OPTIONS2 = []
             self.subject_list_label = ttk.Label(self.uploader_data, text="Select Subject")
-            self.subject_list_label.grid(row=1, column=0, padx=2, pady=5, sticky=tk.NW)
+            self.subject_list_label.grid(row=1, column=0, padx=2, pady=10, sticky=tk.NW)
             self.sub = tk.StringVar()
             self.subject_list = ttk.OptionMenu(self.uploader_data, self.sub, default_value, *self.OPTIONS2)
             self.subject_list.configure(state="disabled", width=30)
@@ -2167,22 +2166,22 @@ class xnat_pic_gui():
                 self.entry_subname.delete(0,tk.END)
             self.new_sub_btn = ttk.Button(self.uploader_data, state=tk.DISABLED, width=20, style="Popup.TButton",
                                         command=add_subject, cursor=CURSOR_HAND, text="Add New Subject")
-            self.new_sub_btn.grid(row=1, column=2, padx=10, pady=5, sticky=tk.NW)
+            self.new_sub_btn.grid(row=1, column=2, padx=20, pady=10, sticky=tk.NW)
 
             # Entry to write a new subject
             self.entry_subname = ttk.Entry(self.uploader_data)
             self.entry_subname.configure(state="disabled", width=30)
-            self.entry_subname.grid(row=1, column=3, padx=2, pady=5, sticky=tk.NW)
+            self.entry_subname.grid(row=1, column=3, padx=2, pady=10, sticky=tk.NW)
 
             # Button to confirm new subject
             self.confirm_new_sub = ttk.Button(self.uploader_data, image=master.logo_accept, style="Popup.TButton",
                                             command=self.check_subject_name, cursor=CURSOR_HAND, state='disabled')
-            self.confirm_new_sub.grid(row=1, column=4, padx=10, pady=5, sticky=tk.NW)
+            self.confirm_new_sub.grid(row=1, column=4, padx=10, pady=10, sticky=tk.NW)
 
             # Button to reject new subject
             self.reject_new_sub = ttk.Button(self.uploader_data, image = master.logo_delete, style="Popup.TButton",
                                             command=reject_subject, cursor=CURSOR_HAND, state='disabled')
-            self.reject_new_sub.grid(row=1, column=5, padx=2, pady=5, sticky=tk.NW)
+            self.reject_new_sub.grid(row=1, column=5, padx=2, pady=10, sticky=tk.NW)
             #############################################
 
             #############################################
@@ -2197,12 +2196,12 @@ class xnat_pic_gui():
             else:
                 self.OPTIONS3 = []
             self.experiment_list_label = ttk.Label(self.uploader_data, text="Select Experiment")
-            self.experiment_list_label.grid(row=2, column=0, padx=2, pady=5, sticky=tk.NW)
+            self.experiment_list_label.grid(row=2, column=0, padx=2, pady=10, sticky=tk.NW)
             self.exp = tk.StringVar()
             self.experiment_list = ttk.OptionMenu(self.uploader_data, self.exp, default_value, *self.OPTIONS3)
             self.experiment_list.configure(state="disabled", width=30)
             self.exp.trace('w', reject_experiment)
-            self.experiment_list.grid(row=2, column=1, padx=2, pady=5, sticky=tk.NW)
+            self.experiment_list.grid(row=2, column=1, padx=2, pady=10, sticky=tk.NW)
             
             # Button to add a new experiment
             def add_experiment():
@@ -2210,22 +2209,22 @@ class xnat_pic_gui():
                 self.entry_expname.delete(0,tk.END)
             self.new_exp_btn = ttk.Button(self.uploader_data, state=tk.DISABLED, style="Popup.TButton", 
                                         text="Add New Experiment", command=add_experiment, cursor=CURSOR_HAND, width=20)
-            self.new_exp_btn.grid(row=2, column=2, padx=10, pady=5, sticky=tk.NW)
+            self.new_exp_btn.grid(row=2, column=2, padx=20, pady=10, sticky=tk.NW)
 
             # Entry to write a new experiment
             self.entry_expname = ttk.Entry(self.uploader_data)
             self.entry_expname.config(state='disabled', width=30)
-            self.entry_expname.grid(row=2, column=3, padx=2, pady=5, sticky=tk.NW)
+            self.entry_expname.grid(row=2, column=3, padx=2, pady=10, sticky=tk.NW)
 
             # Button to confirm new experiment
             self.confirm_new_exp = ttk.Button(self.uploader_data, image = master.logo_accept, style="Popup.TButton",
                                             command=self.check_experiment_name, cursor=CURSOR_HAND, state='disabled')
-            self.confirm_new_exp.grid(row=2, column=4, padx=10, pady=5, sticky=tk.NW)
+            self.confirm_new_exp.grid(row=2, column=4, padx=10, pady=10, sticky=tk.NW)
 
             # Button to reject new experiment
             self.reject_new_exp = ttk.Button(self.uploader_data, image = master.logo_delete, style="Popup.TButton",
                                             command=reject_experiment, cursor=CURSOR_HAND, state='disabled')
-            self.reject_new_exp.grid(row=2, column=5, padx=2, pady=5, sticky=tk.NW)
+            self.reject_new_exp.grid(row=2, column=5, padx=2, pady=10, sticky=tk.NW)
             #############################################
 
             #############################################
@@ -2281,6 +2280,7 @@ class xnat_pic_gui():
             def back():
                 destroy_widgets([self.label_frame_uploader, self.uploader_data, self.uploader_options,
                                 self.exit_btn, self.next_btn, self.folder_selection_label_frame])
+                delete_widgets(master.my_canvas, [self.frame_title])
                 self.overall_uploader(master)
 
             # Initialize the press button value
