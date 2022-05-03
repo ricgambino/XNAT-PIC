@@ -57,6 +57,7 @@ LARGE_FONT = ("Calibri", 22, "bold")
 SMALL_FONT = ("Calibri", 16, "bold")
 SMALL_FONT_2 = ("Calibri", 10)
 SMALL_FONT_3 = ("Calibri", 12)
+SMALL_FONT_4 = ("Calibri", 16)
 CURSOR_HAND = "hand2"
 QUESTION_HAND = "question_arrow"
 BORDERWIDTH = 3
@@ -753,7 +754,7 @@ class xnat_pic_gui():
             self.notebook.pack()
             
             ### Tab Content is a listbox
-            self.my_listbox = tk.Listbox(master.my_canvas, borderwidth=0, highlightbackground = WHITE, highlightcolor= WHITE, font=SMALL_FONT_3, selectmode=SINGLE, takefocus = 0)
+            self.my_listbox = tk.Listbox(master.my_canvas, background = LIGHT_GREY, borderwidth=2, highlightbackground = "#008ad7", selectbackground = AZURE, relief=tk.FLAT, font=SMALL_FONT_3, selectmode=SINGLE, takefocus = 0)
             x_listbox = int(my_width*23.5/100)
             y_listbox = int(my_height*19/100)
             h_listbox = int(my_height*47/100)
@@ -761,16 +762,16 @@ class xnat_pic_gui():
             master.my_canvas.create_window(x_listbox, y_listbox, width = w_listbox, height = h_listbox, anchor = tk.NW, window=self.my_listbox)
             
             # # Yscrollbar for listbox
-            self.my_yscrollbar = tk.Scrollbar(master.my_canvas, orient="vertical")
+            self.my_yscrollbar = ttk.Scrollbar(master.my_canvas, orient="vertical")
             self.my_listbox.config(yscrollcommand = self.my_yscrollbar.set)
             self.my_yscrollbar.config(command = self.my_listbox.yview)
-            x_my_yscrollbar = int(my_width*22/100)
+            x_my_yscrollbar = int(my_width*22.2/100)
             y_my_yscrollbar = int(my_height*19/100)
             h_yscrollbar = int(my_height*48/100)
             master.my_canvas.create_window(x_my_yscrollbar, y_my_yscrollbar, height = h_yscrollbar, anchor = tk.NW, window=self.my_yscrollbar)
 
             # Xscrollbar for listbox
-            self.my_xscrollbar = tk.Scrollbar(master.my_canvas, orient="horizontal")
+            self.my_xscrollbar = ttk.Scrollbar(master.my_canvas, orient="horizontal")
             self.my_listbox.config(xscrollcommand = self.my_xscrollbar.set)
             self.my_xscrollbar.config(command = self.my_listbox.xview)
             x_my_xscrollbar = int(my_width*23.1/100)
@@ -780,7 +781,7 @@ class xnat_pic_gui():
 
             # Sorts the tabs first by length and then alphabetically
             for key in sorted(self.todos, key=len):
-                self.notebook.add(tk.Frame(self.notebook, background=LIGHT_GREY), text=key, underline=0, sticky=tk.NE + tk.SW)
+                self.notebook.add(tk.Frame(self.notebook, background="#99D0EF"), text=key, underline=0, sticky=tk.NE + tk.SW)
 
             self.notebook.enable_traversal()
             
@@ -801,9 +802,9 @@ class xnat_pic_gui():
             h_lbl_ID = int(my_height*25/100)
             #
             # Scroll bar in the Label frame ID
-            self.canvas_ID = tk.Canvas(self.label_frame_ID, bg='white')
-            self.frame_ID = tk.Frame(self.canvas_ID, bg='white')
-            self.vsb_ID = tk.Scrollbar(self.label_frame_ID, orient="vertical", command=self.canvas_ID.yview)
+            self.canvas_ID = tk.Canvas(self.label_frame_ID, bg=LIGHT_GREY)
+            self.frame_ID = tk.Frame(self.canvas_ID, bg=LIGHT_GREY)
+            self.vsb_ID = ttk.Scrollbar(self.label_frame_ID, orient="vertical", command=self.canvas_ID.yview)
             self.canvas_ID.configure(yscrollcommand=self.vsb_ID.set, width=w_lbl_ID, height=h_lbl_ID)       
 
             self.vsb_ID.pack(side="right", fill="y")
@@ -824,21 +825,21 @@ class xnat_pic_gui():
             count = 0
             for key in keys_ID:
                 # Variable
-                self.entries_variable_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT, takefocus = 0, width=15, style = 'Metadata.TEntry'))
+                self.entries_variable_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT_4, takefocus = 0, width=15, style = 'Metadata.TEntry'))
                 self.entries_variable_ID[-1].insert(0, key)
                 self.entries_variable_ID[-1]['state'] = 'disabled'
                 self.entries_variable_ID[-1].grid(row=count, column=0, padx = 5, pady = 5, sticky=W)
                 # Value
                 if key == "Acq. date":
-                    self.entries_value_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT, state='disabled', takefocus = 0, width=20, style = 'Metadata.TEntry'))
+                    self.entries_value_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT_4, state='disabled', takefocus = 0, width=20, style = 'Metadata.TEntry'))
                     self.entries_value_ID[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=NW)
                 else:
-                    self.entries_value_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT, state='disabled', takefocus = 0, width=44, style = 'Metadata.TEntry'))
+                    self.entries_value_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT_4, state='disabled', takefocus = 0, width=44, style = 'Metadata.TEntry'))
                     self.entries_value_ID[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=W)
                 count += 1
 
             # Calendar for acq. date
-            self.cal = DateEntry(self.frame_ID, state = tk.DISABLED, width=11, font = SMALL_FONT_3, background=AZURE, date_pattern = 'y-mm-dd', foreground='white', borderwidth=0, selectbackground = AZURE, selectforeground = "black")
+            self.cal = DateEntry(self.frame_ID,  state = tk.DISABLED, width=11, font = SMALL_FONT_3, background=AZURE, date_pattern = 'y-mm-dd', foreground='white', borderwidth=0, selectbackground = AZURE_DISABLED, selectforeground = "black", style = 'Metadata.TCombobox')
             self.cal.delete(0, tk.END)
             self.cal.grid(row=4, column=1, padx = 5, pady = 5, sticky=NE)
 
@@ -852,9 +853,9 @@ class xnat_pic_gui():
             w_lbl_CV = int(my_width*47/100)
 
             # Scroll bar in the Label frame CV
-            self.canvas_CV = tk.Canvas(self.label_frame_CV, bg='white')
-            self.frame_CV = tk.Frame(self.canvas_CV, bg='white')
-            self.vsb_CV = tk.Scrollbar(self.label_frame_CV, orient="vertical", command=self.canvas_CV.yview)
+            self.canvas_CV = tk.Canvas(self.label_frame_CV, bg=LIGHT_GREY)
+            self.frame_CV = tk.Frame(self.canvas_CV, bg=LIGHT_GREY)
+            self.vsb_CV = ttk.Scrollbar(self.label_frame_CV, orient="vertical", command=self.canvas_CV.yview)
             self.canvas_CV.configure(yscrollcommand=self.vsb_CV.set, width=w_lbl_CV, height=h_lbl_CV)       
 
             self.vsb_CV.pack(side="right", fill="y")
@@ -875,19 +876,19 @@ class xnat_pic_gui():
             count = 0
             for key in keys_CV:
                 # Variable
-                self.entries_variable_CV.append(ttk.Entry(self.frame_CV, font=SMALL_FONT, takefocus = 0, width=15, style = 'Metadata.TEntry'))
+                self.entries_variable_CV.append(ttk.Entry(self.frame_CV, font=SMALL_FONT_4, takefocus = 0, width=15, style = 'Metadata.TEntry'))
                 self.entries_variable_CV[-1].insert(0, key)
                 self.entries_variable_CV[-1]['state'] = 'disabled'
                 self.entries_variable_CV[-1].grid(row=count, column=0, padx = 5, pady = 5, sticky=W)
                 # Value
-                self.entries_value_CV.append(ttk.Entry(self.frame_CV, font=SMALL_FONT, state='disabled', takefocus = 0, width=25, style = 'Metadata.TEntry'))
+                self.entries_value_CV.append(ttk.Entry(self.frame_CV, font=SMALL_FONT_4, state='disabled', takefocus = 0, width=25, style = 'Metadata.TEntry'))
                 self.entries_value_CV[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=W)
                 count += 1
 
             # Group Menu
             OPTIONS = ["untreated", "treated"]
             self.selected_group = tk.StringVar()
-            self.group_menu = ttk.Combobox(self.frame_CV, font = SMALL_FONT, takefocus = 0, textvariable=self.selected_group, width=10)
+            self.group_menu = ttk.Combobox(self.frame_CV, font = SMALL_FONT_4, takefocus = 0, textvariable=self.selected_group, width=10, style="Metadata.TCombobox")
             self.group_menu['values'] = OPTIONS
             self.group_menu['state'] = 'disabled'
             self.group_menu.grid(row=0, column=2, padx = 5, pady = 5, sticky=W)
@@ -895,7 +896,7 @@ class xnat_pic_gui():
             # UM for dose
             self.OPTIONS_UM = ["Mg", "kg", "mg", "µg", "ng"]
             self.selected_dose = tk.StringVar()
-            self.dose_menu = ttk.Combobox(self.frame_CV, font = SMALL_FONT, takefocus = 0, textvariable=self.selected_dose, width=10)
+            self.dose_menu = ttk.Combobox(self.frame_CV, font = SMALL_FONT_4, takefocus = 0, textvariable=self.selected_dose, width=10, style="Metadata.TCombobox")
             self.dose_menu['values'] = self.OPTIONS_UM
             self.dose_menu['state'] = 'disabled'
             self.dose_menu.grid(row=2, column=2, padx = 5, pady = 5, sticky=W)
@@ -903,17 +904,17 @@ class xnat_pic_gui():
             # Timepoint
             self.OPTIONS = ["pre", "post"]
             self.selected_timepoint = tk.StringVar()
-            self.timepoint_menu = ttk.Combobox(self.frame_CV, font = SMALL_FONT, takefocus = 0, textvariable=self.selected_timepoint, width=10)
+            self.timepoint_menu = ttk.Combobox(self.frame_CV, font = SMALL_FONT_4, takefocus = 0, textvariable=self.selected_timepoint, width=10, style="Metadata.TCombobox")
             self.timepoint_menu['values'] = self.OPTIONS
             self.timepoint_menu['state'] = 'disabled'
             self.timepoint_menu.grid(row=1, column=2, padx = 5, pady = 5, sticky=W)
 
-            self.time_entry = ttk.Entry(self.frame_CV, font = SMALL_FONT, state='disabled', takefocus = 0, width=5, style = 'Metadata.TEntry')
+            self.time_entry = ttk.Entry(self.frame_CV, font = SMALL_FONT_4, state='disabled', takefocus = 0, width=5, style = 'Metadata.TEntry')
             self.time_entry.grid(row=1, column=3, padx = 5, pady = 5, sticky=W)
 
             self.OPTIONS1 = ["seconds", "minutes", "hours", "days", "weeks", "months", "years"]
             self.selected_timepoint1 = tk.StringVar()
-            self.timepoint_menu1 = ttk.Combobox(self.frame_CV, font = SMALL_FONT, takefocus = 0, textvariable=self.selected_timepoint1, width=7)
+            self.timepoint_menu1 = ttk.Combobox(self.frame_CV, font = SMALL_FONT_4, takefocus = 0, textvariable=self.selected_timepoint1, width=7, style="Metadata.TCombobox")
             self.timepoint_menu1['values'] = self.OPTIONS1
             self.timepoint_menu1['state'] = 'disabled'
             self.timepoint_menu1.grid(row=1, column=4, padx = 5, pady = 5, sticky=W)
@@ -978,13 +979,13 @@ class xnat_pic_gui():
                 ID = True
                 count = 1
                 self.entries_variable_ID = []
-                self.entries_variable_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT, takefocus = 0, width=15, style = 'Metadata.TEntry'))
+                self.entries_variable_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT_4, takefocus = 0, width=15, style = 'Metadata.TEntry'))
                 self.entries_variable_ID[-1].insert(0, "Folder")
                 self.entries_variable_ID[-1]['state'] = 'disabled'
                 self.entries_variable_ID[-1].grid(row=0, column=0, padx = 5, pady = 5, sticky=W)
                 self.entries_variable_CV = []
                 self.entries_value_ID = []
-                self.entries_value_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT, takefocus = 0, width=44, style = 'Metadata.TEntry'))
+                self.entries_value_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT_4, takefocus = 0, width=44, style = 'Metadata.TEntry'))
                 self.entries_value_ID[-1].insert(0, self.selected_folder)
                 self.entries_value_ID[-1]['state'] = 'disabled'
                 self.entries_value_ID[-1].grid(row=0, column=1, padx = 5, pady = 5, sticky=W)
@@ -996,16 +997,16 @@ class xnat_pic_gui():
                         ID = False
                         count = 0
                     if ID:
-                        self.entries_variable_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT, takefocus = 0, width=15, style = 'Metadata.TEntry'))
+                        self.entries_variable_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT_4, takefocus = 0, width=15, style = 'Metadata.TEntry'))
                         self.entries_variable_ID[-1].insert(0, k)
                         self.entries_variable_ID[-1]['state'] = 'disabled'
                         self.entries_variable_ID[-1].grid(row=count, column=0, padx = 5, pady = 5, sticky=W)
                         # Value
                         if k == "Acquisition_date":
-                            self.entries_value_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT, takefocus = 0, width=20, style = 'Metadata.TEntry'))
+                            self.entries_value_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT_4, takefocus = 0, width=20, style = 'Metadata.TEntry'))
                             self.entries_value_ID[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=NW)
                         else:
-                            self.entries_value_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT, takefocus = 0, width=44, style = 'Metadata.TEntry'))
+                            self.entries_value_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT_4, takefocus = 0, width=44, style = 'Metadata.TEntry'))
                             self.entries_value_ID[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=W)
                         self.entries_value_ID[-1].insert(0, v)
                         self.entries_value_ID[-1]['state'] = 'disabled'
@@ -1014,12 +1015,12 @@ class xnat_pic_gui():
                         
                     else:
                         if k != "C_V":
-                            self.entries_variable_CV.append(ttk.Entry(self.frame_CV, font=SMALL_FONT, takefocus = 0, width=15, style = 'Metadata.TEntry'))
+                            self.entries_variable_CV.append(ttk.Entry(self.frame_CV, font=SMALL_FONT_4, takefocus = 0, width=15, style = 'Metadata.TEntry'))
                             self.entries_variable_CV[-1].insert(0, k)
                             self.entries_variable_CV[-1]['state'] = 'disabled'
                             self.entries_variable_CV[-1].grid(row=count, column=0, padx = 5, pady = 5, sticky=W)
                             # Value
-                            self.entries_value_CV.append(ttk.Entry(self.frame_CV, font=SMALL_FONT, takefocus = 0, width=25, style = 'Metadata.TEntry'))
+                            self.entries_value_CV.append(ttk.Entry(self.frame_CV, font=SMALL_FONT_4, takefocus = 0, width=25, style = 'Metadata.TEntry'))
                             self.entries_value_CV[-1].insert(0, v)
                             self.entries_value_CV[-1]['state'] = 'disabled'
                             self.entries_value_CV[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=W)
@@ -1390,12 +1391,12 @@ class xnat_pic_gui():
             next_row = len(self.entries_variable_ID)
             
             # Add entry variable ID
-            ent_variable = ttk.Entry(self.frame_ID, font=SMALL_FONT, takefocus = 0, width=15, style = 'Metadata.TEntry')
+            ent_variable = ttk.Entry(self.frame_ID, font=SMALL_FONT_4, takefocus = 0, width=15, style = 'Metadata.TEntry')
             ent_variable.grid(row=next_row, column=0, padx = 5, pady = 5, sticky=W)
             self.entries_variable_ID.append(ent_variable)                 
 
             # Add entry value ID in second col
-            ent_value = ttk.Entry(self.frame_ID, font=SMALL_FONT, takefocus = 0, width=44, style = 'Metadata.TEntry')
+            ent_value = ttk.Entry(self.frame_ID, font=SMALL_FONT_4, takefocus = 0, width=44, style = 'Metadata.TEntry')
             ent_value.grid(row=next_row, column=1, padx = 5, pady = 5, sticky=W)
             self.entries_value_ID.append(ent_value)
 
@@ -1443,12 +1444,12 @@ class xnat_pic_gui():
             next_row = len(self.entries_variable_CV)
             
             # Add entry variable CV
-            ent_variable = ttk.Entry(self.frame_CV, font=SMALL_FONT, takefocus = 0, width=15, style = 'Metadata.TEntry')
+            ent_variable = ttk.Entry(self.frame_CV, font=SMALL_FONT_4, takefocus = 0, width=15, style = 'Metadata.TEntry')
             ent_variable.grid(row=next_row, column=0, padx = 5, pady = 5, sticky=W)
             self.entries_variable_CV.append(ent_variable)                 
 
-            # add entry value in second col
-            ent_value = ttk.Entry(self.frame_CV, font=SMALL_FONT, takefocus = 0, width=25, style = 'Metadata.TEntry')
+            # Add entry value in second col
+            ent_value = ttk.Entry(self.frame_CV, font=SMALL_FONT_4, takefocus = 0, width=25, style = 'Metadata.TEntry')
             ent_value.grid(row=next_row, column=1, padx = 5, pady = 5, sticky=W)
             self.entries_value_CV.append(ent_value)
             
