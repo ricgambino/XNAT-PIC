@@ -41,14 +41,16 @@ from layout_style import MyStyle
 
 PATH_IMAGE = "images\\"
 PERCENTAGE_SCREEN = 1  # Defines the size of the canvas. If equal to 1 (100%) ,it takes the whole screen
-BACKGROUND_COLOR = "#ffffff"
-THEME_COLOR = "#E5EAF0"
-THEME_COLOR_2 = '#0070C0'
+WHITE = "#ffffff"
+LIGHT_GREY = "#F1FFFE"
+LIGHT_GREY_DISABLED = "#91A3B1"
+AZURE = "#008ad7"
+AZURE_DISABLED = "#99D0EF"
+DARKER_AZURE = "#006EAC"
 TEXT_BTN_COLOR = "black"
 TEXT_BTN_COLOR_2 = "white"
 TEXT_LBL_COLOR = "black"
 BG_BTN_COLOR = "#E5EAF0"
-BG_BTN_COLOR_2 = '#0070C0'
 BG_LBL_COLOR = "black"
 DISABLE_LBL_COLOR = '#D3D3D3'
 LARGE_FONT = ("Calibri", 22, "bold")
@@ -109,7 +111,7 @@ class SplashScreen(tk.Toplevel):
         width = int(self.w)
         wpercent = (width/float(im.size[0]))
         height = int((float(im.size[1])*float(wpercent)))
-        self.my_canvas = tk.Canvas(self, height=height, width=width, bg="white", highlightthickness=1, highlightbackground=THEME_COLOR)
+        self.my_canvas = tk.Canvas(self, height=height, width=width, bg="white", highlightthickness=1, highlightbackground=LIGHT_GREY)
         self.my_canvas.pack()
     
         # Adapt the size of the logo to the size of the canvas
@@ -161,8 +163,8 @@ class xnat_pic_gui():
         global my_height
         my_width = int(w*PERCENTAGE_SCREEN)
         my_height = int(work_height*PERCENTAGE_SCREEN)
-        self.my_canvas = tk.Canvas(self.root, width=my_width, height=my_height, bg=BACKGROUND_COLOR, highlightthickness=0, 
-                                    highlightbackground=THEME_COLOR)
+        self.my_canvas = tk.Canvas(self.root, width=my_width, height=my_height, bg=LIGHT_GREY, highlightthickness=0, 
+                                    highlightbackground=LIGHT_GREY)
         self.my_canvas.place(x=0, y=0, anchor=tk.NW)
 
         # Logo Panel
@@ -177,7 +179,7 @@ class xnat_pic_gui():
         logo = Image.open(PATH_IMAGE + "XNAT-PIC-logo.png").convert("RGBA")
         logo = logo.resize((int(logo.size[0]/3), int(logo.size[1]/3)), Image.ANTIALIAS)
         self.logo = ImageTk.PhotoImage(logo)
-        self.logo_img = tk.Button(self.my_canvas, image=self.logo, background=BACKGROUND_COLOR, borderwidth=0)
+        self.logo_img = tk.Button(self.my_canvas, image=self.logo, background=LIGHT_GREY, borderwidth=0)
         self.img2 = self.my_canvas.create_window(int(my_width/5 + ((4*my_width/5)/2)), int(my_height*10/100), 
                                                 anchor=tk.CENTER, window=self.logo_img)
         
@@ -751,7 +753,7 @@ class xnat_pic_gui():
             self.notebook.pack()
             
             ### Tab Content is a listbox
-            self.my_listbox = tk.Listbox(master.my_canvas, borderwidth=0, highlightbackground = BACKGROUND_COLOR, highlightcolor= BACKGROUND_COLOR, font=SMALL_FONT_3, selectmode=SINGLE, takefocus = 0)
+            self.my_listbox = tk.Listbox(master.my_canvas, borderwidth=0, highlightbackground = WHITE, highlightcolor= WHITE, font=SMALL_FONT_3, selectmode=SINGLE, takefocus = 0)
             x_listbox = int(my_width*23.5/100)
             y_listbox = int(my_height*19/100)
             h_listbox = int(my_height*47/100)
@@ -778,7 +780,7 @@ class xnat_pic_gui():
 
             # Sorts the tabs first by length and then alphabetically
             for key in sorted(self.todos, key=len):
-                self.notebook.add(tk.Frame(self.notebook, background=THEME_COLOR), text=key, underline=0, sticky=tk.NE + tk.SW)
+                self.notebook.add(tk.Frame(self.notebook, background=LIGHT_GREY), text=key, underline=0, sticky=tk.NE + tk.SW)
 
             self.notebook.enable_traversal()
             
@@ -836,7 +838,7 @@ class xnat_pic_gui():
                 count += 1
 
             # Calendar for acq. date
-            self.cal = DateEntry(self.frame_ID, state = tk.DISABLED, width=11, font = SMALL_FONT_3, background=BG_BTN_COLOR_2, date_pattern = 'y-mm-dd', foreground='white', borderwidth=0, selectbackground = BG_BTN_COLOR_2, selectforeground = "black")
+            self.cal = DateEntry(self.frame_ID, state = tk.DISABLED, width=11, font = SMALL_FONT_3, background=AZURE, date_pattern = 'y-mm-dd', foreground='white', borderwidth=0, selectbackground = AZURE, selectforeground = "black")
             self.cal.delete(0, tk.END)
             self.cal.grid(row=4, column=1, padx = 5, pady = 5, sticky=NE)
 
@@ -1527,7 +1529,7 @@ class xnat_pic_gui():
             disable_buttons([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn])
 
             # Start with a popup to get credentials
-            login_popup = tk.Toplevel(background="#ffffff")
+            login_popup = tk.Toplevel(background=WHITE)
             login_popup.title("XNAT-PIC ~ Login")
             login_popup.geometry("%dx%d+%d+%d" % (400, 250, my_width/3, my_height/4))
 
@@ -1543,7 +1545,7 @@ class xnat_pic_gui():
             login_popup.cred_frame.grid(row=1, column=0, padx=10, pady=5, sticky=tk.W, columnspan=2)
 
             # XNAT ADDRESS      
-            login_popup.label_address = ttk.Label(login_popup.cred_frame, text="XNAT web address")   
+            login_popup.label_address = ttk.Label(login_popup.cred_frame, text="XNAT web address", style="Popup.TLabel")   
             login_popup.label_address.grid(row=1, column=0, padx=2, pady=2, sticky=tk.E)
             login_popup.entry_address = ttk.Entry(login_popup.cred_frame, width=25)
             login_popup.entry_address.var = tk.StringVar()
@@ -1563,7 +1565,7 @@ class xnat_pic_gui():
             login_popup.modify_address_flag.trace('w', enable_address_modification)
            
             # XNAT USER 
-            login_popup.label_user = ttk.Label(login_popup.cred_frame, text="Username")
+            login_popup.label_user = ttk.Label(login_popup.cred_frame, text="Username", style="Popup.TLabel")
             login_popup.label_user.grid(row=2, column=0, padx=1, ipadx=1, sticky=tk.E)
 
             def get_list_of_users():
@@ -1620,13 +1622,13 @@ class xnat_pic_gui():
 
             login_popup.entry_user = tk.StringVar()
             login_popup.combo_user = ttk.Combobox(login_popup.cred_frame, font=SMALL_FONT_2, takefocus=0, textvariable=login_popup.entry_user, 
-                                                    state='normal', width=19)
+                                                    state='normal', width=19, style="Popup.TCombobox")
             login_popup.combo_user['values'] = get_list_of_users()
             login_popup.entry_user.trace('w', get_credentials)
             login_popup.combo_user.grid(row=2, column=1, padx=2, pady=2)
 
             # XNAT PASSWORD 
-            login_popup.label_psw = ttk.Label(login_popup.cred_frame, text="Password")
+            login_popup.label_psw = ttk.Label(login_popup.cred_frame, text="Password", style="Popup.TLabel")
             login_popup.label_psw.grid(row=3, column=0, padx=1, ipadx=1, sticky=tk.E)
 
             # Show/Hide the password
@@ -2022,8 +2024,10 @@ class xnat_pic_gui():
             self.file_btn.grid(row=0, column=3, padx=5, pady=5, sticky=tk.NW)
 
             ### Label Frame for folder selection
-            self.folder_selection_label_frame = ttk.Labelframe(master.my_canvas, text="Folder Selection", width=50, height=50)
+            self.folder_selection_label_frame = ttk.Labelframe(master.my_canvas, text="Folder Selection")
             master.my_canvas.create_window(x_btn_init, int(y_btn*0.25), window=self.folder_selection_label_frame, anchor=tk.NW)
+            self.folder_selection_label_frame.grid_columnconfigure(1, weight=1)
+            self.folder_selection_label_frame.grid_rowconfigure(1, weight=1)
             
             def select_folder(*args):
                 init_dir = os.path.expanduser("~").replace('\\', '/') + '/Desktop/Dataset'
@@ -2032,29 +2036,110 @@ class xnat_pic_gui():
 
             def folder_selected_handler(*args):
                 if self.folder_to_upload.get() != '':
-                    main_folder = self.tree.insert("", "end", iid=0, text=self.folder_to_upload.get().split('/')[-1], values=(), open=True)
-                    subdirectories = os.listdir(self.folder_to_upload.get())
-                    for i, sub in enumerate(subdirectories, 1):
-                        modification_time = str(time.strftime("%d/%m/%Y,%H:%M:%S", time.localtime(os.path.getmtime(os.path.join(self.folder_to_upload.get(), sub)))))
-                        folder_size = round(get_dir_size(os.path.join(self.folder_to_upload.get(), sub))/1000/1000, 1)
-                        self.tree.insert(main_folder, "end", iid=i, text=sub, values=(modification_time, str(folder_size) + 'MB'))
-                else:
-                    pass
+                    # Check for pre-existent tree
+                    if self.tree.exists(0):
+                        # # Check for the name of the previous tree
+                        # if self.tree.item(0)['text'] != self.folder_to_upload.get().split('/')[-1]:
+                        # If the folder name is changed, then delete the previous tree
+                        self.tree.delete(*self.tree.get_children())
+
+                    # Define the main folder into the Treeview object
+                    main_folder = self.tree.insert("", "end", iid=0, text=self.folder_to_upload.get().split('/')[-1], values=("", "", "Folder"), open=True)
+                    # Scan the folder to get its tree
+                    subdir = os.listdir(self.folder_to_upload.get())
+                    # Check for OS configuration files and remove them
+                    subdirectories = [x for x in subdir if x.endswith('.ini') == False]
+                    total_weight = 0
+                    last_edit_time = ''
+                    j = 1
+                    for sub in subdirectories:
+                        
+                        if os.path.isfile(os.path.join(self.folder_to_upload.get(), sub)):
+                            # Check for last edit time
+                            edit_time = str(time.strftime("%d/%m/%Y,%H:%M:%S", time.localtime(os.path.getmtime(os.path.join(self.folder_to_upload.get(), sub)))))
+                            if last_edit_time == '' or edit_time > last_edit_time:
+                                # Update the last edit time
+                                last_edit_time = edit_time
+                            # Check for file dimension
+                            file_weight = round(os.path.getsize(os.path.join(self.folder_to_upload.get(), sub))/1024, 2)
+                            total_weight += round(file_weight/1024, 2)
+                            # Add the item like a file
+                            self.tree.insert(main_folder, "end", iid=j, text=sub, values=(edit_time, str(file_weight) + "KB", "File"))
+                            # Update the j counter
+                            j += 1
+
+                        elif os.path.isdir(os.path.join(self.folder_to_upload.get(), sub)):
+                            current_weight = 0
+                            last_edit_time_lev2 = ''
+                            branch_idx = j
+                            level2_folder = self.tree.insert(main_folder, "end", iid=branch_idx, text=sub, values=("", "", "Folder"), open=False)
+                            j += 1
+                            # Scansiona le directory interne per ottenere il tree CHIUSO
+                            sub_level2 = os.listdir(os.path.join(self.folder_to_upload.get(), sub))
+                            subdirectories2 = [x for x in sub_level2 if x.endswith('.ini') == False]
+                            for sub2 in subdirectories2:
+                                if os.path.isfile(os.path.join(self.folder_to_upload.get(), sub, sub2)):
+                                    # Check for last edit time
+                                    edit_time = str(time.strftime("%d/%m/%Y,%H:%M:%S", time.localtime(os.path.getmtime(os.path.join(self.folder_to_upload.get(), sub, sub2)))))
+                                    if last_edit_time_lev2 == '' or edit_time > last_edit_time_lev2:
+                                        # Update the last edit time
+                                        last_edit_time_lev2 = edit_time
+                                    if last_edit_time_lev2 > last_edit_time:
+                                        last_edit_time = last_edit_time_lev2
+                                    # Check for file dimension
+                                    file_weight = round(os.path.getsize(os.path.join(self.folder_to_upload.get(), sub, sub2))/1024, 2)
+                                    current_weight += round(file_weight/1024, 2)
+                                    # Add the item like a file
+                                    self.tree.insert(level2_folder, "end", iid=j, text=sub2, values=(edit_time, str(file_weight) + "KB", "File"))
+                                    # Update the j counter
+                                    j += 1
+
+                                elif os.path.isdir(os.path.join(self.folder_to_upload.get(), sub, sub2)):
+                                    # Check for last edit time
+                                    edit_time = str(time.strftime("%d/%m/%Y,%H:%M:%S", time.localtime(os.path.getmtime(os.path.join(self.folder_to_upload.get(), sub, sub2)))))
+                                    if last_edit_time_lev2 == '' or edit_time > last_edit_time_lev2:
+                                        # Update the last edit time
+                                        last_edit_time_lev2 = edit_time
+                                    if last_edit_time_lev2 > last_edit_time:
+                                        last_edit_time = last_edit_time_lev2
+
+                                    folder_size = round(get_dir_size(os.path.join(self.folder_to_upload.get(), sub, sub2))/1024/1024, 2)
+                                    current_weight += folder_size
+                                    self.tree.insert(level2_folder, "end", iid=j, text=sub2, values=(edit_time, str(folder_size) + 'MB', "Folder"))
+                                    j += 1
+                                
+                            total_weight += current_weight
+                            self.tree.set(branch_idx, column="#1", value=last_edit_time_lev2)
+                            self.tree.set(branch_idx, column="#2", value=str(round(current_weight, 2)) + "MB")
+                        
+                        # Check for object type
+
+                    # Update the fields of the parent object
+                    self.tree.set(0, column="#1", value=last_edit_time)
+                    self.tree.set(0, column="#2", value=str(round(total_weight/1024, 2)) + "GB")
 
             self.folder_to_upload = tk.StringVar()
-            self.select_folder_button = ttk.Button(self.folder_selection_label_frame, text="Select folder", style="MainPopup.TButton",
+            self.select_folder_button = ttk.Button(self.folder_selection_label_frame, text="Select folder", style="TButton",
                                                     state='disabled', cursor=CURSOR_HAND, width=20, command=select_folder)
             self.select_folder_button.grid(row=0, column=0, padx=10, pady=10, sticky=tk.NW)
 
+            # Treeview for folder visualization
             self.tree = ttk.Treeview(self.folder_selection_label_frame, selectmode='none')
             self.tree.grid(row=1, column=0, padx=10, pady=10, sticky=tk.NW)
-            self.tree["columns"] = ("#1", "#2")
+            # Scrollbar for Treeview widget
+            self.tree_scrollbar = ttk.Scrollbar(self.folder_selection_label_frame, orient='vertical', command=self.tree.yview)
+
+            self.tree_scrollbar.grid(row=1, column=1, padx=0, pady=10, sticky=tk.NS)
+            self.tree.configure(yscrollcommand=self.tree_scrollbar.set)
+            self.tree["columns"] = ("#1", "#2", "#3")
             self.tree.heading("#0", text="Selected folder", anchor=tk.NW)
             self.tree.heading("#1", text="Last Update", anchor=tk.NW)
             self.tree.heading("#2", text="Size", anchor=tk.NW)
+            self.tree.heading("#3", text="Type", anchor=tk.NW)
             self.tree.column("#0", stretch=tk.YES)
             self.tree.column("#1", stretch=tk.YES)
             self.tree.column("#2", stretch=tk.YES)
+            self.tree.column("#3", stretch=tk.YES)
 
             self.folder_to_upload.trace('w', folder_selected_handler)
 
@@ -2073,6 +2158,7 @@ class xnat_pic_gui():
             self.n_custom_var = tk.IntVar()
             custom_var_options = list(range(0, 5))
             self.custom_var_list = ttk.OptionMenu(self.uploader_options, self.n_custom_var, 0, *custom_var_options)
+            self.custom_var_list.config(width=2)
             self.custom_var_list.grid(row=1, column=0, padx=5, pady=5, sticky=tk.NW)
             self.custom_var_label = ttk.Label(self.uploader_options, text="Custom Variables")
             self.custom_var_label.grid(row=1, column=1, padx=2, pady=5, sticky=tk.NW)
@@ -2101,7 +2187,7 @@ class xnat_pic_gui():
                 disable_buttons([self.entry_prjname, self.confirm_new_prj, self.reject_new_prj])
 
             self.project_list_label = ttk.Label(self.uploader_data, text="Select Project")
-            self.project_list_label.grid(row=0, column=0, padx=2, pady=2, sticky=tk.NW)
+            self.project_list_label.grid(row=0, column=0, padx=2, pady=5, sticky=tk.NW)
             self.OPTIONS = list(self.session.projects)
             self.prj = tk.StringVar()
             default_value = "--"
@@ -2109,7 +2195,7 @@ class xnat_pic_gui():
             self.project_list.configure(state="disabled", width=30)
             self.prj.trace('w', get_subjects)
             self.prj.trace('w', reject_project)
-            self.project_list.grid(row=0, column=1, padx=2, pady=2, sticky=tk.NW)
+            self.project_list.grid(row=0, column=1, padx=2, pady=5, sticky=tk.NW)
             
             # Button to add a new project
             def add_project():
@@ -2117,22 +2203,22 @@ class xnat_pic_gui():
                 self.entry_prjname.delete(0,tk.END)
             self.new_prj_btn = ttk.Button(self.uploader_data, state=tk.DISABLED, width=20, style="Popup.TButton",
                                         command=add_project, cursor=CURSOR_HAND, text="Add New Project")
-            self.new_prj_btn.grid(row=0, column=2, padx=10, pady=2, sticky=tk.NW)
+            self.new_prj_btn.grid(row=0, column=2, padx=10, pady=5, sticky=tk.NW)
             
             # Entry to write a new project
             self.entry_prjname = ttk.Entry(self.uploader_data)
             self.entry_prjname.configure(state="disabled", width=30)
-            self.entry_prjname.grid(row=0, column=3, padx=2, pady=2, sticky=tk.NW)
+            self.entry_prjname.grid(row=0, column=3, padx=2, pady=5, sticky=tk.NW)
 
             # Button to confirm new project
-            self.confirm_new_prj = ttk.Button(self.uploader_data, image=master.logo_accept,
+            self.confirm_new_prj = ttk.Button(self.uploader_data, image=master.logo_accept, style="Popup.TButton",
                                             command=self.check_project_name, cursor=CURSOR_HAND, state='disabled')
-            self.confirm_new_prj.grid(row=0, column=4, padx=10, pady=2, sticky=tk.NW)
+            self.confirm_new_prj.grid(row=0, column=4, padx=10, pady=5, sticky=tk.NW)
 
             # Button to reject new project
-            self.reject_new_prj = ttk.Button(self.uploader_data, image=master.logo_delete,
+            self.reject_new_prj = ttk.Button(self.uploader_data, image=master.logo_delete, style="Popup.TButton",
                                             command=reject_project, cursor=CURSOR_HAND, state='disabled')
-            self.reject_new_prj.grid(row=0, column=5, padx=2, pady=2, sticky=tk.NW)
+            self.reject_new_prj.grid(row=0, column=5, padx=2, pady=5, sticky=tk.NW)
             
             #############################################
 
@@ -2158,13 +2244,13 @@ class xnat_pic_gui():
             else:
                 self.OPTIONS2 = []
             self.subject_list_label = ttk.Label(self.uploader_data, text="Select Subject")
-            self.subject_list_label.grid(row=1, column=0, padx=2, pady=2, sticky=tk.NW)
+            self.subject_list_label.grid(row=1, column=0, padx=2, pady=5, sticky=tk.NW)
             self.sub = tk.StringVar()
             self.subject_list = ttk.OptionMenu(self.uploader_data, self.sub, default_value, *self.OPTIONS2)
             self.subject_list.configure(state="disabled", width=30)
             self.sub.trace('w', get_experiments)
             self.sub.trace('w', reject_subject)
-            self.subject_list.grid(row=1, column=1, padx=2, pady=2, sticky=tk.NW)
+            self.subject_list.grid(row=1, column=1, padx=2, pady=5, sticky=tk.NW)
             
             # Button to add a new subject
             def add_subject():
@@ -2172,22 +2258,22 @@ class xnat_pic_gui():
                 self.entry_subname.delete(0,tk.END)
             self.new_sub_btn = ttk.Button(self.uploader_data, state=tk.DISABLED, width=20, style="Popup.TButton",
                                         command=add_subject, cursor=CURSOR_HAND, text="Add New Subject")
-            self.new_sub_btn.grid(row=1, column=2, padx=10, pady=2, sticky=tk.NW)
+            self.new_sub_btn.grid(row=1, column=2, padx=10, pady=5, sticky=tk.NW)
 
             # Entry to write a new subject
             self.entry_subname = ttk.Entry(self.uploader_data)
             self.entry_subname.configure(state="disabled", width=30)
-            self.entry_subname.grid(row=1, column=3, padx=2, pady=2, sticky=tk.NW)
+            self.entry_subname.grid(row=1, column=3, padx=2, pady=5, sticky=tk.NW)
 
             # Button to confirm new subject
-            self.confirm_new_sub = ttk.Button(self.uploader_data, image=master.logo_accept,
+            self.confirm_new_sub = ttk.Button(self.uploader_data, image=master.logo_accept, style="Popup.TButton",
                                             command=self.check_subject_name, cursor=CURSOR_HAND, state='disabled')
-            self.confirm_new_sub.grid(row=1, column=4, padx=10, pady=2, sticky=tk.NW)
+            self.confirm_new_sub.grid(row=1, column=4, padx=10, pady=5, sticky=tk.NW)
 
             # Button to reject new subject
-            self.reject_new_sub = ttk.Button(self.uploader_data, image = master.logo_delete,
+            self.reject_new_sub = ttk.Button(self.uploader_data, image = master.logo_delete, style="Popup.TButton",
                                             command=reject_subject, cursor=CURSOR_HAND, state='disabled')
-            self.reject_new_sub.grid(row=1, column=5, padx=2, pady=2, sticky=tk.NW)
+            self.reject_new_sub.grid(row=1, column=5, padx=2, pady=5, sticky=tk.NW)
             #############################################
 
             #############################################
@@ -2202,12 +2288,12 @@ class xnat_pic_gui():
             else:
                 self.OPTIONS3 = []
             self.experiment_list_label = ttk.Label(self.uploader_data, text="Select Experiment")
-            self.experiment_list_label.grid(row=2, column=0, padx=2, pady=2, sticky=tk.NW)
+            self.experiment_list_label.grid(row=2, column=0, padx=2, pady=5, sticky=tk.NW)
             self.exp = tk.StringVar()
             self.experiment_list = ttk.OptionMenu(self.uploader_data, self.exp, default_value, *self.OPTIONS3)
             self.experiment_list.configure(state="disabled", width=30)
             self.exp.trace('w', reject_experiment)
-            self.experiment_list.grid(row=2, column=1, padx=2, pady=2, sticky=tk.NW)
+            self.experiment_list.grid(row=2, column=1, padx=2, pady=5, sticky=tk.NW)
             
             # Button to add a new experiment
             def add_experiment():
@@ -2215,22 +2301,22 @@ class xnat_pic_gui():
                 self.entry_expname.delete(0,tk.END)
             self.new_exp_btn = ttk.Button(self.uploader_data, state=tk.DISABLED, style="Popup.TButton", 
                                         text="Add New Experiment", command=add_experiment, cursor=CURSOR_HAND, width=20)
-            self.new_exp_btn.grid(row=2, column=2, padx=10, pady=2, sticky=tk.NW)
+            self.new_exp_btn.grid(row=2, column=2, padx=10, pady=5, sticky=tk.NW)
 
             # Entry to write a new experiment
             self.entry_expname = ttk.Entry(self.uploader_data)
             self.entry_expname.config(state='disabled', width=30)
-            self.entry_expname.grid(row=2, column=3, padx=2, pady=2, sticky=tk.NW)
+            self.entry_expname.grid(row=2, column=3, padx=2, pady=5, sticky=tk.NW)
 
             # Button to confirm new experiment
-            self.confirm_new_exp = ttk.Button(self.uploader_data, image = master.logo_accept,
+            self.confirm_new_exp = ttk.Button(self.uploader_data, image = master.logo_accept, style="Popup.TButton",
                                             command=self.check_experiment_name, cursor=CURSOR_HAND, state='disabled')
-            self.confirm_new_exp.grid(row=2, column=4, padx=10, pady=2, sticky=tk.NW)
+            self.confirm_new_exp.grid(row=2, column=4, padx=10, pady=5, sticky=tk.NW)
 
             # Button to reject new experiment
-            self.reject_new_exp = ttk.Button(self.uploader_data, image = master.logo_delete,
+            self.reject_new_exp = ttk.Button(self.uploader_data, image = master.logo_delete, style="Popup.TButton",
                                             command=reject_experiment, cursor=CURSOR_HAND, state='disabled')
-            self.reject_new_exp.grid(row=2, column=5, padx=2, pady=2, sticky=tk.NW)
+            self.reject_new_exp.grid(row=2, column=5, padx=2, pady=5, sticky=tk.NW)
             #############################################
 
             #############################################
