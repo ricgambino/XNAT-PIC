@@ -32,7 +32,7 @@ def get_dir_size(path):
 
     total_weight = 0
     if os.path.isdir(path):
-        for n, level1 in enumerate(os.listdir(path)):
+        for l, level1 in enumerate(os.listdir(path)):
             if os.path.isfile(os.path.join(path, level1)):
                 total_weight += os.path.getsize(os.path.join(path, level1))
             elif os.path.isdir(os.path.join(path, level1)):
@@ -40,10 +40,23 @@ def get_dir_size(path):
                     if os.path.isfile(os.path.join(path, level1, level2)):
                         total_weight += os.path.getsize(os.path.join(path, level1, level2))
                     elif os.path.isdir(os.path.join(path, level1, level2)):
-                        for m, level3 in enumerate(os.listdir(os.path.join(path, level1, level2))):
+                        for n, level3 in enumerate(os.listdir(os.path.join(path, level1, level2))):
                             if os.path.isfile(os.path.join(path, level1, level2, level3)):
                                 total_weight += os.path.getsize(os.path.join(path, level1, level2, level3))
+                            elif os.path.isdir(os.path.join(path, level1, level2, level3)):
+                                for p, level4 in enumerate(os.listdir(os.path.join(path, level1, level2, level3))):
+                                    if os.path.isfile(os.path.join(path, level1, level2, level3, level4)):
+                                        total_weight += os.path.getsize(os.path.join(path, level1, level2, level3, level4))
+                            #         elif os.path.isdir(os.path.join(path, level1, level2, level3,level4)):
+                            #             for q, level5 in enumerate(os.listdir(os.path.join(path, level1, level2, level3, level4))):
+                            #                 if os.path.isfile(os.path.join(path, level1, level2, level3, level4, level5)):
+                            #                     total_weight += os.path.getsize(os.path.join(path, level1, level2, level3, level4, level5))
+                            #                 elif os.path.isdir(os.path.join(path, level1, level2, level3,level4, level5)):
+                            #                     for q, level6 in enumerate(os.listdir(os.path.join(path, level1, level2, level3, level4, level5))):
+                            #                         if os.path.isfile(os.path.join(path, level1, level2, level3, level4, level5, level6)):
+                            #                             total_weight += os.path.getsize(os.path.join(path, level1, level2, level3, level4, level5, level6))
 
-        return int(total_weight)
+
+        return round(total_weight, 2)
     else:
         return 0
