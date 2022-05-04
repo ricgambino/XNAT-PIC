@@ -773,16 +773,16 @@ class xnat_pic_gui():
             master.my_canvas.create_window(x_listbox, y_listbox, width = w_listbox, height = h_listbox, anchor = tk.NW, window=self.my_listbox)
             
             # # Yscrollbar for listbox
-            self.my_yscrollbar = ttk.Scrollbar(master.my_canvas, orient="vertical")
+            self.my_yscrollbar = tk.Scrollbar(master.my_canvas, orient="vertical")
             self.my_listbox.config(yscrollcommand = self.my_yscrollbar.set)
             self.my_yscrollbar.config(command = self.my_listbox.yview)
-            x_my_yscrollbar = int(my_width*22.2/100)
+            x_my_yscrollbar = int(my_width*22/100)
             y_my_yscrollbar = int(my_height*19/100)
             h_yscrollbar = int(my_height*48/100)
             master.my_canvas.create_window(x_my_yscrollbar, y_my_yscrollbar, height = h_yscrollbar, anchor = tk.NW, window=self.my_yscrollbar)
 
             # Xscrollbar for listbox
-            self.my_xscrollbar = ttk.Scrollbar(master.my_canvas, orient="horizontal")
+            self.my_xscrollbar = tk.Scrollbar(master.my_canvas, orient="horizontal")
             self.my_listbox.config(xscrollcommand = self.my_xscrollbar.set)
             self.my_xscrollbar.config(command = self.my_listbox.xview)
             x_my_xscrollbar = int(my_width*23.1/100)
