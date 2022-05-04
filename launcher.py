@@ -35,7 +35,6 @@ from accessory_functions import *
 from idlelib.tooltip import Hovertip
 from multiprocessing import Pool, cpu_count
 from credential_manager import CredentialManager
-from win32api import GetMonitorInfo, MonitorFromPoint
 import pandas
 from layout_style import MyStyle
 
@@ -160,10 +159,7 @@ class xnat_pic_gui():
 
         # Adjust size based on screen resolution
         w = self.root.screenwidth
-        h = self.root.screenheight
-        monitor_info = GetMonitorInfo(MonitorFromPoint((0,0)))
-        work_area = monitor_info.get("Work")
-        work_height = work_area[3] - 10
+        h = self.root.screenheight - 50
         self.root.geometry("%dx%d+0+0" % (w, h))
         self.root.title("   XNAT-PIC   ~   Molecular Imaging Center   ~   University of Torino   ")
         # If you want the logo 
@@ -173,7 +169,8 @@ class xnat_pic_gui():
         global my_width
         global my_height
         my_width = int(w*PERCENTAGE_SCREEN)
-        my_height = int(work_height*PERCENTAGE_SCREEN)
+        # my_height = int(work_height*PERCENTAGE_SCREEN)
+        my_height = int(h*PERCENTAGE_SCREEN)
         self.my_canvas = tk.Canvas(self.root, width=my_width, height=my_height, bg=LIGHT_GREY, highlightthickness=0, 
                                     highlightbackground=LIGHT_GREY)
         self.my_canvas.place(x=0, y=0, anchor=tk.NW)
@@ -288,27 +285,41 @@ class xnat_pic_gui():
             self.conv_selection = ttk.LabelFrame(master.my_canvas, text="Converter Selection")
             master.my_canvas.create_window(x_btn_init, int(y_btn*0.2), anchor=tk.NW, window=self.conv_selection)
 
+            self.conv_flag = tk.IntVar()
+            self.folder_to_convert = tk.StringVar()
+            self.converted_folder = tk.StringVar()
+
+            def select_folder(*args):
+                # Disable the buttons
+                disable_buttons([self.prj_conv_btn, self.sbj_conv_btn, self.exp_conv_btn])
+                # Ask for project directory
+                self.folder_to_convert.set(filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), 
+                                                                title="XNAT-PIC: Select directory in Bruker ParaVision format"))
+
             # Convert Project
-            def convert_project_handler(*args):
-                self.prj_convertion(master)
-            self.prj_conv_btn = ttk.Button(self.conv_selection, text="Convert Project", width=20,
-                                        command=convert_project_handler, cursor=CURSOR_HAND)
+            def prj_conv_handler(*args):
+                self.conv_flag.set(0)
+                select_folder()
+            self.prj_conv_btn = ttk.Button(self.conv_selection, text="Convert Project", width=20, 
+                                            command=prj_conv_handler, cursor=CURSOR_HAND)
             self.prj_conv_btn.grid(row=0, column=0, sticky=tk.W, padx=10, pady=10)
             Hovertip(self.prj_conv_btn, "Convert a project from Bruker format to DICOM standard")
 
             # Convert Subject
-            def convert_subject_handler(*args):
-                self.sbj_convertion(master)
+            def sbj_conv_handler(*args):
+                self.conv_flag.set(1)
+                select_folder()
             self.sbj_conv_btn = ttk.Button(self.conv_selection, text="Convert Subject", width=20,
-                                         command=convert_subject_handler, cursor=CURSOR_HAND)
+                                            command=sbj_conv_handler, cursor=CURSOR_HAND)
             self.sbj_conv_btn.grid(row=0, column=1, sticky=tk.W, padx=10, pady=10)
             Hovertip(self.sbj_conv_btn, "Convert a subject from Bruker format to DICOM standard")
 
             # Convert Experiment
-            def convert_experiment_handler(*args):
-                self.experiment_convertion(master)
+            def exp_conv_handler(*args):
+                self.conv_flag.set(2)
+                select_folder()
             self.exp_conv_btn = ttk.Button(self.conv_selection, text="Convert Experiment", width=20,
-                                         command=convert_experiment_handler, cursor=CURSOR_HAND)
+                                            command=exp_conv_handler, cursor=CURSOR_HAND)
             self.exp_conv_btn.grid(row=0, column=2, sticky=tk.W, padx=10, pady=10)
             Hovertip(self.exp_conv_btn, "Convert an experiment from Bruker format to DICOM standard")
 
@@ -320,7 +331,7 @@ class xnat_pic_gui():
             self.overwrite_flag = tk.IntVar()
             self.btn_overwrite = ttk.Checkbutton(self.label_frame_checkbtn, text="Overwrite existing folders", variable=self.overwrite_flag,
                                 onvalue=1, offvalue=0, style='Mini.TCheckbutton')
-            self.btn_overwrite.grid(row=1, column=1, sticky=tk.W, padx=10, pady=10)
+            self.btn_overwrite.grid(row=1, column=1, sticky=tk.NW, padx=10, pady=5)
             Hovertip(self.btn_overwrite, "Overwrite already existent folders if they occur")
 
             # Results button
@@ -329,38 +340,256 @@ class xnat_pic_gui():
             self.results_flag = tk.IntVar()
             self.btn_results = ttk.Checkbutton(self.label_frame_checkbtn, text='Copy additional files', variable=self.results_flag,
                                 onvalue=1, offvalue=0, command=add_results_handler, style="Mini.TCheckbutton")
-            self.btn_results.grid(row=2, column=1, sticky=tk.W, padx=10, pady=10)
+            self.btn_results.grid(row=2, column=1, sticky=tk.NW, padx=10, pady=5)
             Hovertip(self.btn_results, "Copy additional files (results, parametric maps, graphs, ...)\ninto converted folders")
+
+            def display_folder_tree(*args):
+                if self.folder_to_convert.get() != '':
+                    if self.tree_to_convert.exists(0):
+                        self.tree_to_convert.delete(*self.tree_to_convert.get_children())
+                    main_folder = self.tree_to_convert.insert("", "end", iid=0, text=self.folder_to_convert.get().split('/')[-1], 
+                                                            values=("", "", "Folder"), open=True)
+                    subdir = os.listdir(self.folder_to_convert.get())
+                    subdirectories = [x for x in subdir if x.endswith('.ini') == False]
+                    total_weight = 0
+                    last_edit_time = ''
+                    j = 1
+                    for sub in subdirectories:
+                        
+                        if os.path.isfile(os.path.join(self.folder_to_convert.get(), sub)):
+                            # Check for last edit time
+                            edit_time = str(time.strftime("%d/%m/%Y,%H:%M:%S", time.localtime(os.path.getmtime(os.path.join(self.folder_to_convert.get(), sub)))))
+                            if last_edit_time == '' or edit_time > last_edit_time:
+                                # Update the last edit time
+                                last_edit_time = edit_time
+                            # Check for file dimension
+                            file_weight = round(os.path.getsize(os.path.join(self.folder_to_convert.get(), sub))/1024, 2)
+                            total_weight += round(file_weight/1024, 2)
+                            # Add the item like a file
+                            self.tree_to_convert.insert(main_folder, "end", iid=j, text=sub, values=(edit_time, str(file_weight) + "KB", "File"))
+                            # Update the j counter
+                            j += 1
+
+                        elif os.path.isdir(os.path.join(self.folder_to_convert.get(), sub)):
+                            current_weight = 0
+                            last_edit_time_lev2 = ''
+                            branch_idx = j
+                            level2_folder = self.tree_to_convert.insert(main_folder, "end", iid=branch_idx, text=sub, values=("", "", "Folder"), open=False)
+                            j += 1
+                            # Scansiona le directory interne per ottenere il tree CHIUSO
+                            sub_level2 = os.listdir(os.path.join(self.folder_to_convert.get(), sub))
+                            subdirectories2 = [x for x in sub_level2 if x.endswith('.ini') == False]
+                            for sub2 in subdirectories2:
+                                if os.path.isfile(os.path.join(self.folder_to_convert.get(), sub, sub2)):
+                                    # Check for last edit time
+                                    edit_time = str(time.strftime("%d/%m/%Y,%H:%M:%S", time.localtime(os.path.getmtime(os.path.join(self.folder_to_convert.get(), sub, sub2)))))
+                                    if last_edit_time_lev2 == '' or edit_time > last_edit_time_lev2:
+                                        # Update the last edit time
+                                        last_edit_time_lev2 = edit_time
+                                    if last_edit_time_lev2 > last_edit_time:
+                                        last_edit_time = last_edit_time_lev2
+                                    # Check for file dimension
+                                    file_weight = round(os.path.getsize(os.path.join(self.folder_to_convert.get(), sub, sub2))/1024, 2)
+                                    current_weight += round(file_weight/1024, 2)
+                                    # Add the item like a file
+                                    self.tree_to_convert.insert(level2_folder, "end", iid=j, text=sub2, values=(edit_time, str(file_weight) + "KB", "File"))
+                                    # Update the j counter
+                                    j += 1
+
+                                elif os.path.isdir(os.path.join(self.folder_to_convert.get(), sub, sub2)):
+                                    # Check for last edit time
+                                    edit_time = str(time.strftime("%d/%m/%Y,%H:%M:%S", time.localtime(os.path.getmtime(os.path.join(self.folder_to_convert.get(), sub, sub2)))))
+                                    if last_edit_time_lev2 == '' or edit_time > last_edit_time_lev2:
+                                        # Update the last edit time
+                                        last_edit_time_lev2 = edit_time
+                                    if last_edit_time_lev2 > last_edit_time:
+                                        last_edit_time = last_edit_time_lev2
+
+                                    folder_size = round(get_dir_size(os.path.join(self.folder_to_convert.get(), sub, sub2))/1024/1024, 2)
+                                    current_weight += folder_size
+                                    self.tree_to_convert.insert(level2_folder, "end", iid=j, text=sub2, values=(edit_time, str(folder_size) + 'MB', "Folder"))
+                                    j += 1
+                                
+                            total_weight += current_weight
+                            self.tree_to_convert.set(branch_idx, column="#1", value=last_edit_time_lev2)
+                            self.tree_to_convert.set(branch_idx, column="#2", value=str(round(current_weight, 2)) + "MB")
+
+                    # Update the fields of the parent object
+                    self.tree_to_convert.set(0, column="#1", value=last_edit_time)
+                    self.tree_to_convert.set(0, column="#2", value=str(round(total_weight/1024, 2)) + "GB")
+            
+            # Treeview Label Frame pre_convertion
+            self.tree_labelframe = ttk.LabelFrame(master.my_canvas, text="Folder to Convert")
+            master.my_canvas.create_window(x_btn_init, y_btn*0.3, anchor=tk.NW, window=self.tree_labelframe)
+
+            # Treeview widget pre_convertion
+            self.tree_to_convert = ttk.Treeview(self.tree_labelframe, selectmode='none')
+            self.tree_to_convert.grid(row=0, column=0, padx=5, pady=10, sticky=tk.NW)
+            self.tree_scrollbar = ttk.Scrollbar(self.tree_labelframe, orient='vertical', command=self.tree_to_convert.yview)
+            self.tree_scrollbar.grid(row=0, column=1, padx=0, pady=10, sticky=tk.NS)
+            self.tree_to_convert.configure(yscrollcommand=self.tree_scrollbar.set)
+            self.tree_to_convert["columns"] = ("#1", "#2", "#3")
+            self.tree_to_convert.heading("#0", text="Selected folder", anchor=tk.NW)
+            self.tree_to_convert.heading("#1", text="Last Update", anchor=tk.NW)
+            self.tree_to_convert.heading("#2", text="Size", anchor=tk.NW)
+            self.tree_to_convert.heading("#3", text="Type", anchor=tk.NW)
+            self.tree_to_convert.column("#0", stretch=tk.YES, width=150)
+            self.tree_to_convert.column("#1", stretch=tk.YES, width=150)
+            self.tree_to_convert.column("#2", stretch=tk.YES, width=100)
+            self.tree_to_convert.column("#3", stretch=tk.YES, width=100)
+
+            self.folder_to_convert.trace('w', display_folder_tree)
+
+            def display_converted_folder_tree(*args):
+
+                if self.converted_folder.get() != '' and self.convertion_state.get() == 1:
+                    if self.tree_converted.exists(0):
+                        self.tree_converted.delete(*self.tree_converted.get_children())
+                    main_folder = self.tree_converted.insert("", "end", iid=0, text=self.converted_folder.get().split('/')[-1], 
+                                                            values=("", "", "Folder"), open=True)
+                    subdir = os.listdir(self.converted_folder.get())
+                    subdirectories = [x for x in subdir if x.endswith('.ini') == False]
+                    total_weight = 0
+                    last_edit_time = ''
+                    j = 1
+                    for sub in subdirectories:
+                        
+                        if os.path.isfile(os.path.join(self.converted_folder.get(), sub)):
+                            # Check for last edit time
+                            edit_time = str(time.strftime("%d/%m/%Y,%H:%M:%S", time.localtime(os.path.getmtime(os.path.join(self.converted_folder.get(), sub)))))
+                            if last_edit_time == '' or edit_time > last_edit_time:
+                                # Update the last edit time
+                                last_edit_time = edit_time
+                            # Check for file dimension
+                            file_weight = round(os.path.getsize(os.path.join(self.converted_folder.get(), sub))/1024, 2)
+                            total_weight += round(file_weight/1024, 2)
+                            # Add the item like a file
+                            self.tree_converted.insert(main_folder, "end", iid=j, text=sub, values=(edit_time, str(file_weight) + "KB", "File"))
+                            # Update the j counter
+                            j += 1
+
+                        elif os.path.isdir(os.path.join(self.converted_folder.get(), sub)):
+                            current_weight = 0
+                            last_edit_time_lev2 = ''
+                            branch_idx = j
+                            level2_folder = self.tree_converted.insert(main_folder, "end", iid=branch_idx, text=sub, values=("", "", "Folder"), open=False)
+                            j += 1
+                            # Scansiona le directory interne per ottenere il tree CHIUSO
+                            sub_level2 = os.listdir(os.path.join(self.converted_folder.get(), sub))
+                            subdirectories2 = [x for x in sub_level2 if x.endswith('.ini') == False]
+                            for sub2 in subdirectories2:
+                                if os.path.isfile(os.path.join(self.converted_folder.get(), sub, sub2)):
+                                    # Check for last edit time
+                                    edit_time = str(time.strftime("%d/%m/%Y,%H:%M:%S", time.localtime(os.path.getmtime(os.path.join(self.converted_folder.get(), sub, sub2)))))
+                                    if last_edit_time_lev2 == '' or edit_time > last_edit_time_lev2:
+                                        # Update the last edit time
+                                        last_edit_time_lev2 = edit_time
+                                    if last_edit_time_lev2 > last_edit_time:
+                                        last_edit_time = last_edit_time_lev2
+                                    # Check for file dimension
+                                    file_weight = round(os.path.getsize(os.path.join(self.converted_folder.get(), sub, sub2))/1024, 2)
+                                    current_weight += round(file_weight/1024, 2)
+                                    # Add the item like a file
+                                    self.tree_converted.insert(level2_folder, "end", iid=j, text=sub2, values=(edit_time, str(file_weight) + "KB", "File"))
+                                    # Update the j counter
+                                    j += 1
+
+                                elif os.path.isdir(os.path.join(self.converted_folder.get(), sub, sub2)):
+                                    # Check for last edit time
+                                    edit_time = str(time.strftime("%d/%m/%Y,%H:%M:%S", time.localtime(os.path.getmtime(os.path.join(self.converted_folder.get(), sub, sub2)))))
+                                    if last_edit_time_lev2 == '' or edit_time > last_edit_time_lev2:
+                                        # Update the last edit time
+                                        last_edit_time_lev2 = edit_time
+                                    if last_edit_time_lev2 > last_edit_time:
+                                        last_edit_time = last_edit_time_lev2
+
+                                    folder_size = round(get_dir_size(os.path.join(self.converted_folder.get(), sub, sub2))/1024/1024, 2)
+                                    current_weight += folder_size
+                                    self.tree_converted.insert(level2_folder, "end", iid=j, text=sub2, values=(edit_time, str(folder_size) + 'MB', "Folder"))
+                                    j += 1
+                                
+                            total_weight += current_weight
+                            self.tree_converted.set(branch_idx, column="#1", value=last_edit_time_lev2)
+                            self.tree_converted.set(branch_idx, column="#2", value=str(round(current_weight, 2)) + "MB")
+
+                    # Update the fields of the parent object
+                    self.tree_converted.set(0, column="#1", value=last_edit_time)
+                    self.tree_converted.set(0, column="#2", value=str(round(total_weight/1024, 2)) + "GB")
+
+                    enable_buttons([self.prj_conv_btn, self.sbj_conv_btn, self.exp_conv_btn])
+
+            # Treeview Label Frame post_convertion
+            self.tree_labelframe_post = ttk.LabelFrame(master.my_canvas, text="Converted Folder")
+            master.my_canvas.create_window(3*x_btn, y_btn*0.3, anchor=tk.NW, window=self.tree_labelframe_post)
+
+            # Treeview widget post_convertion
+            self.tree_converted = ttk.Treeview(self.tree_labelframe_post, selectmode='none')
+            self.tree_converted.grid(row=0, column=0, padx=5, pady=10, sticky=tk.NW)
+            self.tree_scrollbarconverted = ttk.Scrollbar(self.tree_labelframe_post, orient='vertical', command=self.tree_converted.yview)
+            self.tree_scrollbarconverted.grid(row=0, column=1, padx=0, pady=10, sticky=tk.NS)
+            self.tree_converted.configure(yscrollcommand=self.tree_scrollbarconverted.set)
+            self.tree_converted["columns"] = ("#1", "#2", "#3")
+            self.tree_converted.heading("#0", text="Selected folder", anchor=tk.NW)
+            self.tree_converted.heading("#1", text="Last Update", anchor=tk.NW)
+            self.tree_converted.heading("#2", text="Size", anchor=tk.NW)
+            self.tree_converted.heading("#3", text="Type", anchor=tk.NW)
+            self.tree_converted.column("#0", stretch=tk.YES, width=150)
+            self.tree_converted.column("#1", stretch=tk.YES, width=150)
+            self.tree_converted.column("#2", stretch=tk.YES, width=100)
+            self.tree_converted.column("#3", stretch=tk.YES, width=100)
 
             # EXIT Button 
             def exit_converter():
                 result = messagebox.askquestion("XNAT-PIC Converter", "Do you want to exit?", icon='warning')
                 if result == 'yes':
                     # Destroy all the existent widgets (Button, Checkbutton, ...)
-                    destroy_widgets([self.conv_selection, self.exit_btn, self.label_frame_checkbtn])
+                    destroy_widgets([self.conv_selection, self.exit_btn, self.label_frame_checkbtn, self.next_btn, 
+                                    self.tree_labelframe, self.tree_labelframe_post])
                     delete_widgets(master.my_canvas, [self.frame_title])
                     # Restore the main frame
                     xnat_pic_gui.choose_your_action(master)
 
             self.exit_btn = ttk.Button(master.my_canvas, text="Exit", cursor=CURSOR_HAND)
             self.exit_btn.configure(command=exit_converter)
-            master.my_canvas.create_window(4*x_btn + x_btn/2, y_btn*0.9, anchor=tk.CENTER, width=int(width_btn/2), window=self.exit_btn)
+            master.my_canvas.create_window(x_btn_init, y_btn*0.85, anchor=tk.NW, width=int(width_btn/2), window=self.exit_btn)
+
+            # NEXT Button
+            def next_btn_handler(*args):
+                if self.conv_flag.get() == 0:
+                    self.converted_folder.set(self.folder_to_convert.get() + '_dcm')
+                    self.prj_convertion(master)
+                    self.convertion_state.set(1)
+                    
+                elif self.conv_flag.get() == 1:
+                    self.converted_folder.set(os.path.join(self.folder_to_convert.get().split('/')[-2] + '_dcm', 
+                                                self.folder_to_convert.get().split('/')[-1]))
+                    self.sbj_convertion(master)
+                    self.convertion_state.set(1)
+                    
+                elif self.conv_flag.get() == 2:
+                    self.converted_folder.set(os.path.join(self.folder_to_convert.get().split('/')[-3] + '_dcm', 
+                                                self.folder_to_convert.get().split('/')[-2:]))
+                    self.exp_convertion(master)
+                    self.convertion_state.set(1)
+                    
+                else:
+                    pass
+
+            self.convertion_state = tk.IntVar()
+            self.convertion_state.set(0)
+            self.convertion_state.trace('w', display_converted_folder_tree)
+            self.next_btn = ttk.Button(master.my_canvas, text="Next", cursor=CURSOR_HAND, command=next_btn_handler)
+            master.my_canvas.create_window(4*x_btn, y_btn*0.85, anchor=tk.NW, width=int(width_btn/2), window=self.next_btn)
             
         def prj_convertion(self, master):
 
-            # Disable the buttons
-            disable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
-
-            # Ask for project directory
-            self.project_to_convert = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), 
-                                                            title="XNAT-PIC: Select project directory in Bruker ParaVision format")
             # Check for the chosen directory
-            if not self.project_to_convert:
+            if not self.folder_to_convert.get():
                 enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
                 messagebox.showerror("XNAT-PIC Converter", "The selected folder does not exists. Please select an other one.")
                 return
 
-            if glob(self.project_to_convert + '/**/**/**/**/**/2dseq', recursive=False) == []:
+            if glob(self.folder_to_convert.get() + '/**/**/**/**/**/2dseq', recursive=False) == []:
                 enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
                 messagebox.showerror("XNAT-PIC Converter", "The selected folder is not project related")
                 return
@@ -368,7 +597,8 @@ class xnat_pic_gui():
             master.root.deiconify()
             master.root.update()
             # Define the project destination folder
-            self.prj_dst = self.project_to_convert + '_dcm'
+            # self.prj_dst = self.folder_to_convert.get() + '_dcm'
+            self.prj_dst = self.converted_folder.get()
 
             # Initialize converter class
             self.converter = Bruker2DicomConverter(self.params)
@@ -376,7 +606,7 @@ class xnat_pic_gui():
             def prj_converter():
 
                 # Get the list of the subject into the project
-                list_sub = os.listdir(self.project_to_convert)
+                list_sub = os.listdir(self.folder_to_convert.get())
                 # Initialize the list of conversion errors
                 self.conversion_err = []
                 # Loop over subjects
@@ -384,7 +614,7 @@ class xnat_pic_gui():
                     # Show the current step on the progress bar
                     progressbar.show_step(j + 1, len(list_sub))
                     # Define the current subject path 
-                    current_folder = os.path.join(self.project_to_convert, dir).replace('\\', '/')
+                    current_folder = os.path.join(self.folder_to_convert.get(), dir).replace('\\', '/')
 
                     if os.path.isdir(current_folder):
                         current_dst = os.path.join(self.prj_dst, dir).replace('\\', '/')
@@ -419,7 +649,8 @@ class xnat_pic_gui():
                             print('Converting ' + str(exp))
                             exp_folder = os.path.join(current_folder, exp).replace('\\', '/')
                             exp_dst = os.path.join(current_dst, exp).replace('\\','/')
-
+                            if os.path.isdir(exp_folder) is not True:
+                                continue
                             list_scans = self.converter.get_list_of_folders(exp_folder, exp_dst)
 
                             # Start the multiprocessing conversion: one pool per each scan folder
@@ -427,7 +658,7 @@ class xnat_pic_gui():
                                 pool.map(self.converter.convert, list_scans)
 
                     # Update the current step of the progress bar
-                    progressbar.update_progressbar(j + 1, len(list_sub))
+                    progressbar.update_progressbar(j, len(list_sub))
                     # Set progress bar caption 'done' to the current folder
                     progressbar.set_caption('Converting ' + str(current_folder.split('/')[-1]) + ' ...done!')
             
@@ -441,7 +672,7 @@ class xnat_pic_gui():
             tp = threading.Thread(target=prj_converter, args=())
             tp.start()
             while tp.is_alive() == True:
-                progressbar.update_bar(0.0001)
+                progressbar.update_bar(0.00001)
             else:
                 progressbar.stop_progress_bar()
             
@@ -455,28 +686,23 @@ class xnat_pic_gui():
                 
         def sbj_convertion(self, master):
 
-            # Convert from bruker to DICOM and disable the buttons
-            disable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
-
-            # Ask for subject directory
-            self.subject_to_convert = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), 
-                                                            title="XNAT-PIC: Select subject directory in Bruker ParaVision format")
             # Check for chosen directory
-            if not self.subject_to_convert:
+            if not self.folder_to_convert.get():
                 enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
                 messagebox.showerror("XNAT-PIC Converter", "You have not chosen a directory")
                 return
-            if glob(self.subject_to_convert + '/**/**/**/**/2dseq', recursive=False) == []:
+            if glob(self.folder_to_convert.get() + '/**/**/**/**/2dseq', recursive=False) == []:
                 enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
                 messagebox.showerror("XNAT-PIC Converter", "The selected folder is not subject related")
                 return
 
             master.root.deiconify()
             master.root.update()
-            head, tail = os.path.split(self.subject_to_convert)
-            head = head + '_dcm'
-            project_foldername = tail.split('.',1)[0]
-            self.sub_dst = os.path.join(head, project_foldername).replace('\\', '/')
+            # head, tail = os.path.split(self.folder_to_convert.get())
+            # head = head + '_dcm'
+            # project_foldername = tail.split('.',1)[0]
+            # self.sub_dst = os.path.join(head, project_foldername).replace('\\', '/')
+            self.sub_dst = self.converted_folder.get()
 
             # Start converter
             self.converter = Bruker2DicomConverter(self.params)
@@ -504,12 +730,12 @@ class xnat_pic_gui():
 
             def sbj_converter():
 
-                list_exp = os.listdir(self.subject_to_convert)
+                list_exp = os.listdir(self.folder_to_convert.get())
                 for k, exp in enumerate(list_exp):
                     progressbar.show_step(k + 1, len(list_exp))
                     progressbar.update_progressbar(k + 1, len(list_exp))
                     print('Converting ' + str(exp))
-                    exp_folder = os.path.join(self.subject_to_convert, exp).replace('\\','/')
+                    exp_folder = os.path.join(self.folder_to_convert.get(), exp).replace('\\','/')
                     exp_dst = os.path.join(self.sub_dst, exp).replace('\\','/')
 
                     list_scans = self.converter.get_list_of_folders(exp_folder, exp_dst)
@@ -539,41 +765,36 @@ class xnat_pic_gui():
             messagebox.showinfo("XNAT-PIC Converter","Done! Your subject is successfully converted.")
             enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])   
 
-        def experiment_convertion(self, master):
+        def exp_convertion(self, master):
 
-            # Convert from bruker to DICOM and disable the buttons
-            disable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
-
-            # Ask for subject directory
-            self.experiment_to_convert = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), 
-                                                            title="XNAT-PIC: Select experiment directory in Bruker ParaVision format")
             # Check for chosen directory
-            if not self.experiment_to_convert:
+            if not self.folder_to_convert.get():
                 enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
                 messagebox.showerror("XNAT-PIC Converter", "You have not chosen a directory")
                 return
-            if glob(self.experiment_to_convert + '/**/**/**/2dseq', recursive=False) == []:
+            if glob(self.folder_to_convert.get() + '/**/**/**/2dseq', recursive=False) == []:
                 enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
                 messagebox.showerror("XNAT-PIC Converter", "The selected folder is not experiment related")
                 return
 
             master.root.deiconify()
             master.root.update()
-            head, tail = os.path.split(self.experiment_to_convert)
-            head2, tail2 = os.path.split(head)
-            head2 = head2 + '_dcm'
-            self.exp_dst = os.path.join(head2, tail2, tail).replace('\\', '/')
+            # head, tail = os.path.split(self.folder_to_convert.get())
+            # head2, tail2 = os.path.split(head)
+            # head2 = head2 + '_dcm'
+            # self.exp_dst = os.path.join(head2, tail2, tail).replace('\\', '/')
+            self.exp_dst = self.converted_folder.get()
 
             # Initialize converter class
             self.converter = Bruker2DicomConverter(self.params)
 
             def exp_converter():
-                list_scans = self.converter.get_list_of_folders(self.experiment_to_convert, self.exp_dst)
+                list_scans = self.converter.get_list_of_folders(self.folder_to_convert.get(), self.exp_dst)
     
-                progressbar.set_caption('Converting ' + str(self.experiment_to_convert.split('/')[-1]) + ' ...')
+                progressbar.set_caption('Converting ' + str(self.folder_to_convert.get().split('/')[-1]) + ' ...')
                 with Pool(processes=int(cpu_count() - 1)) as pool:
                     pool.map(self.converter.convert, list_scans)
-                progressbar.set_caption('Converting ' + str(self.experiment_to_convert.split('/')[-1]) + ' ...done!')
+                progressbar.set_caption('Converting ' + str(self.folder_to_convert.get().split('/')[-1]) + ' ...done!')
 
             start_time = time.time()
 
@@ -2019,8 +2240,6 @@ class xnat_pic_gui():
                             total_weight += current_weight
                             self.tree.set(branch_idx, column="#1", value=last_edit_time_lev2)
                             self.tree.set(branch_idx, column="#2", value=str(round(current_weight, 2)) + "MB")
-                        
-                        # Check for object type
 
                     # Update the fields of the parent object
                     self.tree.set(0, column="#1", value=last_edit_time)
@@ -2044,10 +2263,10 @@ class xnat_pic_gui():
             self.tree.heading("#1", text="Last Update", anchor=tk.NW)
             self.tree.heading("#2", text="Size", anchor=tk.NW)
             self.tree.heading("#3", text="Type", anchor=tk.NW)
-            self.tree.column("#0", stretch=tk.YES)
-            self.tree.column("#1", stretch=tk.YES)
-            self.tree.column("#2", stretch=tk.YES)
-            self.tree.column("#3", stretch=tk.YES)
+            self.tree.column("#0", stretch=tk.YES, width=150)
+            self.tree.column("#1", stretch=tk.YES, width=150)
+            self.tree.column("#2", stretch=tk.YES, width=100)
+            self.tree.column("#3", stretch=tk.YES, width=100)
 
             self.folder_to_upload.trace('w', folder_selected_handler)
 
