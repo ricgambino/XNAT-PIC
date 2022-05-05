@@ -608,6 +608,8 @@ class xnat_pic_gui():
 
                 # Get the list of the subject into the project
                 list_sub = os.listdir(self.folder_to_convert.get())
+                # Clear list_sub from configuration files (e.g. desktop.ini)
+                list_sub = [sub for sub in list_sub if sub.endswith('.ini')==False]
                 # Initialize the list of conversion errors
                 self.conversion_err = []
                 # Loop over subjects
@@ -645,13 +647,13 @@ class xnat_pic_gui():
 
                         # Get the list of the experiments into the subject
                         list_exp = os.listdir(current_folder)
+                        # Clear list_exp from configuration files (e.g. desktop.ini)
+                        list_exp = [exp for exp in list_exp if exp.endswith('.ini')==False]
 
                         for k, exp in enumerate(list_exp):
                             print('Converting ' + str(exp))
                             exp_folder = os.path.join(current_folder, exp).replace('\\', '/')
                             exp_dst = os.path.join(current_dst, exp).replace('\\','/')
-                            if os.path.isdir(exp_folder) is not True:
-                                continue
                             list_scans = self.converter.get_list_of_folders(exp_folder, exp_dst)
 
                             # Start the multiprocessing conversion: one pool per each scan folder
@@ -2344,11 +2346,11 @@ class xnat_pic_gui():
 
             # Treeview for folder visualization
             self.tree = ttk.Treeview(self.folder_selection_label_frame, selectmode='none')
-            self.tree.grid(row=1, column=0, padx=10, pady=10, sticky=tk.NW)
+            self.tree.grid(row=1, column=0, padx=10, pady=10, sticky=tk.NW, columnspan=2)
             # Scrollbar for Treeview widget
             self.tree_scrollbar = ttk.Scrollbar(self.folder_selection_label_frame, orient='vertical', command=self.tree.yview)
 
-            self.tree_scrollbar.grid(row=1, column=1, padx=0, pady=10, ipadx=0, sticky=tk.NS)
+            self.tree_scrollbar.grid(row=1, column=2, padx=0, pady=10, ipadx=0, sticky=tk.NS)
             self.tree.configure(yscrollcommand=self.tree_scrollbar.set)
             self.tree["columns"] = ("#1", "#2", "#3")
             self.tree.heading("#0", text="Selected folder", anchor=tk.NW)
@@ -2362,25 +2364,51 @@ class xnat_pic_gui():
 
             self.folder_to_upload.trace('w', folder_selected_handler)
 
-            # Label Frame Uploader Options
-            self.uploader_options = ttk.LabelFrame(master.my_canvas, text="Options")
-            master.my_canvas.create_window(int(3*x_btn + 2*x_btn/3), int(y_btn*0.25), window=self.uploader_options, anchor=tk.NW)
-
             # Upload additional files
             self.add_file_flag = tk.IntVar()
-            self.add_file_btn = ttk.Checkbutton(self.uploader_options, variable=self.add_file_flag, onvalue=1, offvalue=0)
-            self.add_file_btn.grid(row=0, column=0, padx=5, pady=5, sticky=tk.NW)
-            self.add_file_label = ttk.Label(self.uploader_options, text="Additional Files")
-            self.add_file_label.grid(row=0, column=1, padx=2, pady=5, sticky=tk.NW)
+            self.add_file_btn = ttk.Checkbutton(self.folder_selection_label_frame, variable=self.add_file_flag, onvalue=1, offvalue=0, text="Additional Files")
+            self.add_file_btn.grid(row=0, column=1, padx=5, pady=5, sticky=tk.W)
+
+            # Label Frame Uploader Options
+            self.custom_var_labelframe = ttk.LabelFrame(master.my_canvas, text="Custom Variables")
+            master.my_canvas.create_window(int(3*x_btn + 2*x_btn/3), int(y_btn*0.25), window=self.custom_var_labelframe, anchor=tk.NW)
 
             # Custom Variables
             self.n_custom_var = tk.IntVar()
             custom_var_options = list(range(0, 5))
-            self.custom_var_list = ttk.OptionMenu(self.uploader_options, self.n_custom_var, 0, *custom_var_options)
+            self.custom_var_list = ttk.OptionMenu(self.custom_var_labelframe, self.n_custom_var, 0, *custom_var_options)
             self.custom_var_list.config(width=2)
-            self.custom_var_list.grid(row=1, column=0, padx=5, pady=5, sticky=tk.NW)
-            self.custom_var_label = ttk.Label(self.uploader_options, text="Custom Variables")
-            self.custom_var_label.grid(row=1, column=1, padx=2, pady=5, sticky=tk.NW)
+            self.custom_var_list.grid(row=0, column=0, padx=5, pady=5, sticky=tk.NW)
+            self.custom_var_label = ttk.Label(self.custom_var_labelframe, text="Custom Variables")
+            self.custom_var_label.grid(row=0, column=1, padx=2, pady=5, sticky=tk.NW)
+
+            # Show Custom Variables
+            def display_custom_var(*args):
+                if self.n_custom_var.get() != 0:
+                    try:
+                        list_of_files = glob(self.folder_to_upload.get() + '/**/**/**/*.txt', recursive=False)
+                        custom_file = [x for x in list_of_files if 'Custom' in x]
+                        custom_variables = read_table(custom_file[0])
+                        custom_vars = [(key, custom_variables[key]) for key in custom_variables.keys() if key not in ['Project', 'Subject', 'Experiment', 'Acquisition_date', 'C_V']]
+                        print('end')
+                    except:
+                        pass
+                    label_list = []
+                    entry_list = []
+                    # entry_box = []
+                    for x in range(1, self.n_custom_var.get() + 1):
+                        label_n = ttk.Label(self.custom_var_labelframe, text=custom_vars[x-1][0])
+                        label_n.grid(row=x, column=0, padx=5, pady=5, sticky=tk.NW)
+                        label_list.append(label_n)
+
+                        entry_n = ttk.Entry(self.custom_var_labelframe, show='')
+                        entry_n.var = tk.StringVar()
+                        entry_n.var.set(custom_vars[x-1][1])
+                        entry_n["textvariable"] = entry_n.var
+                        entry_n.grid(row=x, column=1, padx=5, pady=5, sticky=tk.NW)
+                        entry_list.append(entry_n)
+
+            self.n_custom_var.trace('w', display_custom_var)
             #############################################
 
             # Label Frame for Uploader Data
@@ -2544,7 +2572,7 @@ class xnat_pic_gui():
                 result = messagebox.askquestion("XNAT-PIC Uploader", "Do you want to exit?", icon='warning')
                 if result == 'yes':
                     # Destroy all the existent widgets (Button, OptionMenu, ...)
-                    destroy_widgets([self.uploader_data, self.uploader_options, self.label_frame_uploader, self.exit_btn,
+                    destroy_widgets([self.uploader_data, self.custom_var_labelframe, self.label_frame_uploader, self.exit_btn,
                                     self.next_btn, self.folder_selection_label_frame])
                     # # Delete all widgets that cannot be destroyed
                     delete_widgets(master.my_canvas, [self.frame_title])
@@ -2583,13 +2611,13 @@ class xnat_pic_gui():
             self.next_btn = ttk.Button(master.my_canvas, textvariable=self.next_text, state='disabled',
                                         command=next)
             self.next_text.set("Next")
-            master.my_canvas.create_window(4*x_btn + x_btn/3, y_exit_btn, anchor=tk.NW, width=int(width_btn/2), window=self.next_btn)
+            master.my_canvas.create_window(4*x_btn, y_exit_btn, anchor=tk.NW, width=int(width_btn/2), window=self.next_btn)
             #############################################
 
         def check_buttons(self, master, press_btn=0):
 
             def back():
-                destroy_widgets([self.label_frame_uploader, self.uploader_data, self.uploader_options,
+                destroy_widgets([self.label_frame_uploader, self.uploader_data, self.custom_var_labelframe,
                                 self.exit_btn, self.next_btn, self.folder_selection_label_frame])
                 delete_widgets(master.my_canvas, [self.frame_title])
                 self.overall_uploader(master)
