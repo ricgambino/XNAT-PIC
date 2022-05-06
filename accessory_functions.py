@@ -1,4 +1,7 @@
 import os
+import pandas as pd
+from tabulate import tabulate
+
 # Accessory functions
 def disable_buttons(list_of_buttons):
     for btn in list_of_buttons:
@@ -60,3 +63,29 @@ def get_dir_size(path):
         return round(total_weight, 2)
     else:
         return 0
+
+def read_table(path_to_read):
+
+    data_dict = {}
+    data = pd.read_table(path_to_read, delimiter='\s\s+', header=[0], skiprows=1,
+        dtype={'Variable': str}, engine='python').values.tolist()
+    for elem in data:
+        data_dict[elem[0]] = elem[1]
+    return data_dict
+
+def write_table(path_to_write, edit, info=[]):
+
+    try:
+        # If there is already a file, edit it
+        data = read_table(path_to_write)
+        for j in edit.keys():
+            for k in data.keys():
+                if j == k:
+                    data[k] = edit[j]
+        with open(path_to_write.replace('\\', '/'), 'w+') as out_file:
+            out_file.write(tabulate(data.items(), headers=['Variable', 'Value']))
+    except:
+        # If the file does not exist yet
+        with open(path_to_write.replace('\\', '/'), 'w+') as out_file:
+            out_file.write(tabulate(info.items(), headers=['Variable', 'Value']))
+            out_file.write(tabulate(edit.items()))
