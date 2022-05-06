@@ -5,24 +5,14 @@ Created on Dec 7, 2021
 @author: Riccardo Gambino
 
 """
-import threading
+# import threading
 from numpy import empty
-import pandas as pd
+# import pandas as pd
 import os
 from tkinter import messagebox
 import xnat, shutil, time
 from multiprocessing import Pool, cpu_count
-from concurrent.futures import ThreadPoolExecutor, process
-
-def read_table(path_to_read):
-
-    data_dict = {}
-    data = pd.read_table(path_to_read, delimiter='\s\s+', header=[0], skiprows=1,
-        dtype={'Variable': str}, engine='python').values.tolist()
-    for elem in data:
-        data_dict[elem[0]] = elem[1]
-    return data_dict
-
+# from concurrent.futures import ThreadPoolExecutor, process
 
 class Dicom2XnatUploader():
 
