@@ -27,7 +27,7 @@ from tabulate import tabulate
 import datetime
 import threading
 from dotenv import load_dotenv
-from xnat_uploader import Dicom2XnatUploader, FileUploader, read_table
+from xnat_uploader import Dicom2XnatUploader, FileUploader
 import datefinder
 import pydicom, webbrowser
 from tkcalendar import DateEntry
@@ -206,6 +206,11 @@ class xnat_pic_gui():
         logo_delete = Image.open(PATH_IMAGE + "delete.png").convert("RGBA")
         logo_delete = logo_delete.resize((width_logo, height_logo), Image.ANTIALIAS)
         self.logo_delete = ImageTk.PhotoImage(logo_delete)
+
+        # Open the image for the edit icon
+        logo_edit = Image.open(PATH_IMAGE + "Edit_icon.png").convert("RGBA")
+        logo_edit = logo_edit.resize((width_logo, height_logo), Image.ANTIALIAS)
+        self.logo_edit = ImageTk.PhotoImage(logo_edit)
 
         # Button to enter
         def enter_handler(*args):
@@ -2214,8 +2219,11 @@ class xnat_pic_gui():
             self.label_frame_uploader = ttk.LabelFrame(master.my_canvas, text="Uploader Selection")
             master.my_canvas.create_window(x_btn_init, int(y_btn*0.15), window=self.label_frame_uploader, anchor=tk.NW)
 
+            self.conv_type = tk.IntVar()
+
             # Upload project
             def project_handler(*args):
+                self.conv_type.set(0)
                 self.uploader_data.config(text="Project Uploader")
                 self.check_buttons(master, press_btn=0)
             self.prj_btn = ttk.Button(self.label_frame_uploader, text="Upload Project",
@@ -2224,6 +2232,7 @@ class xnat_pic_gui():
             
             # Upload subject
             def subject_handler(*args):
+                self.conv_type.set(1)
                 self.uploader_data.config(text="Subject Uploader")
                 self.check_buttons(master, press_btn=1)
             self.sub_btn = ttk.Button(self.label_frame_uploader, text="Upload Subject",
@@ -2232,6 +2241,7 @@ class xnat_pic_gui():
 
             # Upload experiment
             def experiment_handler(*args):
+                self.conv_type.set(2)
                 self.uploader_data.config(text="Experiment Uploader")
                 self.check_buttons(master, press_btn=2)
             self.exp_btn = ttk.Button(self.label_frame_uploader, text="Upload Experiment", 
@@ -2240,6 +2250,7 @@ class xnat_pic_gui():
             
             # Upload file
             def file_handler(*args):
+                self.conv_type.set(3)
                 self.uploader_data.config(text="File Uploader")
                 self.check_buttons(master, press_btn=3)
             self.file_btn = ttk.Button(self.label_frame_uploader, text="Upload File",
@@ -2251,11 +2262,18 @@ class xnat_pic_gui():
             master.my_canvas.create_window(x_btn_init, int(y_btn*0.25), window=self.folder_selection_label_frame, anchor=tk.NW)
             self.folder_selection_label_frame.grid_columnconfigure(1, weight=1)
             self.folder_selection_label_frame.grid_rowconfigure(1, weight=1)
+
+            # Define a string variable in order to check the current selected item of the Treeview widget
+            self.selected_item_path = tk.StringVar()
             
             def select_folder(*args):
+                # Define the initial directory
                 init_dir = os.path.expanduser("~").replace('\\', '/') + '/Desktop/Dataset'
+                # Ask the user to insert the desired directory
                 self.folder_to_upload.set(filedialog.askdirectory(parent=master.my_canvas, initialdir=init_dir, 
                                                         title="XNAT-PIC Uploader: Select directory in DICOM format to upload"))
+                # Reset and clear the selected_item_path defined from Treeview widget selection
+                self.selected_item_path.set('')
 
             def folder_selected_handler(*args):
                 if self.folder_to_upload.get() != '':
@@ -2339,14 +2357,32 @@ class xnat_pic_gui():
                     self.tree.set(0, column="#1", value=last_edit_time)
                     self.tree.set(0, column="#2", value=str(round(total_weight/1024, 2)) + "GB")
 
+            # Initialize the folder_to_upload path
             self.folder_to_upload = tk.StringVar()
             self.select_folder_button = ttk.Button(self.folder_selection_label_frame, text="Select folder", style="TButton",
                                                     state='disabled', cursor=CURSOR_HAND, width=20, command=select_folder)
             self.select_folder_button.grid(row=0, column=0, padx=10, pady=10, sticky=tk.NW)
 
             # Treeview for folder visualization
-            self.tree = ttk.Treeview(self.folder_selection_label_frame, selectmode='none')
+            def get_selected_item(*args):
+                selected_item = self.tree.selection()[0]
+                if self.folder_to_upload.get().split('/')[-1] == self.tree.item(selected_item, "text"):
+                    self.selected_item_path.set(self.folder_to_upload.get())
+                else:
+                    parent_item = self.tree.parent(selected_item)
+                    if self.folder_to_upload.get().split('/')[-1] == self.tree.item(parent_item, "text"):
+                        self.selected_item_path.set('/'.join([self.folder_to_upload.get(), 
+                                self.tree.item(selected_item, "text")]))
+                    else:
+                        higher_parent_item = self.tree.parent(parent_item)
+                        if self.folder_to_upload.get().split('/')[-1] == self.tree.item(higher_parent_item, "text"):
+                            self.selected_item_path.set('/'.join([self.folder_to_upload.get(), self.tree.item(parent_item, "text"),
+                                self.tree.item(selected_item, "text")]))
+
+            self.tree = ttk.Treeview(self.folder_selection_label_frame, selectmode='browse')
             self.tree.grid(row=1, column=0, padx=10, pady=10, sticky=tk.NW, columnspan=2)
+            self.tree.bind("<ButtonRelease-1>", get_selected_item)
+
             # Scrollbar for Treeview widget
             self.tree_scrollbar = ttk.Scrollbar(self.folder_selection_label_frame, orient='vertical', command=self.tree.yview)
 
@@ -2366,8 +2402,9 @@ class xnat_pic_gui():
 
             # Upload additional files
             self.add_file_flag = tk.IntVar()
-            self.add_file_btn = ttk.Checkbutton(self.folder_selection_label_frame, variable=self.add_file_flag, onvalue=1, offvalue=0, text="Additional Files")
-            self.add_file_btn.grid(row=0, column=1, padx=5, pady=5, sticky=tk.W)
+            self.add_file_btn = ttk.Checkbutton(self.folder_selection_label_frame, variable=self.add_file_flag, onvalue=1, offvalue=0, 
+                                text="Additional Files", state='disabled', style="WithoutBack.TCheckbutton")
+            self.add_file_btn.grid(row=0, column=1, padx=5, pady=5, sticky=tk.E)
 
             # Label Frame Uploader Options
             self.custom_var_labelframe = ttk.LabelFrame(master.my_canvas, text="Custom Variables")
@@ -2375,7 +2412,8 @@ class xnat_pic_gui():
 
             # Custom Variables
             self.n_custom_var = tk.IntVar()
-            custom_var_options = list(range(0, 5))
+            self.n_custom_var.set(3)
+            custom_var_options = list(range(0, 4))
             self.custom_var_list = ttk.OptionMenu(self.custom_var_labelframe, self.n_custom_var, 0, *custom_var_options)
             self.custom_var_list.config(width=2)
             self.custom_var_list.grid(row=0, column=0, padx=5, pady=5, sticky=tk.NW)
@@ -2384,31 +2422,70 @@ class xnat_pic_gui():
 
             # Show Custom Variables
             def display_custom_var(*args):
-                if self.n_custom_var.get() != 0:
-                    try:
-                        list_of_files = glob(self.folder_to_upload.get() + '/**/**/**/*.txt', recursive=False)
-                        custom_file = [x for x in list_of_files if 'Custom' in x]
-                        custom_variables = read_table(custom_file[0])
-                        custom_vars = [(key, custom_variables[key]) for key in custom_variables.keys() if key not in ['Project', 'Subject', 'Experiment', 'Acquisition_date', 'C_V']]
-                        print('end')
-                    except:
-                        pass
-                    label_list = []
-                    entry_list = []
-                    # entry_box = []
-                    for x in range(1, self.n_custom_var.get() + 1):
-                        label_n = ttk.Label(self.custom_var_labelframe, text=custom_vars[x-1][0])
-                        label_n.grid(row=x, column=0, padx=5, pady=5, sticky=tk.NW)
-                        label_list.append(label_n)
+                for widget in self.custom_var_labelframe.winfo_children():
+                    if widget.grid_info()['row'] > 0:
+                        widget.destroy()
+                if self.selected_item_path.get() != '':
+                    if self.n_custom_var.get() != 0:
+                        try:
+                            list_of_files = glob(self.selected_item_path.get() + '/**/*.txt', recursive=False)
+                            custom_file = [x for x in list_of_files if 'Custom' in x]
+                            custom_variables = read_table(custom_file[0])
+                            info = []
+                            custom_vars = [(key, custom_variables[key]) for key in custom_variables.keys() 
+                                                if key not in ['Project', 'Subject', 'Experiment', 'Acquisition_date', 'C_V']]
+                        except:
+                            info = [("Project", self.selected_item_path.get().split('/')[-3]), ("Subject", self.selected_item_path.get().split('/')[-2]), 
+                                            ("Experiment", self.selected_item_path.get().split('/')[-1]), ("Acquisition_date", ""), ('C_V', "")]
+                            custom_vars = [("Group", ""), ("Timepoint", ""), ("Dose", "")]
+                            custom_file = [os.path.join(self.selected_item_path.get(), 'MR', self.selected_item_path.get().split('/')[-1] + "_Custom_Variables.txt")]
+                        label_list = []
+                        entry_list = []
+                        for x in range(1, self.n_custom_var.get() + 1):
+                            # Custom Variable Label
+                            label_n = ttk.Label(self.custom_var_labelframe, text=custom_vars[x-1][0])
+                            label_n.grid(row=x, column=0, padx=5, pady=5, sticky=tk.NW)
+                            label_list.append(label_n)
+                            # Custom Variable Entry
+                            entry_n = ttk.Entry(self.custom_var_labelframe, show='', state='disabled')
+                            entry_n.var = tk.StringVar()
+                            entry_n.var.set(custom_vars[x-1][1])
+                            entry_n["textvariable"] = entry_n.var
+                            entry_n.grid(row=x, column=1, padx=5, pady=5, sticky=tk.NW)
+                            entry_list.append(entry_n)
 
-                        entry_n = ttk.Entry(self.custom_var_labelframe, show='')
-                        entry_n.var = tk.StringVar()
-                        entry_n.var.set(custom_vars[x-1][1])
-                        entry_n["textvariable"] = entry_n.var
-                        entry_n.grid(row=x, column=1, padx=5, pady=5, sticky=tk.NW)
-                        entry_list.append(entry_n)
+                        # Button to modify the entry of the custom variable
+                        def edit_handler(*args):
+                            enable_buttons(entry_list)
+                            enable_buttons([confirm_button, reject_button])
+                             
+                        edit_button = ttk.Button(self.custom_var_labelframe, image=master.logo_edit, command=edit_handler,
+                                                    style="WithoutBack.TButton", cursor=CURSOR_HAND)
+                        edit_button.grid(row=1, column=2, padx=5, pady=5, sticky=tk.NW)
+
+                        # Button to confirm changes
+                        def accept_changes(*args):
+                            # Save change on .txt file
+                            data = {}
+                            for e in range(len(entry_list)):
+                                data[label_list[e]["text"]] = entry_list[e].var.get()
+                            write_table(custom_file[0], data)
+                            display_custom_var()
+
+                        confirm_button = ttk.Button(self.custom_var_labelframe, image=master.logo_accept, command=accept_changes,
+                                                    state='disabled', style="WithoutBack.TButton", cursor=CURSOR_HAND)
+                        confirm_button.grid(row=1, column=3, padx=5, pady=5, sticky=tk.NW)
+
+                        # Button to abort changes
+                        def reject_changes(*args):
+                            # disable_buttons(entry_list)
+                            display_custom_var()
+                        reject_button = ttk.Button(self.custom_var_labelframe, image=master.logo_delete, command=reject_changes,
+                                                    state='disabled', style="WithoutBack.TButton", cursor=CURSOR_HAND)
+                        reject_button.grid(row=1, column=4, padx=5, pady=5, sticky=tk.NW)
 
             self.n_custom_var.trace('w', display_custom_var)
+            self.selected_item_path.trace('w', display_custom_var)
             #############################################
 
             # Label Frame for Uploader Data
@@ -2458,12 +2535,12 @@ class xnat_pic_gui():
             self.entry_prjname.grid(row=0, column=3, padx=2, pady=10, sticky=tk.NW)
 
             # Button to confirm new project
-            self.confirm_new_prj = ttk.Button(self.uploader_data, image=master.logo_accept, style="Popup.TButton",
+            self.confirm_new_prj = ttk.Button(self.uploader_data, image=master.logo_accept, style="WithoutBack.TButton",
                                             command=self.check_project_name, cursor=CURSOR_HAND, state='disabled')
             self.confirm_new_prj.grid(row=0, column=4, padx=10, pady=10, sticky=tk.NW)
 
             # Button to reject new project
-            self.reject_new_prj = ttk.Button(self.uploader_data, image=master.logo_delete, style="Popup.TButton",
+            self.reject_new_prj = ttk.Button(self.uploader_data, image=master.logo_delete, style="WithoutBack.TButton",
                                             command=reject_project, cursor=CURSOR_HAND, state='disabled')
             self.reject_new_prj.grid(row=0, column=5, padx=2, pady=10, sticky=tk.NW)
             
@@ -2513,12 +2590,12 @@ class xnat_pic_gui():
             self.entry_subname.grid(row=1, column=3, padx=2, pady=10, sticky=tk.NW)
 
             # Button to confirm new subject
-            self.confirm_new_sub = ttk.Button(self.uploader_data, image=master.logo_accept, style="Popup.TButton",
+            self.confirm_new_sub = ttk.Button(self.uploader_data, image=master.logo_accept, style="WithoutBack.TButton",
                                             command=self.check_subject_name, cursor=CURSOR_HAND, state='disabled')
             self.confirm_new_sub.grid(row=1, column=4, padx=10, pady=10, sticky=tk.NW)
 
             # Button to reject new subject
-            self.reject_new_sub = ttk.Button(self.uploader_data, image = master.logo_delete, style="Popup.TButton",
+            self.reject_new_sub = ttk.Button(self.uploader_data, image = master.logo_delete, style="WithoutBack.TButton",
                                             command=reject_subject, cursor=CURSOR_HAND, state='disabled')
             self.reject_new_sub.grid(row=1, column=5, padx=2, pady=10, sticky=tk.NW)
             #############################################
@@ -2556,12 +2633,12 @@ class xnat_pic_gui():
             self.entry_expname.grid(row=2, column=3, padx=2, pady=10, sticky=tk.NW)
 
             # Button to confirm new experiment
-            self.confirm_new_exp = ttk.Button(self.uploader_data, image = master.logo_accept, style="Popup.TButton",
+            self.confirm_new_exp = ttk.Button(self.uploader_data, image = master.logo_accept, style="WithoutBack.TButton",
                                             command=self.check_experiment_name, cursor=CURSOR_HAND, state='disabled')
             self.confirm_new_exp.grid(row=2, column=4, padx=10, pady=10, sticky=tk.NW)
 
             # Button to reject new experiment
-            self.reject_new_exp = ttk.Button(self.uploader_data, image = master.logo_delete, style="Popup.TButton",
+            self.reject_new_exp = ttk.Button(self.uploader_data, image = master.logo_delete, style="WithoutBack.TButton",
                                             command=reject_experiment, cursor=CURSOR_HAND, state='disabled')
             self.reject_new_exp.grid(row=2, column=5, padx=2, pady=10, sticky=tk.NW)
             #############################################
@@ -2632,7 +2709,7 @@ class xnat_pic_gui():
             if press_btn == 0:
                 # Disable main buttons
                 disable_buttons([self.prj_btn, self.sub_btn, self.exp_btn, self.file_btn])
-                enable_buttons([self.project_list, self.new_prj_btn, self.select_folder_button])
+                enable_buttons([self.project_list, self.new_prj_btn, self.select_folder_button, self.add_file_btn])
                 # Enable NEXT button only if all the requested fields are filled
                 def enable_next(*args):
                     if self.prj.get() != '--':
@@ -2642,7 +2719,7 @@ class xnat_pic_gui():
             elif press_btn == 1:
                 # Disable main buttons
                 disable_buttons([self.prj_btn, self.sub_btn, self.exp_btn, self.file_btn])
-                enable_buttons([self.project_list, self.new_prj_btn, self.select_folder_button])
+                enable_buttons([self.project_list, self.new_prj_btn, self.select_folder_button, self.add_file_btn])
                 # Enable NEXT button only if all the requested fields are filled
                 def enable_next(*args):
                     if self.prj.get() != '--':
@@ -2653,7 +2730,7 @@ class xnat_pic_gui():
                 # Disable main buttons
                 disable_buttons([self.prj_btn, self.sub_btn, self.exp_btn, self.file_btn])
                 enable_buttons([self.project_list, self.new_prj_btn, self.select_folder_button,
-                                self.subject_list, self.new_sub_btn])
+                                self.subject_list, self.new_sub_btn, self.add_file_btn])
                 # Enable NEXT button only if all the requested fields are filled
                 def enable_next(*args):
                     if self.prj.get() != '--' and self.sub.get() != '--':
@@ -2665,7 +2742,7 @@ class xnat_pic_gui():
                 disable_buttons([self.prj_btn, self.sub_btn, self.exp_btn, self.file_btn])
                 enable_buttons([self.project_list, self.new_prj_btn, self.select_folder_button,
                                 self.subject_list, self.new_sub_btn,
-                                self.experiment_list, self.new_exp_btn])
+                                self.experiment_list, self.new_exp_btn, self.add_file_btn])
                 # Enable NEXT button only if all the requested fields are filled
                 def enable_next(*args):
                     if self.prj.get() != '--' and self.sub.get() != '--' and self.exp.get() != '--':
