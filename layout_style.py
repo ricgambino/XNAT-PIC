@@ -47,9 +47,9 @@ class MyStyle():
                                 anchor=tk.CENTER, relief=tk.FLAT, padding=2)
         self.style.map("Popup.TButton", background=[('disabled', AZURE_DISABLED), ('active', AZURE)], foreground=[('disabled', LIGHT_GREY_DISABLED), ('active', WHITE)])
 
-        self.style.configure("WithoutBack.TButton", background=LIGHT_GREY, foreground=WHITE, borderwidth=0, font=("Calibri", 8),
+        self.style.configure("WithoutBack.TButton", background=LIGHT_GREY, foreground=LIGHT_GREY_DISABLED, borderwidth=0, font=("Calibri", 12),
                                 anchor=tk.CENTER, relief=tk.FLAT, padding=2)
-        self.style.map("WithoutBack.TButton", background=[('disabled', LIGHT_GREY), ('active', LIGHT_GREY)], foreground=[('disabled', LIGHT_GREY_DISABLED), ('active', WHITE)])
+        self.style.map("WithoutBack.TButton", background=[('disabled', LIGHT_GREY), ('active', LIGHT_GREY)], foreground=[('disabled', LIGHT_GREY_DISABLED), ('active', 'black')])
 
         self.style.configure("TCheckbutton", background=LIGHT_GREY, borderwidth=0, font=("Calibri", 12),
                                 anchor=tk.CENTER, relief=tk.FLAT)
