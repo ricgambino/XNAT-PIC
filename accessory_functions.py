@@ -73,7 +73,7 @@ def read_table(path_to_read):
         data_dict[elem[0]] = elem[1]
     return data_dict
 
-def write_table(path_to_write, edit, info=[]):
+def write_table(path_to_write, edit):
 
     try:
         # If there is already a file, edit it
@@ -87,5 +87,5 @@ def write_table(path_to_write, edit, info=[]):
     except:
         # If the file does not exist yet
         with open(path_to_write.replace('\\', '/'), 'w+') as out_file:
-            out_file.write(tabulate(info.items(), headers=['Variable', 'Value']))
-            out_file.write(tabulate(edit.items()))
+            # out_file.write(tabulate(info.items(), headers=['Variable', 'Value']))
+            out_file.write(tabulate(edit.items(), headers=['Variable', 'Value']))
