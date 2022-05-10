@@ -37,8 +37,11 @@ from multiprocessing import Pool, cpu_count
 from credential_manager import CredentialManager
 import pandas
 from layout_style import MyStyle
+import babel.numbers
+from multiprocessing import Process, freeze_support
 
 PATH_IMAGE = "images\\"
+#PATH_IMAGE = "lib\\images\\"
 PERCENTAGE_SCREEN = 1  # Defines the size of the canvas. If equal to 1 (100%) ,it takes the whole screen
 WHITE = "#ffffff"
 LIGHT_GREY = "#F1FFFE"
@@ -131,7 +134,7 @@ class xnat_pic_gui():
         
         self.root = tk.Tk()
         self.root.state('zoomed')
-
+        
         self.style = MyStyle().get_style
         #self.root.state('zoomed')
         ### GET PRIMARY SCREEN RESOLUTION
@@ -164,7 +167,7 @@ class xnat_pic_gui():
         self.root.geometry("%dx%d+0+0" % (w, h))
         self.root.title("   XNAT-PIC   ~   Molecular Imaging Center   ~   University of Torino   ")
         # If you want the logo 
-        #self.root.iconbitmap(r"logo3.ico")
+        self.root.iconbitmap(PATH_IMAGE + "logo3.ico")
 
         # Define Canvas and logo in background
         global my_width
@@ -180,18 +183,23 @@ class xnat_pic_gui():
         panel = Image.open(PATH_IMAGE + "logo-panel.png").convert("RGBA")
         panel = panel.resize((int(my_width/5), my_height), Image.ANTIALIAS)
         self.panel = ImageTk.PhotoImage(panel)
-        self.panel_image = tk.Button(self.my_canvas, image=self.panel, bg=BG_BTN_COLOR, borderwidth=0, 
-                                    activebackground=BG_BTN_COLOR)
-        self.img1 = self.my_canvas.create_window(0, 0, anchor=tk.NW, window=self.panel_image)
+        # self.panel_image = tk.Button(self.my_canvas, image=self.panel, bg=BG_BTN_COLOR, borderwidth=0, 
+        #                             activebackground=BG_BTN_COLOR)
+        self.img1 = self.my_canvas.create_image(0, 0, anchor=tk.NW, im=self.panel)
 
         # XNAT-PIC Logo
         logo = Image.open(PATH_IMAGE + "XNAT-PIC-logo.png").convert("RGBA")
         logo = logo.resize((int(logo.size[0]/3), int(logo.size[1]/3)), Image.ANTIALIAS)
         self.logo = ImageTk.PhotoImage(logo)
-        self.logo_img = tk.Button(self.my_canvas, image=self.logo, background=LIGHT_GREY, borderwidth=0, relief=tk.FLAT)
-        self.img2 = self.my_canvas.create_window(int(my_width/5)*3, int(my_height*0.1), 
-                                                anchor=tk.CENTER, window=self.logo_img)
-    
+        #self.logo_img = tk.Button(self.my_canvas, image=self.logo, background=LIGHT_GREY, borderwidth=0)
+        self.img2 = self.my_canvas.create_image(int(my_width/5 + ((4*my_width/5)/2)), int(my_height*10/100), 
+                                                anchor=tk.CENTER, im=self.logo)
+        
+        # # Open the image for the logo
+        # logo_info = Image.open(PATH_IMAGE + "info.png")
+        # self.logo_info = ImageTk.PhotoImage(logo_info)
+        width_logo, height_logo = 10, 10
+
         # Open the image for the accept icon
         logo_accept = Image.open(PATH_IMAGE + "Done.png").convert("RGBA")
         logo_accept = logo_accept.resize((15, 15), Image.ANTIALIAS)
@@ -226,10 +234,10 @@ class xnat_pic_gui():
             
     # Choose to upload files, fill in the info, convert files, process images
     def choose_your_action(self):
-
-        if hasattr(xnat_pic_gui, 'img2') == False:
-            self.img2 = self.my_canvas.create_window(int(my_width/5 + ((4*my_width/5)/2)), int(my_height*10/100), 
-                                                anchor=tk.CENTER, window=self.logo_img)
+        
+        if not 2 in self.my_canvas.find_all():
+            self.img2 = self.my_canvas.create_image(int(my_width/5 + ((4*my_width/5)/2)), int(my_height*10/100), 
+                                                anchor=tk.CENTER,im=self.logo)
 
         # Action buttons           
         # Positions for action button parametric with respect to the size of the canvas
@@ -877,25 +885,36 @@ class xnat_pic_gui():
             disable_buttons([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn])
             
             # Choose your directory
+            messagebox.showinfo("Metadata", "Select project directory!")
             self.information_folder = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC: Select project directory!")
             
             # If there is no folder selected, re-enable the buttons and return
             if not self.information_folder:
                 enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
                 return
+                        
+            self.frame_metadata(master) 
+
+        def select_folder(self, master): 
+            # Choose your directory
+            self.information_folder = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC: Select project directory!")
             
+            # If there is no folder selected, re-enable the buttons and return
+            if not self.information_folder:
+                enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
+                return
+
+            destroy_widgets([self.menu, self.notebook, self.label_frame_ID, self.label_frame_CV, self.modify_btn,
+            self.confirm_btn, self.multiple_confirm_btn, self.hscrollbar, self.my_xscrollbar, self.my_yscrollbar, self.my_listbox, self.canvas_notebook])
+            delete_widgets(master.my_canvas, [self.frame_title, self.name_selected_project])  
+
+            self.frame_metadata(master)  
+
+        def frame_metadata(self, master): 
             self.project_name = (self.information_folder.rsplit("/",1)[1])
             self.tmp_dict = {}
             self.results_dict = {}
-            
-        # Scommenta per la gestione dei due progetti
-            self.frame_metadata(master)
-                   
-        def frame_metadata(self, master):   
-            #flag = self.radioValue.get()
-            #self.my_popup.destroy()
-            flag = 1
-             
+ 
             # Load the acq. date from visu_pars file for Bruker file or from DICOM files
             def read_acq_date(path): 
                 match_date = ''
@@ -925,37 +944,26 @@ class xnat_pic_gui():
                 path = str(self.information_folder + "\\" + item).replace('\\', '/')
                 # Check if the content of the project is a folder and therefore a patient or a file not to be considered
                 if os.path.isdir(path):
-                    # Architecture of the project: project-subject
-                    if flag == 0:
-                        self.path_list.append(path)
                     # Architecture of the project: project-subject-experiment
-                    elif flag==1:
-                        for item2 in os.listdir(path):
-                            path1 = str(path + "\\" + item2).replace('\\', '/')
-                            if os.path.isdir(path1):
-                               self.path_list.append(path1)
-                               exp.append(str(item2))
-                        todos_tmp = {item: exp}
-                        exp = []
+                    for item2 in os.listdir(path):
+                        path1 = str(path + "\\" + item2).replace('\\', '/')
+                        if os.path.isdir(path1):
+                            self.path_list.append(path1)
+                            exp.append(str(item2))
+                    todos_tmp = {item: exp}
+                    exp = []
                 self.todos.update(todos_tmp)
                 todos_tmp = {}
 
             # Scan all files contained in the folder that the user has provided
             for path in self.path_list:
-                if flag == 0:
-                    prj = str(path).rsplit("/",2)[2]
-                    sub = str(path).rsplit("/",2)[1]
-                    exp = prj
-                    name = exp + "_" + "Custom_Variables.txt"
-                    keys =  exp
-                elif flag ==1:
-                    exp = str(path).rsplit("/",3)[3]
-                    sub = str(path).rsplit("/",3)[2]
-                    prj = str(path).rsplit("/",3)[1]
-                    name = exp + "_" + "Custom_Variables.txt"
-                    keys = sub + "#" + exp
-                    # Check if the txt file is in folder of the patient
-                    # If the file exists, read le info
+                exp = str(path).rsplit("/",3)[3]
+                sub = str(path).rsplit("/",3)[2]
+                prj = str(path).rsplit("/",3)[1]
+                name = exp + "_" + "Custom_Variables.txt"
+                keys = sub + "#" + exp
+                # Check if the txt file is in folder of the patient
+                # If the file exists, read le info
                 if os.path.exists((path + "\\" + name).replace('\\', '/')):
                     subject_data = read_table((path + "\\" + name).replace('\\', '/'))
                     tmp_dict = {keys: subject_data}
@@ -985,7 +993,7 @@ class xnat_pic_gui():
                 self.results_dict.update(tmp_dict)
 
             #################### Update the frame ####################
-            destroy_widgets([master.convert_btn.destroy(), master.info_btn.destroy(), master.upload_btn.destroy(), master.close_btn])
+            destroy_widgets([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn])
             master.my_canvas.delete(master.img2)
             x_btn = int(my_width/5)
             y_btn = int(my_height)
@@ -997,6 +1005,8 @@ class xnat_pic_gui():
             #################### Menu ###########################
             self.menu = tk.Menu(master.root)
             file_menu = tk.Menu(self.menu, tearoff=0)
+            file_menu.add_command(label="Select Folder", command = lambda: self.select_folder(master))
+            file_menu.add_separator()
             file_menu.add_command(label="Add ID", command = lambda: self.add_ID(master))
             file_menu.add_command(label="Add Custom Variables", command = lambda: self.add_custom_variable(master))
             file_menu.add_command(label="Clear Custom Variables", command = lambda: self.clear_metadata())
@@ -1009,7 +1019,6 @@ class xnat_pic_gui():
             master.root.config(menu=self.menu)
 
             #################### Folder list #################### 
-            s = ttk.Style()
             ### Selected folder label
             x_folder_list = int(my_width*23/100)
             self.name_selected_project = master.my_canvas.create_text(3*x_btn, int(y_btn*0.11), anchor=tk.CENTER, fill='black', font=("Ink Free", 22),
@@ -1027,7 +1036,7 @@ class xnat_pic_gui():
             self.canvas_notebook.create_window((0,0), window=self.frame_nb, anchor="nw", tags="frame")
 
             # Create an object of horizontal scrollbar to scroll tab
-            self.hscrollbar = tk.Scrollbar(master.root, orient="horizontal", command=self.canvas_notebook.xview, activebackground = 'white', bg = 'white')
+            self.hscrollbar = tk.Scrollbar(master.root, orient="horizontal", command=self.canvas_notebook.xview)
             y_scrollbar = int(my_height*70/100)
             x_scrollbar = int(my_width*32/100)
             master.my_canvas.create_window(x_scrollbar, y_scrollbar, anchor = tk.NW, window=self.hscrollbar)
@@ -1045,23 +1054,23 @@ class xnat_pic_gui():
             master.my_canvas.create_window(x_listbox, y_listbox, width = w_listbox, height = h_listbox, anchor = tk.NW, window=self.my_listbox)
             
             # # Yscrollbar for listbox
-            self.my_yscrollbar = tk.Scrollbar(master.my_canvas, orient="vertical")
+            self.my_yscrollbar = ttk.Scrollbar(master.my_canvas, orient="vertical")
             self.my_listbox.config(yscrollcommand = self.my_yscrollbar.set)
             self.my_yscrollbar.config(command = self.my_listbox.yview)
-            x_my_yscrollbar = int(my_width*22/100)
-            y_my_yscrollbar = int(my_height*19/100)
-            h_yscrollbar = int(my_height*48/100)
+            x_my_yscrollbar = int(my_width*22.2/100)
+            y_my_yscrollbar = int(my_height*19.1/100)
+            h_yscrollbar = int(my_height*47.8/100)
             master.my_canvas.create_window(x_my_yscrollbar, y_my_yscrollbar, height = h_yscrollbar, anchor = tk.NW, window=self.my_yscrollbar)
 
             # Xscrollbar for listbox
-            self.my_xscrollbar = tk.Scrollbar(master.my_canvas, orient="horizontal")
+            self.my_xscrollbar = ttk.Scrollbar(master.my_canvas, orient="horizontal")
             self.my_listbox.config(xscrollcommand = self.my_xscrollbar.set)
             self.my_xscrollbar.config(command = self.my_listbox.xview)
             x_my_xscrollbar = int(my_width*23.1/100)
-            y_my_xscrollbar = int(my_height*67/100)
+            y_my_xscrollbar = int(my_height*68/100)
             w_my_xscrollbar = int(my_width*20.4/100)
             master.my_canvas.create_window(x_my_xscrollbar, y_my_xscrollbar, width = w_my_xscrollbar, anchor = tk.NW, window=self.my_xscrollbar)
-
+            
             # Sorts the tabs first by length and then alphabetically
             for key in sorted(self.todos, key=len):
                 self.notebook.add(tk.Frame(self.notebook, background="#99D0EF"), text=key, underline=0, sticky=tk.NE + tk.SW)
@@ -1072,7 +1081,7 @@ class xnat_pic_gui():
                 self.canvas_notebook.configure(scrollregion=self.canvas_notebook.bbox("all"))
 
             self.frame_nb.bind("<Configure>", frame_configure)
-           
+          
             #################### Subject form ####################
             # ID
             # Label frame for ID: folder selected, project, subject and acq. date
@@ -1087,10 +1096,16 @@ class xnat_pic_gui():
             # Scroll bar in the Label frame ID
             self.canvas_ID = tk.Canvas(self.label_frame_ID, bg=LIGHT_GREY)
             self.frame_ID = tk.Frame(self.canvas_ID, bg=LIGHT_GREY)
+
             self.vsb_ID = ttk.Scrollbar(self.label_frame_ID, orient="vertical", command=self.canvas_ID.yview)
-            self.canvas_ID.configure(yscrollcommand=self.vsb_ID.set, width=w_lbl_ID, height=h_lbl_ID)       
+            self.canvas_ID.configure(yscrollcommand=self.vsb_ID.set, width=w_lbl_ID, height=h_lbl_ID)  
+
+            self.hsb_ID = ttk.Scrollbar(self.label_frame_ID, orient="horizontal", command=self.canvas_ID.xview)
+            self.canvas_ID.configure(xscrollcommand=self.hsb_ID.set)     
 
             self.vsb_ID.pack(side="right", fill="y")
+            self.hsb_ID.pack(side="bottom", fill="x")
+
             self.canvas_ID.pack(side="left", fill="both", expand=True)
             self.canvas_ID.create_window((0,0), window=self.frame_ID, anchor="nw")
 
@@ -1139,9 +1154,12 @@ class xnat_pic_gui():
             self.canvas_CV = tk.Canvas(self.label_frame_CV, bg=LIGHT_GREY)
             self.frame_CV = tk.Frame(self.canvas_CV, bg=LIGHT_GREY)
             self.vsb_CV = ttk.Scrollbar(self.label_frame_CV, orient="vertical", command=self.canvas_CV.yview)
-            self.canvas_CV.configure(yscrollcommand=self.vsb_CV.set, width=w_lbl_CV, height=h_lbl_CV)       
+            self.canvas_CV.configure(yscrollcommand=self.vsb_CV.set, width=w_lbl_CV, height=h_lbl_CV)  
+            self.hsb_CV = ttk.Scrollbar(self.label_frame_CV, orient="horizontal", command=self.canvas_CV.xview)
+            self.canvas_CV.configure(xscrollcommand=self.hsb_CV.set)     
 
-            self.vsb_CV.pack(side="right", fill="y")
+            self.vsb_CV.pack(side="right", fill="y")     
+            self.hsb_CV.pack(side="bottom", fill="x")
             self.canvas_CV.pack(side="left", fill="both", expand=True)
             self.canvas_CV.create_window((0,0), window=self.frame_CV, anchor="nw")
 
@@ -1152,7 +1170,7 @@ class xnat_pic_gui():
             def OnFrameConfigure(canvas):
                     canvas.configure(scrollregion=canvas.bbox("all"))
 
-            keys_CV = ["Group", "Timepoint", "Dose",]
+            keys_CV = ["Group", "Timepoint", "Dose"]
             # Entry CV  
             self.entries_variable_CV = []  
             self.entries_value_CV = []          
@@ -1669,7 +1687,7 @@ class xnat_pic_gui():
                     messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
                     raise 
             # Disable btns
-            disable_buttons([self.modify_btn, self.confirm_btn])
+            disable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn])
             # I use len(all_entries) to get nuber of next free row
             next_row = len(self.entries_variable_ID)
             
@@ -1692,7 +1710,7 @@ class xnat_pic_gui():
                 state = self.entries_value_ID[1]['state']
                 self.entries_variable_ID[next_row]['state'] = tk.DISABLED
                 self.entries_value_ID[next_row]['state'] = state
-                enable_buttons([self.modify_btn, self.confirm_btn])
+                enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn])
                 btn_confirm_ID.destroy()
                 btn_reject_ID.destroy()
                  
@@ -1702,7 +1720,7 @@ class xnat_pic_gui():
 
             # Delete
             def reject_ID(next_row):
-                enable_buttons([self.modify_btn, self.confirm_btn])
+                enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn])
                 self.entries_variable_ID[next_row].destroy()
                 self.entries_value_ID[next_row].destroy()
                 btn_confirm_ID.destroy()
@@ -1722,7 +1740,7 @@ class xnat_pic_gui():
                     messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
                     raise 
             # Disable btns
-            disable_buttons([self.modify_btn, self.confirm_btn])
+            disable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn])
             # I get number of next free row
             next_row = len(self.entries_variable_CV)
             
@@ -3210,7 +3228,8 @@ class xnat_pic_gui():
 
 
 if __name__ == "__main__":
-
+    
+    freeze_support()
     check_credentials()
 
     # root = tk.Tk()
