@@ -4,12 +4,17 @@ import shutil
 from sqlite3 import Row
 import tkinter as tk
 from tkinter import DISABLED, END, MULTIPLE, N, NE, NW, RAISED, SINGLE, W, Menu, filedialog, messagebox
+from tkinter import font
 from tkinter.font import Font
 from turtle import bgcolor, width
 from unicodedata import name
 from unittest import result
 from PIL import Image, ImageTk
-from tkinter import ttk
+#from tkinter import ttk
+import ttkbootstrap as ttk
+from ttkbootstrap import Style
+from ttkbootstrap.constants import *
+import ttkbootstrap.themes.standard 
 import tkinter.simpledialog
 import time, json
 import os, re
@@ -132,10 +137,13 @@ class xnat_pic_gui():
 
     def __init__(self):
         
-        self.root = tk.Tk()
+
+        self.style = Style('solar')
+        self.style.configure('TButton', font = LARGE_FONT)
+        self.root = self.style.master
         self.root.state('zoomed')
         
-        self.style = MyStyle().get_style
+            
         #self.root.state('zoomed')
         ### GET PRIMARY SCREEN RESOLUTION
         ### MADE FOR MULTISCREEN ENVIRONMENTS
@@ -227,7 +235,7 @@ class xnat_pic_gui():
 
         self.enter_btn = ttk.Button(self.my_canvas, text="ENTER",
                                     command=enter_handler,
-                                    cursor=CURSOR_HAND)
+                                    cursor=CURSOR_HAND, bootstyle="primary")
         self.my_canvas.create_window(int(my_width/5)*3, int(my_height*70/100), 
                                     anchor=tk.CENTER, window = self.enter_btn)
         self.root.mainloop()
@@ -1137,8 +1145,10 @@ class xnat_pic_gui():
                 count += 1
 
             # Calendar for acq. date
-            self.cal = DateEntry(self.frame_ID,  state = tk.DISABLED, width=11, font = SMALL_FONT_3, background=AZURE, date_pattern = 'y-mm-dd', foreground='white', borderwidth=0, selectbackground = AZURE_DISABLED, selectforeground = "black", style = 'Metadata.TCombobox')
-            self.cal.delete(0, tk.END)
+            #self.cal = DateEntry(self.frame_ID,  state = tk.DISABLED, width=11, font = SMALL_FONT_3, background=AZURE, date_pattern = 'y-mm-dd', foreground='white', borderwidth=0, selectbackground = AZURE_DISABLED, selectforeground = "black", style = 'Metadata.TCombobox')
+            #self.cal.delete(0, tk.END)
+            self.cal = ttk.DateEntry(self.frame_ID)
+
             self.cal.grid(row=4, column=1, padx = 5, pady = 5, sticky=NE)
 
             ####################################################################
@@ -1844,7 +1854,7 @@ class xnat_pic_gui():
 
             # Credentials Label Frame
             login_popup.cred_frame = ttk.LabelFrame(login_popup, text="Credentials", style="Popup.TLabelframe")
-            login_popup.cred_frame.grid(row=1, column=0, padx=10, pady=5, sticky=tk.W, columnspan=2)
+            login_popup.cred_frame.grid(row=1, column=0, padx=10, pady=5, sticky=tk.E+tk.W+tk.N+tk.S, columnspan=2)
 
             # XNAT ADDRESS      
             login_popup.label_address = ttk.Label(login_popup.cred_frame, text="XNAT web address", style="Popup.TLabel")   
@@ -1973,7 +1983,7 @@ class xnat_pic_gui():
 
             # Label Frame for HTTP buttons
             login_popup.label_frame_http = ttk.LabelFrame(login_popup, text="Options", style="Popup.TLabelframe")
-            login_popup.label_frame_http.grid(row=0, column=0, padx=10, pady=5, sticky=tk.W, columnspan=2)
+            login_popup.label_frame_http.grid(row=0, column=0, padx=10, pady=5, sticky=tk.E+tk.W+tk.N+tk.S, columnspan=2)
             
             # HTTP/HTTPS 
             login_popup.http = tk.StringVar()
