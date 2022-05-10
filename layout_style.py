@@ -98,15 +98,21 @@ class MyStyle():
         self.style.configure("Treeview.Heading", background=LIGHT_GREY, foreground="black", relief=tk.FLAT, anchor=tk.CENTER, font=SMALL_FONT_2,
                                         highlightthickness=0, borderwidth=3)
 
-        self.style.configure("Vertical.TScrollbar", background=AZURE_DISABLED, anchor=tk.CENTER, width=6,
+        self.style.configure("TScrollbar", background=AZURE_DISABLED, anchor=tk.CENTER, width=6,
                                         highlightthickness=3, borderwidth=3, activerelief=LIGHT_GREY)
-        self.style.map("Vertical.TScrollbar", background=[('active', AZURE), ('disabled', AZURE_DISABLED)],
+        self.style.map("TScrollbar", background=[('active', AZURE), ('disabled', AZURE_DISABLED)],
                                                 activebackground=[('active', LIGHT_GREY), ('disabled', LIGHT_GREY)])
-        self.style.layout('TScrollbar', 
+        self.style.layout('Vertical.TScrollbar', 
          [('Scrollbar.trough',
            {'children': [('Scrollbar.thumb', 
                           {'expand': '1', 'sticky': 'nswe'})],
             'sticky': 'ns'})])
+
+        self.style.layout('Horizontal.TScrollbar', 
+         [('Scrollbar.trough',
+           {'children': [('Scrollbar.thumb', 
+                          {'expand': '1', 'sticky': 'nswe'})],
+            'sticky': 'we'})])
 
     def get_style(self):
         return self.style
