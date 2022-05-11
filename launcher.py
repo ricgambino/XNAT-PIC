@@ -139,7 +139,7 @@ class xnat_pic_gui():
                    
         self.root = tk.Tk()
         self.root.state('zoomed')
-        
+    
         self.style = MyStyle().get_style
         ### GET PRIMARY SCREEN RESOLUTION
         ### MADE FOR MULTISCREEN ENVIRONMENTS
@@ -155,8 +155,8 @@ class xnat_pic_gui():
             self.root.screenheight=self.root.winfo_screenheight()
 
         # Toolbar Menu
-        self.toolbar_menu = tk.Menu(self.root)
-        fileMenu = tk.Menu(self.toolbar_menu, tearoff=0)
+        self.toolbar_menu = ttk.Menu(self.root)
+        fileMenu = ttk.Menu(self.toolbar_menu, tearoff=0)
         fileMenu.add_separator()
         fileMenu.add_command(label="Exit", command=lambda: self.root.destroy())
 
@@ -166,107 +166,114 @@ class xnat_pic_gui():
         self.root.config(menu=self.toolbar_menu)
 
         # Adjust size based on screen resolution
-        w = self.root.screenwidth
-        h = self.root.screenheight - 50
-        self.root.geometry("%dx%d+0+0" % (w, h))
+        self.width = self.root.screenwidth
+        self.height = self.root.screenheight
+        self.root.geometry("%dx%d+0+0" % (self.width, self.height))
         self.root.title("   XNAT-PIC   ~   Molecular Imaging Center   ~   University of Torino   ")
         # If you want the logo 
         self.root.iconbitmap(PATH_IMAGE + "logo3.ico")
 
-        # Define Canvas and logo in background
-        global my_width
-        global my_height
-        my_width = int(w*PERCENTAGE_SCREEN)
-        # my_height = int(work_height*PERCENTAGE_SCREEN)
-        my_height = int(h*PERCENTAGE_SCREEN)
-        self.my_canvas = tk.Canvas(self.root, width=my_width, height=my_height, bg=LIGHT_GREY, highlightthickness=0, 
-                                    highlightbackground=LIGHT_GREY)
-        self.my_canvas.place(x=0, y=0, anchor=tk.NW)
+        self.frame = ttk.Frame()
+        self.frame.pack(fill='both', expand=1)
+        # self.frame.columnconfigure(0, weight=1)
+        # self.frame.columnconfigure(1, weight=10)
 
-        # Logo Panel
-        panel = Image.open(PATH_IMAGE + "logo-panel.png").convert("RGBA")
-        panel = panel.resize((int(my_width/5), my_height), Image.ANTIALIAS)
-        self.panel = ImageTk.PhotoImage(panel)
-        #self.panel_image = ttk.Button(self.my_canvas, image=self.panel)
-        self.img1 = self.my_canvas.create_image(0, 0, anchor=tk.NW, im=self.panel)
+        self.my_width = int(self.width*PERCENTAGE_SCREEN)
+        self.my_height = int(self.height*PERCENTAGE_SCREEN)
 
-        # XNAT-PIC Logo
-        logo = Image.open(PATH_IMAGE + "XNAT-PIC-logo.png").convert("RGBA")
-        logo = logo.resize((int(logo.size[0]/3), int(logo.size[1]/3)), Image.ANTIALIAS)
-        self.logo = ImageTk.PhotoImage(logo)
-        #self.logo_img = tk.Button(self.my_canvas, image=self.logo, background=LIGHT_GREY, borderwidth=0)
-        self.img2 = self.my_canvas.create_image(int(my_width/5 + ((4*my_width/5)/2)), int(my_height*10/100), 
-                                                anchor=tk.CENTER, im=self.logo)
-        
-        # # Open the image for the logo
-        # logo_info = Image.open(PATH_IMAGE + "info.png")
-        # self.logo_info = ImageTk.PhotoImage(logo_info)
-        width_logo, height_logo = 10, 10
+        def resize_window(*args):
+            self.width = self.root.winfo_width()
+            self.height = self.root.winfo_height()
+            
+            self.my_width = int(self.width*PERCENTAGE_SCREEN)
+            self.my_height = int(self.height*PERCENTAGE_SCREEN)
 
-        # Open the image for the accept icon
-        logo_accept = Image.open(PATH_IMAGE + "Done.png").convert("RGBA")
-        logo_accept = logo_accept.resize((15, 15), Image.ANTIALIAS)
-        self.logo_accept = ImageTk.PhotoImage(logo_accept)
+            # Logo Panel
+            panel = Image.open(PATH_IMAGE + "logo-panel.png").convert("RGBA")
+            panel = panel.resize((int(self.my_width/5), self.my_height), Image.ANTIALIAS)
+            self.panel_img = ImageTk.PhotoImage(panel)
+            self.panel_img.label = ttk.Label(self.frame, image=self.panel_img)
+            # self.panel_img.label.grid(row=0, column=0, sticky=tk.NSEW, rowspan=2)
+            self.panel_img.label.place(x=0, y=0, anchor=tk.NW, relheight=1, relwidth=0.2)
 
-        # Open the image for the delete icon
-        logo_delete = Image.open(PATH_IMAGE + "Reject.png").convert("RGBA")
-        logo_delete = logo_delete.resize((15, 15), Image.ANTIALIAS)
-        self.logo_delete = ImageTk.PhotoImage(logo_delete)
+            # XNAT-PIC Logo
+            logo = Image.open(PATH_IMAGE + "XNAT-PIC-logo.png").convert("RGBA")
+            logo = logo.resize((int(2*self.my_width/5), int(self.my_height/3)), Image.ANTIALIAS)
+            self.logo = ImageTk.PhotoImage(logo)
+            self.logo.label= ttk.Label(self.frame, image=self.logo)
+            # self.logo.label.grid(row=0, column=1, sticky='ns')
+            self.logo.label.place(relx=0.6, rely=0, anchor=tk.N, relheight=0.3, relwidth=0.8)
+            
+            # # Open the image for the logo
+            # logo_info = Image.open(PATH_IMAGE + "info.png")
+            # self.logo_info = ImageTk.PhotoImage(logo_info)
+            width_logo, height_logo = 10, 10
 
-        # Open the image for the edit icon
-        logo_edit = Image.open(PATH_IMAGE + "Edit.png").convert("RGBA")
-        logo_edit = logo_edit.resize((15, 15), Image.ANTIALIAS)
-        self.logo_edit = ImageTk.PhotoImage(logo_edit)
+            # Open the image for the accept icon
+            logo_accept = Image.open(PATH_IMAGE + "Done.png").convert("RGBA")
+            logo_accept = logo_accept.resize((15, 15), Image.ANTIALIAS)
+            self.logo_accept = ImageTk.PhotoImage(logo_accept)
 
-        # Open the image for clear icon
-        logo_clear = Image.open(PATH_IMAGE + "delete.png").convert("RGBA")
-        logo_clear = logo_clear.resize((20, 20), Image.ANTIALIAS)
-        self.logo_clear = ImageTk.PhotoImage(logo_clear)
+            # Open the image for the delete icon
+            logo_delete = Image.open(PATH_IMAGE + "Reject.png").convert("RGBA")
+            logo_delete = logo_delete.resize((15, 15), Image.ANTIALIAS)
+            self.logo_delete = ImageTk.PhotoImage(logo_delete)
+
+            # Open the image for the edit icon
+            logo_edit = Image.open(PATH_IMAGE + "Edit.png").convert("RGBA")
+            logo_edit = logo_edit.resize((15, 15), Image.ANTIALIAS)
+            self.logo_edit = ImageTk.PhotoImage(logo_edit)
+
+            # Open the image for clear icon
+            logo_clear = Image.open(PATH_IMAGE + "delete.png").convert("RGBA")
+            logo_clear = logo_clear.resize((20, 20), Image.ANTIALIAS)
+            self.logo_clear = ImageTk.PhotoImage(logo_clear)
 
         # Button to enter
         def enter_handler(*args):
             self.enter_btn.destroy()
             xnat_pic_gui.choose_your_action(self)
 
-        self.enter_btn = ttk.Button(self.my_canvas, text="ENTER",
+        self.enter_btn = ttk.Button(self.frame, text="ENTER",
                                     command=enter_handler,
                                     cursor=CURSOR_HAND, bootstyle="primary")
-        self.my_canvas.create_window(int(my_width/5)*3, int(my_height*70/100), width = int(my_width/5),
-                                    anchor=tk.CENTER, window = self.enter_btn)
+        # self.enter_btn.grid(row=1, column=1, sticky=tk.N)
+        self.enter_btn.place(relx=0.6, rely=0.6, anchor=tk.CENTER, relwidth=0.2)
+
+        self.frame.bind("<Configure>", resize_window)
         self.root.mainloop()
             
     # Choose to upload files, fill in the info, convert files, process images
     def choose_your_action(self):
         
-        if not 2 in self.my_canvas.find_all():
-            self.img2 = self.my_canvas.create_image(int(my_width/5 + ((4*my_width/5)/2)), int(my_height*10/100), 
-                                                anchor=tk.CENTER,im=self.logo)
+        # if not 2 in self.my_canvas.find_all():
+        #     self.img2 = self.my_canvas.create_image(int(self.my_width/5 + ((4*self.my_width/5)/2)), int(self.my_height*10/100), 
+        #                                         anchor=tk.CENTER,im=self.logo)
 
         # Action buttons           
         # Positions for action button parametric with respect to the size of the canvas
-        x_btn = int(my_width/5)
-        y_btn = int(my_height)
-        width_btn = int(my_width/5)
+        x_btn = int(self.my_width/5)
+        y_btn = int(self.my_height)
+        width_btn = int(self.my_width/5)
 
         # Convert files Bruker2DICOM
-        self.convert_btn = ttk.Button(self.my_canvas, text="DICOM Converter", style="TButton",
+        self.convert_btn = ttk.Button(self.frame, text="DICOM Converter",
                                     command=partial(self.bruker2dicom_conversion, self), cursor=CURSOR_HAND)
-
-        self.my_canvas.create_window(3*x_btn, y_btn*50/100, width = width_btn, anchor = tk.CENTER, window=self.convert_btn)
+        self.convert_btn.place(relx=0.6, rely=0.5, anchor=tk.CENTER, relwidth=0.2)
         Hovertip(self.convert_btn,'Convert images from Bruker ParaVision format to DICOM standard')
         
         # Fill in the info
-        self.info_btn = ttk.Button(self.my_canvas, text="Project Data", style="TButton",
+        self.info_btn = ttk.Button(self.frame, text="Project Data", style="TButton",
                                     command=partial(self.metadata, self), cursor=CURSOR_HAND)
-        self.my_canvas.create_window(3*x_btn, y_btn*60/100, width = width_btn, anchor = tk.CENTER, window=self.info_btn)
+        self.info_btn.place(relx=0.6, rely=0.6, anchor=tk.CENTER, relwidth=0.2)
         Hovertip(self.info_btn,'Fill in the information about the acquisition')
 
         # Upload files
         def upload_callback(*args):
             self.XNATUploader(self)
-        self.upload_btn = ttk.Button(self.my_canvas, text="Uploader", style="TButton",
+        self.upload_btn = ttk.Button(self.frame, text="Uploader", style="TButton",
                                         command=upload_callback, cursor=CURSOR_HAND)
-        self.my_canvas.create_window(3*x_btn, y_btn*70/100, width = width_btn, anchor = tk.CENTER, window=self.upload_btn)
+        self.upload_btn.place(relx=0.6, rely=0.7, anchor=tk.CENTER, relwidth=0.2)
         Hovertip(self.upload_btn,'Upload DICOM images to XNAT')
 
         # Close button
@@ -289,10 +296,10 @@ class xnat_pic_gui():
                 pass
 
             # Create new frame
-            x_btn = int(my_width/5)
+            x_btn = int(master.my_width/5)
             x_btn_init = int(x_btn + x_btn/3)
-            y_btn = int(my_height)
-            width_btn = int(my_width/5)
+            y_btn = int(master.my_height)
+            width_btn = int(master.my_width/5)
 
             # Frame Title
             self.frame_title = master.my_canvas.create_text(3*x_btn, int(y_btn*0.1), anchor=tk.N, fill='black', 
@@ -998,8 +1005,8 @@ class xnat_pic_gui():
             #################### Update the frame ####################
             destroy_widgets([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn])
             master.my_canvas.delete(master.img2)
-            x_btn = int(my_width/5)
-            y_btn = int(my_height)
+            x_btn = int(master.my_width/5)
+            y_btn = int(master.my_height)
            
             # Frame Title
             self.frame_title = master.my_canvas.create_text(3*x_btn, int(y_btn*0.05), anchor=tk.CENTER, fill='black', font=("Ink Free", 36, "bold", "underline"),
@@ -1023,13 +1030,13 @@ class xnat_pic_gui():
 
             #################### Folder list #################### 
             ### Selected folder label
-            x_folder_list = int(my_width*23/100)
+            x_folder_list = int(master.my_width*23/100)
             self.name_selected_project = master.my_canvas.create_text(3*x_btn, int(y_btn*0.11), anchor=tk.CENTER, fill='black', font=("Ink Free", 22),
                                          text='Selected Project: ' + self.project_name)
             
-            y_folder_list1 = int(my_height*15/100)
-            h_notebook = int(my_height*52/100)
-            w_notebook = int(my_width*20.5/100)
+            y_folder_list1 = int(master.my_height*15/100)
+            h_notebook = int(master.my_height*52/100)
+            w_notebook = int(master.my_width*20.5/100)
 
             ### Tab Notebook
             self.canvas_notebook = tk.Canvas(master.my_canvas, borderwidth = 0, highlightbackground="white")
@@ -1040,8 +1047,8 @@ class xnat_pic_gui():
 
             # Create an object of horizontal scrollbar to scroll tab
             self.hscrollbar = tk.Scrollbar(master.root, orient="horizontal", command=self.canvas_notebook.xview)
-            y_scrollbar = int(my_height*70/100)
-            x_scrollbar = int(my_width*32/100)
+            y_scrollbar = int(master.my_height*70/100)
+            x_scrollbar = int(master.my_width*32/100)
             master.my_canvas.create_window(x_scrollbar, y_scrollbar, anchor = tk.NW, window=self.hscrollbar)
 
             self.notebook = ttk.Notebook(self.frame_nb) 
@@ -1050,28 +1057,28 @@ class xnat_pic_gui():
             
             ### Tab Content is a listbox
             self.my_listbox = tk.Listbox(master.my_canvas, background = LIGHT_GREY, borderwidth=2, highlightbackground = "#008ad7", selectbackground = AZURE, relief=tk.FLAT, font=SMALL_FONT_3, selectmode=SINGLE, takefocus = 0)
-            x_listbox = int(my_width*23.5/100)
-            y_listbox = int(my_height*19/100)
-            h_listbox = int(my_height*47/100)
-            w_listbox = int(my_width*19.5/100)
+            x_listbox = int(master.my_width*23.5/100)
+            y_listbox = int(master.my_height*19/100)
+            h_listbox = int(master.my_height*47/100)
+            w_listbox = int(master.my_width*19.5/100)
             master.my_canvas.create_window(x_listbox, y_listbox, width = w_listbox, height = h_listbox, anchor = tk.NW, window=self.my_listbox)
             
             # # Yscrollbar for listbox
             self.my_yscrollbar = ttk.Scrollbar(master.my_canvas, orient="vertical")
             self.my_listbox.config(yscrollcommand = self.my_yscrollbar.set)
             self.my_yscrollbar.config(command = self.my_listbox.yview)
-            x_my_yscrollbar = int(my_width*22.2/100)
-            y_my_yscrollbar = int(my_height*19.1/100)
-            h_yscrollbar = int(my_height*47.8/100)
+            x_my_yscrollbar = int(master.my_width*22.2/100)
+            y_my_yscrollbar = int(master.my_height*19.1/100)
+            h_yscrollbar = int(master.my_height*47.8/100)
             master.my_canvas.create_window(x_my_yscrollbar, y_my_yscrollbar, height = h_yscrollbar, anchor = tk.NW, window=self.my_yscrollbar)
 
             # Xscrollbar for listbox
             self.my_xscrollbar = ttk.Scrollbar(master.my_canvas, orient="horizontal")
             self.my_listbox.config(xscrollcommand = self.my_xscrollbar.set)
             self.my_xscrollbar.config(command = self.my_listbox.xview)
-            x_my_xscrollbar = int(my_width*23.1/100)
-            y_my_xscrollbar = int(my_height*68/100)
-            w_my_xscrollbar = int(my_width*20.4/100)
+            x_my_xscrollbar = int(master.my_width*23.1/100)
+            y_my_xscrollbar = int(master.my_height*68/100)
+            w_my_xscrollbar = int(master.my_width*20.4/100)
             master.my_canvas.create_window(x_my_xscrollbar, y_my_xscrollbar, width = w_my_xscrollbar, anchor = tk.NW, window=self.my_xscrollbar)
             
             # Sorts the tabs first by length and then alphabetically
@@ -1091,10 +1098,10 @@ class xnat_pic_gui():
             self.label_frame_ID = ttk.LabelFrame(master.my_canvas, text="ID", style = "Metadata.TLabelframe")
 
             #
-            x_lbl_ID = int(my_width*46/100)
-            y_lbl_ID = int(my_height*18/100)
-            w_lbl_ID = int(my_width*42/100)
-            h_lbl_ID = int(my_height*25/100)
+            x_lbl_ID = int(master.my_width*46/100)
+            y_lbl_ID = int(master.my_height*18/100)
+            w_lbl_ID = int(master.my_width*42/100)
+            h_lbl_ID = int(master.my_height*25/100)
             #
             # Scroll bar in the Label frame ID
             self.canvas_ID = tk.Canvas(self.label_frame_ID, bg=LIGHT_GREY)
@@ -1151,9 +1158,9 @@ class xnat_pic_gui():
             # Label frame for Custom Variables: group, dose, timepoint
             self.label_frame_CV = ttk.LabelFrame(master.my_canvas, text="Custom Variables", style = "Metadata.TLabelframe")
             x_lbl_CV = x_lbl_ID
-            y_lbl_CV = int(my_height*47/100)
-            h_lbl_CV = int(my_height*18/100)
-            w_lbl_CV = int(my_width*47/100)
+            y_lbl_CV = int(master.my_height*47/100)
+            h_lbl_CV = int(master.my_height*18/100)
+            w_lbl_CV = int(master.my_width*47/100)
 
             # Scroll bar in the Label frame CV
             self.canvas_CV = tk.Canvas(self.label_frame_CV, bg=LIGHT_GREY)
@@ -1240,19 +1247,19 @@ class xnat_pic_gui():
             self.notebook.bind("<<NotebookTabChanged>>", select_tab)  
             #################### Modify the metadata ####################
             self.modify_btn = ttk.Button(master.my_canvas, text="Modify", command = lambda: self.modify_metadata(), cursor=CURSOR_HAND, takefocus = 0)
-            x_lbl = int(my_width*30/100)
-            y_btn = int(my_height*78/100)
-            width_btn = int(my_width*16/100)
+            x_lbl = int(master.my_width*30/100)
+            y_btn = int(master.my_height*78/100)
+            width_btn = int(master.my_width*16/100)
             master.my_canvas.create_window(x_lbl, y_btn, anchor = tk.NW, width = width_btn, window = self.modify_btn)
 
             #################### Confirm the metadata ####################
             self.confirm_btn = ttk.Button(master.my_canvas, text="Confirm", command = lambda: self.confirm_metadata(), cursor=CURSOR_HAND, takefocus = 0)
-            x_conf_btn = int(my_width*50/100)
+            x_conf_btn = int(master.my_width*50/100)
             master.my_canvas.create_window(x_conf_btn, y_btn, anchor = tk.NW, width = width_btn, window = self.confirm_btn)
 
             #################### Confirm multiple metadata ####################
             self.multiple_confirm_btn = ttk.Button(master.my_canvas, text="Multiple Confirm", command = lambda: self.confirm_multiple_metadata(master), cursor=CURSOR_HAND, takefocus = 0)
-            x_multiple_conf_btn = int(my_width*70/100)
+            x_multiple_conf_btn = int(master.my_width*70/100)
             master.my_canvas.create_window(x_multiple_conf_btn, y_btn, anchor = tk.NW, width = width_btn, window = self.multiple_confirm_btn)
                        
         def load_info(self, master):
@@ -1838,7 +1845,7 @@ class xnat_pic_gui():
             # Start with a popup to get credentials
             login_popup = tk.Toplevel(background=WHITE)
             login_popup.title("XNAT-PIC ~ Login")
-            login_popup.geometry("%dx%d+%d+%d" % (400, 250, my_width/3, my_height/4))
+            login_popup.geometry("%dx%d+%d+%d" % (400, 250, master.my_width/3, master.my_height/4))
 
             # Closing window event: if it occurs, the popup must be destroyed and the main frame buttons must be enabled
             def closed_window():
@@ -2273,10 +2280,10 @@ class xnat_pic_gui():
 
             #############################################
             ################ Main Buttons ###############
-            x_btn = int(my_width/5)
+            x_btn = int(master.my_width/5)
             x_btn_init = x_btn + x_btn/3
-            y_btn = int(my_height)
-            width_btn = int(my_width/5)
+            y_btn = int(master.my_height)
+            width_btn = int(master.my_width/5)
 
             # Frame Title
             self.frame_title = master.my_canvas.create_text(3*x_btn, int(y_btn*0.1), anchor=tk.CENTER, fill='black', font=("Ink Free", 36, "bold"),
@@ -2749,7 +2756,7 @@ class xnat_pic_gui():
             self.exit_btn = ttk.Button(master.my_canvas, textvariable=self.exit_text)
             self.exit_btn.configure(command=exit_uploader)
             self.exit_text.set("Exit")
-            y_exit_btn = int(my_height*80/100)
+            y_exit_btn = int(master.my_height*80/100)
             master.my_canvas.create_window(x_btn_init, y_exit_btn, anchor=tk.NW, width=int(width_btn/2), window=self.exit_btn)
             #############################################
 
