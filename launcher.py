@@ -136,15 +136,11 @@ class SplashScreen(tk.Toplevel):
 class xnat_pic_gui():
 
     def __init__(self):
-        
-
-        self.style = Style('solar')
-        self.style.configure('TButton', font = LARGE_FONT)
-        self.root = self.style.master
+                   
+        self.root = tk.Tk()
         self.root.state('zoomed')
         
-            
-        #self.root.state('zoomed')
+        self.style = MyStyle().get_style
         ### GET PRIMARY SCREEN RESOLUTION
         ### MADE FOR MULTISCREEN ENVIRONMENTS
         if (platform.system()=='Linux'):
@@ -191,8 +187,7 @@ class xnat_pic_gui():
         panel = Image.open(PATH_IMAGE + "logo-panel.png").convert("RGBA")
         panel = panel.resize((int(my_width/5), my_height), Image.ANTIALIAS)
         self.panel = ImageTk.PhotoImage(panel)
-        # self.panel_image = tk.Button(self.my_canvas, image=self.panel, bg=BG_BTN_COLOR, borderwidth=0, 
-        #                             activebackground=BG_BTN_COLOR)
+        #self.panel_image = ttk.Button(self.my_canvas, image=self.panel)
         self.img1 = self.my_canvas.create_image(0, 0, anchor=tk.NW, im=self.panel)
 
         # XNAT-PIC Logo
@@ -236,7 +231,7 @@ class xnat_pic_gui():
         self.enter_btn = ttk.Button(self.my_canvas, text="ENTER",
                                     command=enter_handler,
                                     cursor=CURSOR_HAND, bootstyle="primary")
-        self.my_canvas.create_window(int(my_width/5)*3, int(my_height*70/100), 
+        self.my_canvas.create_window(int(my_width/5)*3, int(my_height*70/100), width = int(my_width/5),
                                     anchor=tk.CENTER, window = self.enter_btn)
         self.root.mainloop()
             
@@ -1011,8 +1006,8 @@ class xnat_pic_gui():
                                          text="XNAT-PIC Project Data")
             
             #################### Menu ###########################
-            self.menu = tk.Menu(master.root)
-            file_menu = tk.Menu(self.menu, tearoff=0)
+            self.menu = ttk.Menu(master.root)
+            file_menu = ttk.Menu(self.menu, tearoff=0)
             file_menu.add_command(label="Select Folder", command = lambda: self.select_folder(master))
             file_menu.add_separator()
             file_menu.add_command(label="Add ID", command = lambda: self.add_ID(master))
