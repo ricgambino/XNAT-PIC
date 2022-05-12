@@ -196,9 +196,24 @@ class xnat_pic_gui():
         # Initialize the Frame widget which parent is the root widget
         self.frame = ttk.Frame(self.root)
         self.frame.pack(fill='both', expand=1)
+        self.frame_label = tk.StringVar()
+        self.frame_label.set('Enter')
         # Initialize the working area size
         self.my_width = int(self.width*PERCENTAGE_SCREEN)
         self.my_height = int(self.height*PERCENTAGE_SCREEN)
+
+        # Load Accept icon
+        self.logo_accept = open_image(PATH_IMAGE + "Done.png", 15, 15)
+        # Load Delete icon
+        self.logo_delete = open_image(PATH_IMAGE + "Reject.png", 15, 15)
+        # Load Edit icon
+        self.logo_edit = open_image(PATH_IMAGE + "Edit.png", 15, 15)
+        # Load Clear icon
+        self.logo_clear = open_image(PATH_IMAGE + "delete.png", 15, 15)
+        # Load open eye
+        self.open_eye = open_image(PATH_IMAGE + "open_eye.png", 15, 15)
+        # Load closed eye
+        self.closed_eye = open_image(PATH_IMAGE + "closed_eye.png", 15, 15)
 
         def resize_window(*args):
             # Get the current window size
@@ -212,17 +227,10 @@ class xnat_pic_gui():
             self.panel_img.label = ttk.Label(self.frame, image=self.panel_img)
             self.panel_img.label.place(x=0, y=0, anchor=tk.NW, relheight=1, relwidth=0.2)
             # Load XNAT-PIC Logo
-            self.xnat_pic_logo = open_image(PATH_IMAGE + "XNAT-PIC-logo.png", 3*self.my_width/5, self.my_height/3)
-            self.xnat_pic_logo.label= ttk.Label(self.frame, image=self.xnat_pic_logo)
-            self.xnat_pic_logo.label.place(relx=0.3, rely=0, anchor=tk.NW, relheight=0.3, relwidth=0.8)
-            # Load Accept icon
-            self.logo_accept = open_image(PATH_IMAGE + "Done.png", 15, 15)
-            # Load Delete icon
-            self.logo_delete = open_image(PATH_IMAGE + "Reject.png", 15, 15)
-            # Load Edit icon
-            self.logo_edit = open_image(PATH_IMAGE + "Edit.png", 15, 15)
-            # Load Clear icon
-            self.logo_clear = open_image(PATH_IMAGE + "delete.png", 15, 15)
+            if self.frame_label.get() in ["Enter", "Main"]:
+                self.xnat_pic_logo = open_image(PATH_IMAGE + "XNAT-PIC-logo.png", 3*self.my_width/5, self.my_height/3)
+                self.xnat_pic_logo.label= ttk.Label(self.frame, image=self.xnat_pic_logo)
+                self.xnat_pic_logo.label.place(relx=0.3, rely=0, anchor=tk.NW, relheight=0.3, relwidth=0.8)
             # Change font according to window size
             if self.width > 1700:
                 self.style.configure('TButton', font = LARGE_FONT)
@@ -254,6 +262,7 @@ class xnat_pic_gui():
             self.xnat_pic_logo.label= ttk.Label(self.frame, image=self.xnat_pic_logo)
             self.xnat_pic_logo.label.place(relx=0.3, rely=0, anchor=tk.NW, relheight=0.3, relwidth=0.8)
 
+        self.frame_label.set("Main")
         # Action buttons           
         # Convert files Bruker2DICOM
         self.convert_btn = ttk.Button(self.frame, text="DICOM Converter",
@@ -280,7 +289,7 @@ class xnat_pic_gui():
             self.root.destroy()
         self.close_btn = ttk.Button(self.frame, text="Quit", command=close_window,
                                         cursor=CURSOR_HAND)
-        self.close_btn.place(relx=0.9, rely=0.9, anchor=tk.CENTER, relwidth=0.1)
+        self.close_btn.place(relx=0.95, rely=0.9, anchor=tk.NE, relwidth=0.1)
         
 
     class bruker2dicom_conversion():
@@ -295,13 +304,14 @@ class xnat_pic_gui():
                 pass
 
             # Create new frame
+            master.frame_label.set("Converter")
             # Frame Title
-            self.frame_title = ttk.Label(master.frame, text="XNAT-PIC Converter")
-            self.frame_title.place(relx=0.2, rely=0, anchor=tk.NW, relwidth=0.2)
+            self.frame_title = ttk.Label(master.frame, text="XNAT-PIC Converter", style="Title.TLabel")
+            self.frame_title.place(relx=0.6, rely=0.05, anchor=tk.CENTER, relwidth=0.4)
 
             # Label Frame for Select Converter
             self.conv_selection = ttk.LabelFrame(master.frame, text="Converter Selection")
-            self.conv_selection.place(relx=0.25, rely=0.2, anchor=tk.NW, relwidth=0.6)
+            self.conv_selection.place(relx=0.25, rely=0.15, anchor=tk.NW)
 
             self.conv_flag = tk.IntVar()
             self.folder_to_convert = tk.StringVar()
@@ -353,7 +363,7 @@ class xnat_pic_gui():
 
             # Label Frame for Checkbuttons
             self.label_frame_checkbtn = ttk.LabelFrame(master.frame, text="Options")
-            self.label_frame_checkbtn.place(relx=0.8, rely=0.2, anchor=tk.CENTER, relwidth=0.1)
+            self.label_frame_checkbtn.place(relx=0.95, rely=0.15, anchor=tk.NE)
             # Overwrite button
             self.overwrite_flag = tk.IntVar()
             self.btn_overwrite = ttk.Checkbutton(self.label_frame_checkbtn, text="Overwrite existing folders",                               
@@ -449,7 +459,7 @@ class xnat_pic_gui():
             
             # Treeview Label Frame pre_convertion
             self.tree_labelframe = ttk.LabelFrame(master.frame, text="Folder to Convert")
-            self.tree_labelframe.place(relx=0.25, rely=0.35, anchor=tk.NW, relwidth=0.3)
+            self.tree_labelframe.place(relx=0.25, rely=0.25, anchor=tk.NW)
 
             # Clear Tree buttons
             def clear_tree(*args):
@@ -489,8 +499,6 @@ class xnat_pic_gui():
                 while t.is_alive():
                     progressbar_tree.update_bar()
                 progressbar_tree.stop_progress_bar()
-
-            # self.folder_to_convert.trace('w', tree_thread)
 
             def display_converted_folder_tree(*args):
 
@@ -576,7 +584,7 @@ class xnat_pic_gui():
 
             # Treeview Label Frame post_convertion
             self.tree_labelframe_post = ttk.LabelFrame(master.frame, text="Converted Folder")
-            self.tree_labelframe_post.place(relx=0.6, rely=0.35, anchor=tk.NW, relwidth=0.3)
+            self.tree_labelframe_post.place(relx=0.95, rely=0.25, anchor=tk.NE)
 
             self.clear_tree_btn_post = ttk.Button(self.tree_labelframe_post, image=master.logo_clear,
                                     cursor=CURSOR_HAND, command=clear_tree, style="WithoutBack.TButton")
@@ -613,7 +621,7 @@ class xnat_pic_gui():
             self.exit_btn = ttk.Button(master.frame, cursor=CURSOR_HAND,
                                      text="Back", command=exit_converter)
             # self.exit_btn.configure(command=exit_converter)
-            self.exit_btn.place(relx=0.2, rely=0.9, anchor=tk.NW, relwidth=0.1)
+            self.exit_btn.place(relx=0.25, rely=0.9, anchor=tk.NW, relwidth=0.1)
 
             # NEXT Button
             def next_btn_handler(*args):
@@ -636,7 +644,7 @@ class xnat_pic_gui():
 
             self.next_btn = ttk.Button(master.frame, text="Next", cursor=CURSOR_HAND, command=next_btn_handler,
                                     state='disabled')
-            self.next_btn.place(relx=0.8, rely=0.9, anchor=tk.NW, relwidth=0.1)
+            self.next_btn.place(relx=0.95, rely=0.9, anchor=tk.NE, relwidth=0.1)
             
         def prj_convertion(self, master):
 
@@ -894,7 +902,7 @@ class xnat_pic_gui():
             if not self.information_folder:
                 enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
                 return
-                        
+            master.frame_label.set("Metadata")         
             self.frame_metadata(master) 
 
         def select_folder(self, master): 
@@ -1821,7 +1829,8 @@ class xnat_pic_gui():
             # Start with a popup to get credentials
             login_popup = tk.Toplevel(background=WHITE)
             login_popup.title("XNAT-PIC ~ Login")
-            login_popup.geometry("%dx%d+%d+%d" % (400, 250, master.my_width/3, master.my_height/4))
+            login_popup.geometry("%dx%d+%d+%d" % (410, 240, master.my_width/3, master.my_height/4))
+            login_popup.resizable(False, False)
 
             # Closing window event: if it occurs, the popup must be destroyed and the main frame buttons must be enabled
             def closed_window():
@@ -1835,7 +1844,7 @@ class xnat_pic_gui():
             login_popup.cred_frame.grid(row=1, column=0, padx=10, pady=5, sticky=tk.E+tk.W+tk.N+tk.S, columnspan=2)
 
             # XNAT ADDRESS      
-            login_popup.label_address = ttk.Label(login_popup.cred_frame, text="XNAT web address", style="Popup.TLabel")   
+            login_popup.label_address = ttk.Label(login_popup.cred_frame, text="XNAT web address")   
             login_popup.label_address.grid(row=1, column=0, padx=2, pady=2, sticky=tk.E)
             login_popup.entry_address = ttk.Entry(login_popup.cred_frame, width=25)
             login_popup.entry_address.var = tk.StringVar()
@@ -1855,7 +1864,7 @@ class xnat_pic_gui():
             login_popup.modify_address_flag.trace('w', enable_address_modification)
            
             # XNAT USER 
-            login_popup.label_user = ttk.Label(login_popup.cred_frame, text="Username", style="Popup.TLabel")
+            login_popup.label_user = ttk.Label(login_popup.cred_frame, text="Username")
             login_popup.label_user.grid(row=2, column=0, padx=1, ipadx=1, sticky=tk.E)
 
             def get_list_of_users():
@@ -1918,26 +1927,28 @@ class xnat_pic_gui():
             login_popup.combo_user.grid(row=2, column=1, padx=2, pady=2)
 
             # XNAT PASSWORD 
-            login_popup.label_psw = ttk.Label(login_popup.cred_frame, text="Password", style="Popup.TLabel")
+            login_popup.label_psw = ttk.Label(login_popup.cred_frame, text="Password")
             login_popup.label_psw.grid(row=3, column=0, padx=1, ipadx=1, sticky=tk.E)
 
             # Show/Hide the password
             def toggle_password():
                 if login_popup.entry_psw.cget('show') == '':
                     login_popup.entry_psw.config(show='*')
-                    login_popup.toggle_btn.config(text='Show Password')
+                    login_popup.toggle_btn.config(image=master.open_eye)
                 else:
                     if tkinter.simpledialog.askstring("PIN", "Enter PIN: ", show='*', parent=login_popup.cred_frame) == os.environ.get('secretPIN'):
                         login_popup.entry_psw.config(show='')
-                        login_popup.toggle_btn.config(text='Hide Password')
+                        login_popup.toggle_btn.config(image=master.closed_eye)
                     else:
                         messagebox.showerror("XNAT-PIC Uploader", "Error! The PIN code does not correspond")
+                        enable_buttons([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn])
             
             login_popup.entry_psw = ttk.Entry(login_popup.cred_frame, show="*", width=25)
             login_popup.entry_psw.var = tk.StringVar()
             login_popup.entry_psw["textvariable"] = login_popup.entry_psw.var
             login_popup.entry_psw.grid(row=3, column=1, padx=2, pady=2)
-            login_popup.toggle_btn = ttk.Button(login_popup.cred_frame, text='Show Password', command=toggle_password, state='disabled', 
+            login_popup.toggle_btn = ttk.Button(login_popup.cred_frame, image= master.open_eye,
+                                                command=toggle_password, state='disabled', 
                                                 cursor=CURSOR_HAND, style="Popup.TButton")
             login_popup.toggle_btn.grid(row=3, column=2, padx=2, pady=2, sticky=tk.W)
 
@@ -1945,7 +1956,7 @@ class xnat_pic_gui():
             def forgot_psw(*args):
                 webbrowser.open("http://130.192.212.48:8080/app/template/ForgotLogin.vm#!", new=1)
 
-            login_popup.forgot_psw = ttk.Label(login_popup.cred_frame, text="Forgot password", style="Attach.TLabel", 
+            login_popup.forgot_psw = ttk.Label(login_popup.cred_frame, text="Forgot password", style="Popup.TLabel", 
                                             cursor=CURSOR_HAND)
             login_popup.forgot_psw.grid(row=4, column=1, padx=1, ipadx=1)
             login_popup.forgot_psw.bind("<Button-1>", forgot_psw)
@@ -1954,7 +1965,7 @@ class xnat_pic_gui():
             def register(*args):
                 webbrowser.open("http://130.192.212.48:8080/app/template/Register.vm#!", new=1)
 
-            login_popup.register_btn = ttk.Label(login_popup.cred_frame, text="Register", style="Attach.TLabel",
+            login_popup.register_btn = ttk.Label(login_popup.cred_frame, text="Register", style="Popup.TLabel",
                                             cursor=CURSOR_HAND)
             login_popup.register_btn.grid(row=4, column=2, padx=2, pady=2, sticky=tk.W)
             login_popup.register_btn.bind("<Button-1>", register)
@@ -2248,26 +2259,22 @@ class xnat_pic_gui():
                            
             #################### Update the frame ####################
             try:
-                destroy_widgets([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn])
-                master.my_canvas.delete(master.img2)
+                destroy_widgets([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn, master.xnat_pic_logo.label])
+                
             except:
                 pass
             #################### Create the new frame ####################
-
+            master.frame_label.set("Uploader")
             #############################################
             ################ Main Buttons ###############
-            x_btn = int(master.my_width/5)
-            x_btn_init = x_btn + x_btn/3
-            y_btn = int(master.my_height)
-            width_btn = int(master.my_width/5)
 
             # Frame Title
-            self.frame_title = master.my_canvas.create_text(3*x_btn, int(y_btn*0.1), anchor=tk.CENTER, fill='black', font=("Ink Free", 36, "bold"),
-                                         text="XNAT-PIC Uploader")
+            self.frame_title = ttk.Label(master.frame, text="XNAT-PIC Uploader", style="Title.TLabel", anchor=tk.CENTER)
+            self.frame_title.place(relx=0.6, rely=0.05, anchor=tk.CENTER, relwidth=0.4)
 
-            ### Label Frame Uploader Selection
-            self.label_frame_uploader = ttk.LabelFrame(master.my_canvas, text="Uploader Selection")
-            master.my_canvas.create_window(x_btn_init, int(y_btn*0.15), window=self.label_frame_uploader, anchor=tk.NW)
+            # Label Frame Uploader Selection
+            self.label_frame_uploader = ttk.LabelFrame(master.frame, text="Uploader Selection")
+            self.label_frame_uploader.place(relx=0.25, rely=0.15, anchor=tk.NW, relwidth=0.7)
 
             self.conv_type = tk.IntVar()
 
@@ -2307,12 +2314,10 @@ class xnat_pic_gui():
                                     command=file_handler, cursor=CURSOR_HAND, width=20)
             self.file_btn.grid(row=0, column=3, padx=5, pady=5, sticky=tk.NW)
 
-            ### Label Frame for folder selection
-            self.folder_selection_label_frame = ttk.Labelframe(master.my_canvas, text="Folder Selection")
-            master.my_canvas.create_window(x_btn_init, int(y_btn*0.25), window=self.folder_selection_label_frame, anchor=tk.NW)
-            self.folder_selection_label_frame.grid_columnconfigure(1, weight=1)
-            self.folder_selection_label_frame.grid_rowconfigure(1, weight=1)
-
+            # Label Frame for folder selection
+            self.folder_selection_label_frame = ttk.Labelframe(master.frame, text="Folder Selection")
+            self.folder_selection_label_frame.place(relx=0.25, rely=0.25, anchor=tk.NW)
+            
             # Define a string variable in order to check the current selected item of the Treeview widget
             self.selected_item_path = tk.StringVar()
             
@@ -2320,7 +2325,7 @@ class xnat_pic_gui():
                 # Define the initial directory
                 init_dir = os.path.expanduser("~").replace('\\', '/') + '/Desktop/Dataset'
                 # Ask the user to insert the desired directory
-                self.folder_to_upload.set(filedialog.askdirectory(parent=master.my_canvas, initialdir=init_dir, 
+                self.folder_to_upload.set(filedialog.askdirectory(parent=master.frame, initialdir=init_dir, 
                                                         title="XNAT-PIC Uploader: Select directory in DICOM format to upload"))
                 # Reset and clear the selected_item_path defined from Treeview widget selection
                 self.selected_item_path.set('')
@@ -2467,9 +2472,9 @@ class xnat_pic_gui():
                                 text="Additional Files", state='disabled', style="WithoutBack.TCheckbutton")
             self.add_file_btn.grid(row=0, column=1, padx=5, pady=5, sticky=tk.E)
 
-            # Label Frame Uploader Options
-            self.custom_var_labelframe = ttk.LabelFrame(master.my_canvas, text="Custom Variables")
-            master.my_canvas.create_window(int(3*x_btn + 2*x_btn/3), int(y_btn*0.25), window=self.custom_var_labelframe, anchor=tk.NW)
+            # Label Frame Uploader Custom Variables
+            self.custom_var_labelframe = ttk.LabelFrame(master.frame, text="Custom Variables")
+            self.custom_var_labelframe.place(relx=0.95, rely=0.25, anchor=tk.NE, relwidth=0.2)
 
             # Custom Variables
             self.n_custom_var = tk.IntVar()
@@ -2555,8 +2560,8 @@ class xnat_pic_gui():
             #############################################
 
             # Label Frame for Uploader Data
-            self.uploader_data = ttk.LabelFrame(master.my_canvas, text="")
-            master.my_canvas.create_window(x_btn_init, int(y_btn*0.6), window=self.uploader_data, anchor=tk.NW)
+            self.uploader_data = ttk.LabelFrame(master.frame, text="")
+            self.uploader_data.place(relx=0.25, rely=0.6, anchor=tk.NW)
 
             #############################################
             ################# Project ###################
@@ -2591,7 +2596,7 @@ class xnat_pic_gui():
             def add_project():
                 enable_buttons([self.entry_prjname, self.confirm_new_prj, self.reject_new_prj])
                 self.entry_prjname.delete(0,tk.END)
-            self.new_prj_btn = ttk.Button(self.uploader_data, state=tk.DISABLED, width=20, style="Popup.TButton",
+            self.new_prj_btn = ttk.Button(self.uploader_data, state=tk.DISABLED, width=20, style="Secondary.TButton",
                                         command=add_project, cursor=CURSOR_HAND, text="Add New Project")
             self.new_prj_btn.grid(row=0, column=2, padx=20, pady=10, sticky=tk.NW)
             
@@ -2646,7 +2651,7 @@ class xnat_pic_gui():
             def add_subject():
                 enable_buttons([self.entry_subname, self.confirm_new_sub, self.reject_new_sub])
                 self.entry_subname.delete(0,tk.END)
-            self.new_sub_btn = ttk.Button(self.uploader_data, state=tk.DISABLED, width=20, style="Popup.TButton",
+            self.new_sub_btn = ttk.Button(self.uploader_data, state=tk.DISABLED, width=20, style="Secondary.TButton",
                                         command=add_subject, cursor=CURSOR_HAND, text="Add New Subject")
             self.new_sub_btn.grid(row=1, column=2, padx=20, pady=10, sticky=tk.NW)
 
@@ -2689,7 +2694,7 @@ class xnat_pic_gui():
             def add_experiment():
                 enable_buttons([self.entry_expname, self.confirm_new_exp, self.reject_new_exp])
                 self.entry_expname.delete(0,tk.END)
-            self.new_exp_btn = ttk.Button(self.uploader_data, state=tk.DISABLED, style="Popup.TButton", 
+            self.new_exp_btn = ttk.Button(self.uploader_data, state=tk.DISABLED, style="Secondary.TButton", 
                                         text="Add New Experiment", command=add_experiment, cursor=CURSOR_HAND, width=20)
             self.new_exp_btn.grid(row=2, column=2, padx=20, pady=10, sticky=tk.NW)
 
@@ -2716,9 +2721,7 @@ class xnat_pic_gui():
                 if result == 'yes':
                     # Destroy all the existent widgets (Button, OptionMenu, ...)
                     destroy_widgets([self.uploader_data, self.custom_var_labelframe, self.label_frame_uploader, self.exit_btn,
-                                    self.next_btn, self.folder_selection_label_frame])
-                    # # Delete all widgets that cannot be destroyed
-                    delete_widgets(master.my_canvas, [self.frame_title])
+                                    self.next_btn, self.folder_selection_label_frame, self.frame_title])
                     # Perform disconnection of the session if it is alive
                     try:
                         self.session.disconnect()
@@ -2729,11 +2732,10 @@ class xnat_pic_gui():
                     xnat_pic_gui.choose_your_action(master)
 
             self.exit_text = tk.StringVar() 
-            self.exit_btn = ttk.Button(master.my_canvas, textvariable=self.exit_text)
+            self.exit_btn = ttk.Button(master.frame, textvariable=self.exit_text)
             self.exit_btn.configure(command=exit_uploader)
             self.exit_text.set("Exit")
-            y_exit_btn = int(master.my_height*80/100)
-            master.my_canvas.create_window(x_btn_init, y_exit_btn, anchor=tk.NW, width=int(width_btn/2), window=self.exit_btn)
+            self.exit_btn.place(relx=0.25, rely=0.9, anchor=tk.NW, relwidth=0.1)
             #############################################
 
             #############################################
@@ -2751,18 +2753,17 @@ class xnat_pic_gui():
                     pass
 
             self.next_text = tk.StringVar() 
-            self.next_btn = ttk.Button(master.my_canvas, textvariable=self.next_text, state='disabled',
+            self.next_btn = ttk.Button(master.frame, textvariable=self.next_text, state='disabled',
                                         command=next)
             self.next_text.set("Next")
-            master.my_canvas.create_window(4*x_btn, y_exit_btn, anchor=tk.NW, width=int(width_btn/2), window=self.next_btn)
+            self.next_btn.place(relx=0.95, rely=0.9, anchor=tk.NE, relwidth=0.1)
             #############################################
 
         def check_buttons(self, master, press_btn=0):
 
             def back():
                 destroy_widgets([self.label_frame_uploader, self.uploader_data, self.custom_var_labelframe,
-                                self.exit_btn, self.next_btn, self.folder_selection_label_frame])
-                delete_widgets(master.my_canvas, [self.frame_title])
+                                self.exit_btn, self.next_btn, self.folder_selection_label_frame, self.frame_title])
                 self.overall_uploader(master)
 
             # Initialize the press button value
@@ -2778,7 +2779,7 @@ class xnat_pic_gui():
                 enable_buttons([self.project_list, self.new_prj_btn, self.select_folder_button, self.add_file_btn])
                 # Enable NEXT button only if all the requested fields are filled
                 def enable_next(*args):
-                    if self.prj.get() != '--':
+                    if self.prj.get() != '--' and self.folder_to_upload.get() != '':
                         enable_buttons([self.next_btn])
                 self.prj.trace('w', enable_next)
                 
@@ -2788,7 +2789,7 @@ class xnat_pic_gui():
                 enable_buttons([self.project_list, self.new_prj_btn, self.select_folder_button, self.add_file_btn])
                 # Enable NEXT button only if all the requested fields are filled
                 def enable_next(*args):
-                    if self.prj.get() != '--':
+                    if self.prj.get() != '--' and self.folder_to_upload.get() != '':
                         enable_buttons([self.next_btn])
                 self.prj.trace('w', enable_next)
                 
@@ -2799,7 +2800,7 @@ class xnat_pic_gui():
                                 self.subject_list, self.new_sub_btn, self.add_file_btn])
                 # Enable NEXT button only if all the requested fields are filled
                 def enable_next(*args):
-                    if self.prj.get() != '--' and self.sub.get() != '--':
+                    if self.prj.get() != '--' and self.sub.get() != '--' and self.folder_to_upload.get() != '':
                         enable_buttons([self.next_btn])
                 self.sub.trace('w', enable_next)
 
@@ -2811,7 +2812,7 @@ class xnat_pic_gui():
                                 self.experiment_list, self.new_exp_btn, self.add_file_btn])
                 # Enable NEXT button only if all the requested fields are filled
                 def enable_next(*args):
-                    if self.prj.get() != '--' and self.sub.get() != '--' and self.exp.get() != '--':
+                    if self.prj.get() != '--' and self.sub.get() != '--' and self.exp.get() != '--' and self.folder_to_upload.get() != '':
                         enable_buttons([self.next_btn])
                 self.exp.trace('w', enable_next)
             else:
