@@ -141,7 +141,8 @@ class xnat_pic_gui():
         self.root.state('zoomed') # The root widget is adapted to the screen size
         self.root.minsize(width=1000, height=500) # Set the minimum size of the working window
         # Define the style of the root widget
-        self.style = ttk.Style('cerculean')
+        # self.style = ttk.Style('cerculean')
+        self.style = MyStyle('cerculean').get_style()
         # Get the screen resolution
         if (platform.system()=='Linux'):
             cmd_show_screen_resolution = subprocess.Popen("xrandr --query | grep -oG 'primary [0-9]*x[0-9]*'",\
