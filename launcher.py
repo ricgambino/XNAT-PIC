@@ -1007,10 +1007,12 @@ class xnat_pic_gui():
             self.name_selected_project.place(relx=0.2, rely=0.1, anchor=tk.NW, relwidth=0.2)
 
             ### Tab Notebook
-            self.canvas_notebook = tk.Canvas(master.frame, bg = 'green')
-            self.canvas_notebook.place(relx=0.25, rely=0.2, anchor=tk.NW, relwidth=0.2, relheight=0.5)
+            # self.canvas_notebook = tk.Canvas(master.frame, bg = 'green')
+            # self.canvas_notebook.place(relx=0.25, rely=0.2, anchor=tk.NW, relwidth=0.2, relheight=0.5)
+
             
-            # self.frame_nb = tk.Frame(self.canvas_notebook, bg = 'red')
+            # self.frame_nb = tk.Frame(master.frame)
+            # #self.frame_nb.place(relx=0.25, rely=0.2, anchor=tk.NW, relwidth=0.2, relheight=0.2)
             # self.canvas_notebook.create_window((0,0), window=self.frame_nb, anchor="nw", tags="frame")
 
             # Create an object of horizontal scrollbar to scroll tab
@@ -1019,7 +1021,8 @@ class xnat_pic_gui():
 
             # self.notebook = ttk.Notebook(self.frame_nb) 
             # self.notebook.pack(fill=tk.BOTH, expand=1)
-            
+            # self.notebook = ttk.Notebook(self.frame_nb) 
+            # self.notebook.pack(fill=tk.BOTH, expand=1)
             ### Tab Content is a listbox
             # self.my_listbox = tk.Listbox(master.frame, background = LIGHT_GREY, borderwidth=2, highlightbackground = "#008ad7", selectbackground = AZURE, relief=tk.FLAT, font=SMALL_FONT_3, selectmode=SINGLE, takefocus = 0)
             # self.my_listbox.place(relx=0.25, rely=0.6, anchor=tk.NW, relwidth=0.2, relheight=0.8)
@@ -1042,759 +1045,784 @@ class xnat_pic_gui():
             # w_my_xscrollbar = int(master.my_width*20.4/100)
             # master.my_canvas.create_window(x_my_xscrollbar, y_my_xscrollbar, width = w_my_xscrollbar, anchor = tk.NW, window=self.my_xscrollbar)
             
+            def rightSlide(self,event):
+                if self.notebookTab.winfo_width()>self.notebookContent.winfo_width()-30:
+                    if (self.notebookContent.winfo_width()-(self.notebookTab.winfo_width()+self.notebookTab.winfo_x()))<=35:
+                        self.xLocation-=20
+                        self.notebookTab.place(x=self.xLocation,y=0)
+            def leftSlide(self,event):
+                if not self.notebookTab.winfo_x()== 0:
+                    self.xLocation+=20
+                    self.notebookTab.place(x=self.xLocation,y=0)
+                    self.xLocation = 0
+                    self.notebookContent = ttk.Notebook(master.frame)
+                    self.notebookContent.place(relx=0.25, rely=0.25, anchor=tk.NW, relwidth=0.5, relheight=0.5)
+
+            self.notebookTab = ttk.Notebook(master.frame)
+            #self.notebookTab.bind("<<NotebookTabChanged>>",self._tabChanger)
+
+            slideFrame = ttk.Frame(master.frame)
+            slideFrame.place(relx=0.2, anchor=NE)
+            leftArrow = ttk.Label(slideFrame, text="\u25c0")
+            leftArrow.bind("<1>", leftSlide)
+            leftArrow.pack(side=LEFT)
+            rightArrow = ttk.Label(slideFrame, text=" \u25b6")
+            rightArrow.bind("<1>",rightSlide)
+            rightArrow.pack(side=RIGHT)
+            
             # Sorts the tabs first by length and then alphabetically
             for key in sorted(self.todos, key=len):
-                self.notebook.add(tk.Frame(self.notebook, background="#99D0EF"), text=key, underline=0, sticky=tk.NE + tk.SW)
+                self.notebookTab.add(tk.Frame(master.frame, background="#99D0EF"), text=key, underline=0, sticky=tk.NE + tk.SW)
 
-            self.notebook.enable_traversal()
+        #     self.notebook.enable_traversal()
             
-            def frame_configure(event):
-                self.canvas_notebook.configure(scrollregion=self.canvas_notebook.bbox("all"))
+        #     def frame_configure(event):
+        #         self.canvas_notebook.configure(scrollregion=self.canvas_notebook.bbox("all"))
 
-            self.frame_nb.bind("<Configure>", frame_configure)
+        #     self.frame_nb.bind("<Configure>", frame_configure)
           
-            #################### Subject form ####################
-            # ID
-            # Label frame for ID: folder selected, project, subject and acq. date
-            self.label_frame_ID = ttk.LabelFrame(master.my_canvas, text="ID", style = "Metadata.TLabelframe")
+        #     #################### Subject form ####################
+        #     # ID
+        #     # Label frame for ID: folder selected, project, subject and acq. date
+        #     self.label_frame_ID = ttk.LabelFrame(master.my_canvas, text="ID", style = "Metadata.TLabelframe")
 
-            #
-            x_lbl_ID = int(master.my_width*46/100)
-            y_lbl_ID = int(master.my_height*18/100)
-            w_lbl_ID = int(master.my_width*42/100)
-            h_lbl_ID = int(master.my_height*25/100)
-            #
-            # Scroll bar in the Label frame ID
-            self.canvas_ID = tk.Canvas(self.label_frame_ID, bg=LIGHT_GREY)
-            self.frame_ID = tk.Frame(self.canvas_ID, bg=LIGHT_GREY)
+        #     #
+        #     x_lbl_ID = int(master.my_width*46/100)
+        #     y_lbl_ID = int(master.my_height*18/100)
+        #     w_lbl_ID = int(master.my_width*42/100)
+        #     h_lbl_ID = int(master.my_height*25/100)
+        #     #
+        #     # Scroll bar in the Label frame ID
+        #     self.canvas_ID = tk.Canvas(self.label_frame_ID, bg=LIGHT_GREY)
+        #     self.frame_ID = tk.Frame(self.canvas_ID, bg=LIGHT_GREY)
 
-            self.vsb_ID = ttk.Scrollbar(self.label_frame_ID, orient="vertical", command=self.canvas_ID.yview)
-            self.canvas_ID.configure(yscrollcommand=self.vsb_ID.set, width=w_lbl_ID, height=h_lbl_ID)  
+        #     self.vsb_ID = ttk.Scrollbar(self.label_frame_ID, orient="vertical", command=self.canvas_ID.yview)
+        #     self.canvas_ID.configure(yscrollcommand=self.vsb_ID.set, width=w_lbl_ID, height=h_lbl_ID)  
 
-            self.hsb_ID = ttk.Scrollbar(self.label_frame_ID, orient="horizontal", command=self.canvas_ID.xview)
-            self.canvas_ID.configure(xscrollcommand=self.hsb_ID.set)     
+        #     self.hsb_ID = ttk.Scrollbar(self.label_frame_ID, orient="horizontal", command=self.canvas_ID.xview)
+        #     self.canvas_ID.configure(xscrollcommand=self.hsb_ID.set)     
 
-            self.vsb_ID.pack(side="right", fill="y")
-            self.hsb_ID.pack(side="bottom", fill="x")
+        #     self.vsb_ID.pack(side="right", fill="y")
+        #     self.hsb_ID.pack(side="bottom", fill="x")
 
-            self.canvas_ID.pack(side="left", fill="both", expand=True)
-            self.canvas_ID.create_window((0,0), window=self.frame_ID, anchor="nw")
+        #     self.canvas_ID.pack(side="left", fill="both", expand=True)
+        #     self.canvas_ID.create_window((0,0), window=self.frame_ID, anchor="nw")
 
-            # Be sure that we call OnFrameConfigure on the right canvas
-            self.frame_ID.bind("<Configure>", lambda event, canvas=self.canvas_ID: OnFrameConfigure(canvas))
-            master.my_canvas.create_window(x_lbl_ID, y_lbl_ID, anchor='nw', height = h_lbl_ID, window=self.label_frame_ID)
+        #     # Be sure that we call OnFrameConfigure on the right canvas
+        #     self.frame_ID.bind("<Configure>", lambda event, canvas=self.canvas_ID: OnFrameConfigure(canvas))
+        #     master.my_canvas.create_window(x_lbl_ID, y_lbl_ID, anchor='nw', height = h_lbl_ID, window=self.label_frame_ID)
             
-            def OnFrameConfigure(canvas):
-                    canvas.configure(scrollregion=canvas.bbox("all"))
+        #     def OnFrameConfigure(canvas):
+        #             canvas.configure(scrollregion=canvas.bbox("all"))
 
-            keys_ID = ["Folder", "Project", "Subject", "Experiment", "Acq. date"]
-            # Entry ID 
-            self.entries_variable_ID = []  
-            self.entries_value_ID = []          
-            count = 0
-            for key in keys_ID:
-                # Variable
-                self.entries_variable_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT_4, takefocus = 0, width=15, style = 'Metadata.TEntry'))
-                self.entries_variable_ID[-1].insert(0, key)
-                self.entries_variable_ID[-1]['state'] = 'disabled'
-                self.entries_variable_ID[-1].grid(row=count, column=0, padx = 5, pady = 5, sticky=W)
-                # Value
-                if key == "Acq. date":
-                    self.entries_value_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT_4, state='disabled', takefocus = 0, width=20, style = 'Metadata.TEntry'))
-                    self.entries_value_ID[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=NW)
-                else:
-                    self.entries_value_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT_4, state='disabled', takefocus = 0, width=44, style = 'Metadata.TEntry'))
-                    self.entries_value_ID[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=W)
-                count += 1
+        #     keys_ID = ["Folder", "Project", "Subject", "Experiment", "Acq. date"]
+        #     # Entry ID 
+        #     self.entries_variable_ID = []  
+        #     self.entries_value_ID = []          
+        #     count = 0
+        #     for key in keys_ID:
+        #         # Variable
+        #         self.entries_variable_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT_4, takefocus = 0, width=15, style = 'Metadata.TEntry'))
+        #         self.entries_variable_ID[-1].insert(0, key)
+        #         self.entries_variable_ID[-1]['state'] = 'disabled'
+        #         self.entries_variable_ID[-1].grid(row=count, column=0, padx = 5, pady = 5, sticky=W)
+        #         # Value
+        #         if key == "Acq. date":
+        #             self.entries_value_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT_4, state='disabled', takefocus = 0, width=20, style = 'Metadata.TEntry'))
+        #             self.entries_value_ID[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=NW)
+        #         else:
+        #             self.entries_value_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT_4, state='disabled', takefocus = 0, width=44, style = 'Metadata.TEntry'))
+        #             self.entries_value_ID[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=W)
+        #         count += 1
 
-            # Calendar for acq. date
-            #self.cal = DateEntry(self.frame_ID,  state = tk.DISABLED, width=11, font = SMALL_FONT_3, background=AZURE, date_pattern = 'y-mm-dd', foreground='white', borderwidth=0, selectbackground = AZURE_DISABLED, selectforeground = "black", style = 'Metadata.TCombobox')
-            #self.cal.delete(0, tk.END)
-            self.cal = ttk.DateEntry(self.frame_ID)
+        #     # Calendar for acq. date
+        #     #self.cal = DateEntry(self.frame_ID,  state = tk.DISABLED, width=11, font = SMALL_FONT_3, background=AZURE, date_pattern = 'y-mm-dd', foreground='white', borderwidth=0, selectbackground = AZURE_DISABLED, selectforeground = "black", style = 'Metadata.TCombobox')
+        #     #self.cal.delete(0, tk.END)
+        #     self.cal = ttk.DateEntry(self.frame_ID)
 
-            self.cal.grid(row=4, column=1, padx = 5, pady = 5, sticky=NE)
+        #     self.cal.grid(row=4, column=1, padx = 5, pady = 5, sticky=NE)
 
-            ####################################################################
-            # Custom Variables (CV)
-            # Label frame for Custom Variables: group, dose, timepoint
-            self.label_frame_CV = ttk.LabelFrame(master.my_canvas, text="Custom Variables", style = "Metadata.TLabelframe")
-            x_lbl_CV = x_lbl_ID
-            y_lbl_CV = int(master.my_height*47/100)
-            h_lbl_CV = int(master.my_height*18/100)
-            w_lbl_CV = int(master.my_width*47/100)
+        #     ####################################################################
+        #     # Custom Variables (CV)
+        #     # Label frame for Custom Variables: group, dose, timepoint
+        #     self.label_frame_CV = ttk.LabelFrame(master.my_canvas, text="Custom Variables", style = "Metadata.TLabelframe")
+        #     x_lbl_CV = x_lbl_ID
+        #     y_lbl_CV = int(master.my_height*47/100)
+        #     h_lbl_CV = int(master.my_height*18/100)
+        #     w_lbl_CV = int(master.my_width*47/100)
 
-            # Scroll bar in the Label frame CV
-            self.canvas_CV = tk.Canvas(self.label_frame_CV, bg=LIGHT_GREY)
-            self.frame_CV = tk.Frame(self.canvas_CV, bg=LIGHT_GREY)
-            self.vsb_CV = ttk.Scrollbar(self.label_frame_CV, orient="vertical", command=self.canvas_CV.yview)
-            self.canvas_CV.configure(yscrollcommand=self.vsb_CV.set, width=w_lbl_CV, height=h_lbl_CV)  
-            self.hsb_CV = ttk.Scrollbar(self.label_frame_CV, orient="horizontal", command=self.canvas_CV.xview)
-            self.canvas_CV.configure(xscrollcommand=self.hsb_CV.set)     
+        #     # Scroll bar in the Label frame CV
+        #     self.canvas_CV = tk.Canvas(self.label_frame_CV, bg=LIGHT_GREY)
+        #     self.frame_CV = tk.Frame(self.canvas_CV, bg=LIGHT_GREY)
+        #     self.vsb_CV = ttk.Scrollbar(self.label_frame_CV, orient="vertical", command=self.canvas_CV.yview)
+        #     self.canvas_CV.configure(yscrollcommand=self.vsb_CV.set, width=w_lbl_CV, height=h_lbl_CV)  
+        #     self.hsb_CV = ttk.Scrollbar(self.label_frame_CV, orient="horizontal", command=self.canvas_CV.xview)
+        #     self.canvas_CV.configure(xscrollcommand=self.hsb_CV.set)     
 
-            self.vsb_CV.pack(side="right", fill="y")     
-            self.hsb_CV.pack(side="bottom", fill="x")
-            self.canvas_CV.pack(side="left", fill="both", expand=True)
-            self.canvas_CV.create_window((0,0), window=self.frame_CV, anchor="nw")
+        #     self.vsb_CV.pack(side="right", fill="y")     
+        #     self.hsb_CV.pack(side="bottom", fill="x")
+        #     self.canvas_CV.pack(side="left", fill="both", expand=True)
+        #     self.canvas_CV.create_window((0,0), window=self.frame_CV, anchor="nw")
 
-            # Be sure that we call OnFrameConfigure on the right canvas
-            self.frame_CV.bind("<Configure>", lambda event, canvas=self.canvas_CV: OnFrameConfigure(canvas))
+        #     # Be sure that we call OnFrameConfigure on the right canvas
+        #     self.frame_CV.bind("<Configure>", lambda event, canvas=self.canvas_CV: OnFrameConfigure(canvas))
             
-            master.my_canvas.create_window(x_lbl_CV, y_lbl_CV, height = h_lbl_CV, width=w_lbl_CV, window=self.label_frame_CV, anchor='nw')
-            def OnFrameConfigure(canvas):
-                    canvas.configure(scrollregion=canvas.bbox("all"))
+        #     master.my_canvas.create_window(x_lbl_CV, y_lbl_CV, height = h_lbl_CV, width=w_lbl_CV, window=self.label_frame_CV, anchor='nw')
+        #     def OnFrameConfigure(canvas):
+        #             canvas.configure(scrollregion=canvas.bbox("all"))
 
-            keys_CV = ["Group", "Timepoint", "Dose"]
-            # Entry CV  
-            self.entries_variable_CV = []  
-            self.entries_value_CV = []          
-            count = 0
-            for key in keys_CV:
-                # Variable
-                self.entries_variable_CV.append(ttk.Entry(self.frame_CV, font=SMALL_FONT_4, takefocus = 0, width=15, style = 'Metadata.TEntry'))
-                self.entries_variable_CV[-1].insert(0, key)
-                self.entries_variable_CV[-1]['state'] = 'disabled'
-                self.entries_variable_CV[-1].grid(row=count, column=0, padx = 5, pady = 5, sticky=W)
-                # Value
-                self.entries_value_CV.append(ttk.Entry(self.frame_CV, font=SMALL_FONT_4, state='disabled', takefocus = 0, width=25, style = 'Metadata.TEntry'))
-                self.entries_value_CV[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=W)
-                count += 1
+        #     keys_CV = ["Group", "Timepoint", "Dose"]
+        #     # Entry CV  
+        #     self.entries_variable_CV = []  
+        #     self.entries_value_CV = []          
+        #     count = 0
+        #     for key in keys_CV:
+        #         # Variable
+        #         self.entries_variable_CV.append(ttk.Entry(self.frame_CV, font=SMALL_FONT_4, takefocus = 0, width=15, style = 'Metadata.TEntry'))
+        #         self.entries_variable_CV[-1].insert(0, key)
+        #         self.entries_variable_CV[-1]['state'] = 'disabled'
+        #         self.entries_variable_CV[-1].grid(row=count, column=0, padx = 5, pady = 5, sticky=W)
+        #         # Value
+        #         self.entries_value_CV.append(ttk.Entry(self.frame_CV, font=SMALL_FONT_4, state='disabled', takefocus = 0, width=25, style = 'Metadata.TEntry'))
+        #         self.entries_value_CV[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=W)
+        #         count += 1
 
-            # Group Menu
-            OPTIONS = ["untreated", "treated"]
-            self.selected_group = tk.StringVar()
-            self.group_menu = ttk.Combobox(self.frame_CV, font = SMALL_FONT_4, takefocus = 0, textvariable=self.selected_group, width=10, style="Metadata.TCombobox")
-            self.group_menu['values'] = OPTIONS
-            self.group_menu['state'] = 'disabled'
-            self.group_menu.grid(row=0, column=2, padx = 5, pady = 5, sticky=W)
+        #     # Group Menu
+        #     OPTIONS = ["untreated", "treated"]
+        #     self.selected_group = tk.StringVar()
+        #     self.group_menu = ttk.Combobox(self.frame_CV, font = SMALL_FONT_4, takefocus = 0, textvariable=self.selected_group, width=10, style="Metadata.TCombobox")
+        #     self.group_menu['values'] = OPTIONS
+        #     self.group_menu['state'] = 'disabled'
+        #     self.group_menu.grid(row=0, column=2, padx = 5, pady = 5, sticky=W)
             
-            # UM for dose
-            self.OPTIONS_UM = ["Mg", "kg", "mg", "µg", "ng"]
-            self.selected_dose = tk.StringVar()
-            self.dose_menu = ttk.Combobox(self.frame_CV, font = SMALL_FONT_4, takefocus = 0, textvariable=self.selected_dose, width=10, style="Metadata.TCombobox")
-            self.dose_menu['values'] = self.OPTIONS_UM
-            self.dose_menu['state'] = 'disabled'
-            self.dose_menu.grid(row=2, column=2, padx = 5, pady = 5, sticky=W)
+        #     # UM for dose
+        #     self.OPTIONS_UM = ["Mg", "kg", "mg", "µg", "ng"]
+        #     self.selected_dose = tk.StringVar()
+        #     self.dose_menu = ttk.Combobox(self.frame_CV, font = SMALL_FONT_4, takefocus = 0, textvariable=self.selected_dose, width=10, style="Metadata.TCombobox")
+        #     self.dose_menu['values'] = self.OPTIONS_UM
+        #     self.dose_menu['state'] = 'disabled'
+        #     self.dose_menu.grid(row=2, column=2, padx = 5, pady = 5, sticky=W)
 
-            # Timepoint
-            self.OPTIONS = ["pre", "post"]
-            self.selected_timepoint = tk.StringVar()
-            self.timepoint_menu = ttk.Combobox(self.frame_CV, font = SMALL_FONT_4, takefocus = 0, textvariable=self.selected_timepoint, width=10, style="Metadata.TCombobox")
-            self.timepoint_menu['values'] = self.OPTIONS
-            self.timepoint_menu['state'] = 'disabled'
-            self.timepoint_menu.grid(row=1, column=2, padx = 5, pady = 5, sticky=W)
+        #     # Timepoint
+        #     self.OPTIONS = ["pre", "post"]
+        #     self.selected_timepoint = tk.StringVar()
+        #     self.timepoint_menu = ttk.Combobox(self.frame_CV, font = SMALL_FONT_4, takefocus = 0, textvariable=self.selected_timepoint, width=10, style="Metadata.TCombobox")
+        #     self.timepoint_menu['values'] = self.OPTIONS
+        #     self.timepoint_menu['state'] = 'disabled'
+        #     self.timepoint_menu.grid(row=1, column=2, padx = 5, pady = 5, sticky=W)
 
-            self.time_entry = ttk.Entry(self.frame_CV, font = SMALL_FONT_4, state='disabled', takefocus = 0, width=5, style = 'Metadata.TEntry')
-            self.time_entry.grid(row=1, column=3, padx = 5, pady = 5, sticky=W)
+        #     self.time_entry = ttk.Entry(self.frame_CV, font = SMALL_FONT_4, state='disabled', takefocus = 0, width=5, style = 'Metadata.TEntry')
+        #     self.time_entry.grid(row=1, column=3, padx = 5, pady = 5, sticky=W)
 
-            self.OPTIONS1 = ["seconds", "minutes", "hours", "days", "weeks", "months", "years"]
-            self.selected_timepoint1 = tk.StringVar()
-            self.timepoint_menu1 = ttk.Combobox(self.frame_CV, font = SMALL_FONT_4, takefocus = 0, textvariable=self.selected_timepoint1, width=7, style="Metadata.TCombobox")
-            self.timepoint_menu1['values'] = self.OPTIONS1
-            self.timepoint_menu1['state'] = 'disabled'
-            self.timepoint_menu1.grid(row=1, column=4, padx = 5, pady = 5, sticky=W)
+        #     self.OPTIONS1 = ["seconds", "minutes", "hours", "days", "weeks", "months", "years"]
+        #     self.selected_timepoint1 = tk.StringVar()
+        #     self.timepoint_menu1 = ttk.Combobox(self.frame_CV, font = SMALL_FONT_4, takefocus = 0, textvariable=self.selected_timepoint1, width=7, style="Metadata.TCombobox")
+        #     self.timepoint_menu1['values'] = self.OPTIONS1
+        #     self.timepoint_menu1['state'] = 'disabled'
+        #     self.timepoint_menu1.grid(row=1, column=4, padx = 5, pady = 5, sticky=W)
 
-            #################### Load the info about the selected subject ####################
-            def select_tab(event):
-               tab_id = self.notebook.select()
-               try:
-                  self.tab_name = self.notebook.tab(tab_id, "text")
-               except:
-                   pass
-               # Update the listbox
-               self.my_listbox.delete(0, END)
-               self.my_listbox.insert(tk.END, *self.todos[self.tab_name])
-               self.load_info(master)
+        #     #################### Load the info about the selected subject ####################
+        #     def select_tab(event):
+        #        tab_id = self.notebook.select()
+        #        try:
+        #           self.tab_name = self.notebook.tab(tab_id, "text")
+        #        except:
+        #            pass
+        #        # Update the listbox
+        #        self.my_listbox.delete(0, END)
+        #        self.my_listbox.insert(tk.END, *self.todos[self.tab_name])
+        #        self.load_info(master)
 
-            self.notebook.bind("<<NotebookTabChanged>>", select_tab)  
-            #################### Modify the metadata ####################
-            self.modify_btn = ttk.Button(master.my_canvas, text="Modify", command = lambda: self.modify_metadata(), cursor=CURSOR_HAND, takefocus = 0)
-            x_lbl = int(master.my_width*30/100)
-            y_btn = int(master.my_height*78/100)
-            width_btn = int(master.my_width*16/100)
-            master.my_canvas.create_window(x_lbl, y_btn, anchor = tk.NW, width = width_btn, window = self.modify_btn)
+        #     self.notebook.bind("<<NotebookTabChanged>>", select_tab)  
+        #     #################### Modify the metadata ####################
+        #     self.modify_btn = ttk.Button(master.my_canvas, text="Modify", command = lambda: self.modify_metadata(), cursor=CURSOR_HAND, takefocus = 0)
+        #     x_lbl = int(master.my_width*30/100)
+        #     y_btn = int(master.my_height*78/100)
+        #     width_btn = int(master.my_width*16/100)
+        #     master.my_canvas.create_window(x_lbl, y_btn, anchor = tk.NW, width = width_btn, window = self.modify_btn)
 
-            #################### Confirm the metadata ####################
-            self.confirm_btn = ttk.Button(master.my_canvas, text="Confirm", command = lambda: self.confirm_metadata(), cursor=CURSOR_HAND, takefocus = 0)
-            x_conf_btn = int(master.my_width*50/100)
-            master.my_canvas.create_window(x_conf_btn, y_btn, anchor = tk.NW, width = width_btn, window = self.confirm_btn)
+        #     #################### Confirm the metadata ####################
+        #     self.confirm_btn = ttk.Button(master.my_canvas, text="Confirm", command = lambda: self.confirm_metadata(), cursor=CURSOR_HAND, takefocus = 0)
+        #     x_conf_btn = int(master.my_width*50/100)
+        #     master.my_canvas.create_window(x_conf_btn, y_btn, anchor = tk.NW, width = width_btn, window = self.confirm_btn)
 
-            #################### Confirm multiple metadata ####################
-            self.multiple_confirm_btn = ttk.Button(master.my_canvas, text="Multiple Confirm", command = lambda: self.confirm_multiple_metadata(master), cursor=CURSOR_HAND, takefocus = 0)
-            x_multiple_conf_btn = int(master.my_width*70/100)
-            master.my_canvas.create_window(x_multiple_conf_btn, y_btn, anchor = tk.NW, width = width_btn, window = self.multiple_confirm_btn)
+        #     #################### Confirm multiple metadata ####################
+        #     self.multiple_confirm_btn = ttk.Button(master.my_canvas, text="Multiple Confirm", command = lambda: self.confirm_multiple_metadata(master), cursor=CURSOR_HAND, takefocus = 0)
+        #     x_multiple_conf_btn = int(master.my_width*70/100)
+        #     master.my_canvas.create_window(x_multiple_conf_btn, y_btn, anchor = tk.NW, width = width_btn, window = self.multiple_confirm_btn)
                        
-        def load_info(self, master):
+        # def load_info(self, master):
 
-            def items_selected(event):
-                # Clear all the combobox and the entry
-                self.selected_group.set('')
-                self.selected_timepoint.set('')
-                self.selected_timepoint1.set('')
-                self.dose_menu.set('')
-                self.time_entry.delete(0, tk.END)
-                self.cal.delete(0, tk.END)
-                disable_buttons([self.dose_menu, self.group_menu, self.timepoint_menu, self.time_entry, self.timepoint_menu1, self.cal])
+        #     def items_selected(event):
+        #         # Clear all the combobox and the entry
+        #         self.selected_group.set('')
+        #         self.selected_timepoint.set('')
+        #         self.selected_timepoint1.set('')
+        #         self.dose_menu.set('')
+        #         self.time_entry.delete(0, tk.END)
+        #         self.cal.delete(0, tk.END)
+        #         disable_buttons([self.dose_menu, self.group_menu, self.timepoint_menu, self.time_entry, self.timepoint_menu1, self.cal])
 
-                # Delete entries
-                for i in range(0, len(self.entries_value_ID)):
-                    self.entries_variable_ID[i].destroy()
-                    self.entries_value_ID[i].destroy()
+        #         # Delete entries
+        #         for i in range(0, len(self.entries_value_ID)):
+        #             self.entries_variable_ID[i].destroy()
+        #             self.entries_value_ID[i].destroy()
 
-                for i in range(0, len(self.entries_value_CV)):
-                    self.entries_variable_CV[i].destroy()
-                    self.entries_value_CV[i].destroy()
-                """ handle item selected event
-                """
-                # Get selected index
-                self.selected_index = self.my_listbox.curselection()
-                self.selected_folder = self.tab_name + '#' + self.my_listbox.get(self.selected_index)
+        #         for i in range(0, len(self.entries_value_CV)):
+        #             self.entries_variable_CV[i].destroy()
+        #             self.entries_value_CV[i].destroy()
+        #         """ handle item selected event
+        #         """
+        #         # Get selected index
+        #         self.selected_index = self.my_listbox.curselection()
+        #         self.selected_folder = self.tab_name + '#' + self.my_listbox.get(self.selected_index)
 
-                # Load the info (ID + CV)
-                ID = True
-                count = 1
-                self.entries_variable_ID = []
-                self.entries_variable_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT_4, takefocus = 0, width=15, style = 'Metadata.TEntry'))
-                self.entries_variable_ID[-1].insert(0, "Folder")
-                self.entries_variable_ID[-1]['state'] = 'disabled'
-                self.entries_variable_ID[-1].grid(row=0, column=0, padx = 5, pady = 5, sticky=W)
-                self.entries_variable_CV = []
-                self.entries_value_ID = []
-                self.entries_value_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT_4, takefocus = 0, width=44, style = 'Metadata.TEntry'))
-                self.entries_value_ID[-1].insert(0, self.selected_folder)
-                self.entries_value_ID[-1]['state'] = 'disabled'
-                self.entries_value_ID[-1].grid(row=0, column=1, padx = 5, pady = 5, sticky=W)
-                self.entries_value_CV = []
-                for k, v in dict(self.results_dict[self.selected_folder]).items():
-                    if v is None:
-                        v = ''
-                    if k == "C_V":
-                        ID = False
-                        count = 0
-                    if ID:
-                        self.entries_variable_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT_4, takefocus = 0, width=15, style = 'Metadata.TEntry'))
-                        self.entries_variable_ID[-1].insert(0, k)
-                        self.entries_variable_ID[-1]['state'] = 'disabled'
-                        self.entries_variable_ID[-1].grid(row=count, column=0, padx = 5, pady = 5, sticky=W)
-                        # Value
-                        if k == "Acquisition_date":
-                            self.entries_value_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT_4, takefocus = 0, width=20, style = 'Metadata.TEntry'))
-                            self.entries_value_ID[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=NW)
-                        else:
-                            self.entries_value_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT_4, takefocus = 0, width=44, style = 'Metadata.TEntry'))
-                            self.entries_value_ID[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=W)
-                        self.entries_value_ID[-1].insert(0, v)
-                        self.entries_value_ID[-1]['state'] = 'disabled'
+        #         # Load the info (ID + CV)
+        #         ID = True
+        #         count = 1
+        #         self.entries_variable_ID = []
+        #         self.entries_variable_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT_4, takefocus = 0, width=15, style = 'Metadata.TEntry'))
+        #         self.entries_variable_ID[-1].insert(0, "Folder")
+        #         self.entries_variable_ID[-1]['state'] = 'disabled'
+        #         self.entries_variable_ID[-1].grid(row=0, column=0, padx = 5, pady = 5, sticky=W)
+        #         self.entries_variable_CV = []
+        #         self.entries_value_ID = []
+        #         self.entries_value_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT_4, takefocus = 0, width=44, style = 'Metadata.TEntry'))
+        #         self.entries_value_ID[-1].insert(0, self.selected_folder)
+        #         self.entries_value_ID[-1]['state'] = 'disabled'
+        #         self.entries_value_ID[-1].grid(row=0, column=1, padx = 5, pady = 5, sticky=W)
+        #         self.entries_value_CV = []
+        #         for k, v in dict(self.results_dict[self.selected_folder]).items():
+        #             if v is None:
+        #                 v = ''
+        #             if k == "C_V":
+        #                 ID = False
+        #                 count = 0
+        #             if ID:
+        #                 self.entries_variable_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT_4, takefocus = 0, width=15, style = 'Metadata.TEntry'))
+        #                 self.entries_variable_ID[-1].insert(0, k)
+        #                 self.entries_variable_ID[-1]['state'] = 'disabled'
+        #                 self.entries_variable_ID[-1].grid(row=count, column=0, padx = 5, pady = 5, sticky=W)
+        #                 # Value
+        #                 if k == "Acquisition_date":
+        #                     self.entries_value_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT_4, takefocus = 0, width=20, style = 'Metadata.TEntry'))
+        #                     self.entries_value_ID[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=NW)
+        #                 else:
+        #                     self.entries_value_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT_4, takefocus = 0, width=44, style = 'Metadata.TEntry'))
+        #                     self.entries_value_ID[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=W)
+        #                 self.entries_value_ID[-1].insert(0, v)
+        #                 self.entries_value_ID[-1]['state'] = 'disabled'
     
-                        count += 1
+        #                 count += 1
                         
-                    else:
-                        if k != "C_V":
-                            self.entries_variable_CV.append(ttk.Entry(self.frame_CV, font=SMALL_FONT_4, takefocus = 0, width=15, style = 'Metadata.TEntry'))
-                            self.entries_variable_CV[-1].insert(0, k)
-                            self.entries_variable_CV[-1]['state'] = 'disabled'
-                            self.entries_variable_CV[-1].grid(row=count, column=0, padx = 5, pady = 5, sticky=W)
-                            # Value
-                            self.entries_value_CV.append(ttk.Entry(self.frame_CV, font=SMALL_FONT_4, takefocus = 0, width=25, style = 'Metadata.TEntry'))
-                            self.entries_value_CV[-1].insert(0, v)
-                            self.entries_value_CV[-1]['state'] = 'disabled'
-                            self.entries_value_CV[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=W)
-                            count += 1
+        #             else:
+        #                 if k != "C_V":
+        #                     self.entries_variable_CV.append(ttk.Entry(self.frame_CV, font=SMALL_FONT_4, takefocus = 0, width=15, style = 'Metadata.TEntry'))
+        #                     self.entries_variable_CV[-1].insert(0, k)
+        #                     self.entries_variable_CV[-1]['state'] = 'disabled'
+        #                     self.entries_variable_CV[-1].grid(row=count, column=0, padx = 5, pady = 5, sticky=W)
+        #                     # Value
+        #                     self.entries_value_CV.append(ttk.Entry(self.frame_CV, font=SMALL_FONT_4, takefocus = 0, width=25, style = 'Metadata.TEntry'))
+        #                     self.entries_value_CV[-1].insert(0, v)
+        #                     self.entries_value_CV[-1]['state'] = 'disabled'
+        #                     self.entries_value_CV[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=W)
+        #                     count += 1
 
-            self.my_listbox.bind('<Tab>', items_selected)
+        #     self.my_listbox.bind('<Tab>', items_selected)
 
-        def modify_metadata(self):
-                # Check before confirming the data
-            try:
-                self.selected_folder
-                pass
-            except Exception as e:
-                    messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
-                    raise 
+        # def modify_metadata(self):
+        #         # Check before confirming the data
+        #     try:
+        #         self.selected_folder
+        #         pass
+        #     except Exception as e:
+        #             messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
+        #             raise 
 
-            # Normal entry
-            for i in range(1, len(self.entries_value_ID)):
-                self.entries_value_ID[i]['state'] = 'normal'
+        #     # Normal entry
+        #     for i in range(1, len(self.entries_value_ID)):
+        #         self.entries_value_ID[i]['state'] = 'normal'
 
-            for i in range(0, len(self.entries_value_CV)):
-                self.entries_value_CV[i]['state'] = 'normal'
-            # Acquisition date has a default format in entry but you can modify date with the calendar
-            self.cal['state'] = 'normal'
+        #     for i in range(0, len(self.entries_value_CV)):
+        #         self.entries_value_CV[i]['state'] = 'normal'
+        #     # Acquisition date has a default format in entry but you can modify date with the calendar
+        #     self.cal['state'] = 'normal'
             
-            def date_entry_selected(event):
-                w = event.widget
-                self.entries_value_ID[4]['state'] = tk.NORMAL
-                self.entries_value_ID[4].delete(0, tk.END)
-                self.entries_value_ID[4].insert(0, str(w.get_date()))
-                self.entries_value_ID[4]['state'] = tk.DISABLED
-                self.my_listbox.selection_set(self.selected_index)
+        #     def date_entry_selected(event):
+        #         w = event.widget
+        #         self.entries_value_ID[4]['state'] = tk.NORMAL
+        #         self.entries_value_ID[4].delete(0, tk.END)
+        #         self.entries_value_ID[4].insert(0, str(w.get_date()))
+        #         self.entries_value_ID[4]['state'] = tk.DISABLED
+        #         self.my_listbox.selection_set(self.selected_index)
 
-            self.cal.bind("<<DateEntrySelected>>", date_entry_selected)
+        #     self.cal.bind("<<DateEntrySelected>>", date_entry_selected)
 
-            # Option menu for the group
-            self.group_menu['state'] = 'readonly'
+        #     # Option menu for the group
+        #     self.group_menu['state'] = 'readonly'
 
-            def group_changed(event):
-                """ handle the group changed event """
-                self.entries_value_CV[0].delete(0, tk.END)
-                self.entries_value_CV[0].insert(0, str(self.selected_group.get()))                    
-                self.my_listbox.selection_set(self.selected_index)
+        #     def group_changed(event):
+        #         """ handle the group changed event """
+        #         self.entries_value_CV[0].delete(0, tk.END)
+        #         self.entries_value_CV[0].insert(0, str(self.selected_group.get()))                    
+        #         self.my_listbox.selection_set(self.selected_index)
 
-            self.group_menu.bind("<<ComboboxSelected>>", group_changed)
+        #     self.group_menu.bind("<<ComboboxSelected>>", group_changed)
 
-            # Option menu for the dose
-            self.dose_menu['state'] = 'readonly'
+        #     # Option menu for the dose
+        #     self.dose_menu['state'] = 'readonly'
 
-            def dose_changed(event):
-                """ handle the dose changed event """
-                dose_str = ''
-                if self.entries_value_CV[2].get():
-                    for word in filter(str(self.entries_value_CV[2].get()).__contains__, self.OPTIONS_UM):
-                        # If a unit of measurement is already present, replace it
-                        dose_str = str(self.entries_value_CV[2].get()).replace(word, str(self.selected_dose.get()))
-                        self.entries_value_CV[2].delete(0, tk.END)     
-                        self.entries_value_CV[2].insert(0, dose_str)                    
-                        self.my_listbox.selection_set(self.selected_index)
-                        return
-                            # If only the number is present, add the unit of measure
-                    dose_str = str(self.entries_value_CV[2].get()) + "-" + str(self.selected_dose.get())
-                else:
-                    # If the entry is empty, enter only the unit of measure
-                    dose_str = str(self.selected_dose.get())
+        #     def dose_changed(event):
+        #         """ handle the dose changed event """
+        #         dose_str = ''
+        #         if self.entries_value_CV[2].get():
+        #             for word in filter(str(self.entries_value_CV[2].get()).__contains__, self.OPTIONS_UM):
+        #                 # If a unit of measurement is already present, replace it
+        #                 dose_str = str(self.entries_value_CV[2].get()).replace(word, str(self.selected_dose.get()))
+        #                 self.entries_value_CV[2].delete(0, tk.END)     
+        #                 self.entries_value_CV[2].insert(0, dose_str)                    
+        #                 self.my_listbox.selection_set(self.selected_index)
+        #                 return
+        #                     # If only the number is present, add the unit of measure
+        #             dose_str = str(self.entries_value_CV[2].get()) + "-" + str(self.selected_dose.get())
+        #         else:
+        #             # If the entry is empty, enter only the unit of measure
+        #             dose_str = str(self.selected_dose.get())
 
-                self.entries_value_CV[2].delete(0, tk.END)     
-                self.entries_value_CV[2].insert(0, dose_str)                    
-                self.my_listbox.selection_set(self.selected_index)
+        #         self.entries_value_CV[2].delete(0, tk.END)     
+        #         self.entries_value_CV[2].insert(0, dose_str)                    
+        #         self.my_listbox.selection_set(self.selected_index)
 
-            self.dose_menu.bind("<<ComboboxSelected>>", dose_changed)
+        #     self.dose_menu.bind("<<ComboboxSelected>>", dose_changed)
             
-            # Option menu for the timepoint
-            self.timepoint_menu1['state'] = 'readonly'
-            self.time_entry['state'] = 'normal'
-            self.timepoint_menu['state'] = 'readonly'
+        #     # Option menu for the timepoint
+        #     self.timepoint_menu1['state'] = 'readonly'
+        #     self.time_entry['state'] = 'normal'
+        #     self.timepoint_menu['state'] = 'readonly'
 
-            def timepoint_changed(event):
-                self.entries_value_CV[1].config(state=tk.NORMAL)
-                """ handle the timepoint changed event """
-                if str(self.time_entry.get()) or str(self.selected_timepoint1.get()):
-                    timepoint_str = str(self.selected_timepoint.get()) + "-" + str(self.time_entry.get()) + "-" + str(self.selected_timepoint1.get())
-                else:
-                    timepoint_str = str(self.selected_timepoint.get()) 
+        #     def timepoint_changed(event):
+        #         self.entries_value_CV[1].config(state=tk.NORMAL)
+        #         """ handle the timepoint changed event """
+        #         if str(self.time_entry.get()) or str(self.selected_timepoint1.get()):
+        #             timepoint_str = str(self.selected_timepoint.get()) + "-" + str(self.time_entry.get()) + "-" + str(self.selected_timepoint1.get())
+        #         else:
+        #             timepoint_str = str(self.selected_timepoint.get()) 
 
-                self.my_listbox.selection_set(self.selected_index)
+        #         self.my_listbox.selection_set(self.selected_index)
 
-                if self.time_entry.get():
-                    try:
-                        float(self.time_entry.get())
-                    except Exception as e: 
-                        messagebox.showerror("XNAT-PIC", "Insert a number in the timepoint entry")
+        #         if self.time_entry.get():
+        #             try:
+        #                 float(self.time_entry.get())
+        #             except Exception as e: 
+        #                 messagebox.showerror("XNAT-PIC", "Insert a number in the timepoint entry")
 
-                self.entries_value_CV[1].delete(0, tk.END)
-                self.entries_value_CV[1].insert(0, timepoint_str)
-                self.entries_value_CV[1].config(state=tk.DISABLED)
+        #         self.entries_value_CV[1].delete(0, tk.END)
+        #         self.entries_value_CV[1].insert(0, timepoint_str)
+        #         self.entries_value_CV[1].config(state=tk.DISABLED)
 
-            self.timepoint_menu.bind("<<ComboboxSelected>>", timepoint_changed)
-            self.time_entry.bind("<Return>", timepoint_changed)
-            self.timepoint_menu1.bind("<<ComboboxSelected>>", timepoint_changed)
+        #     self.timepoint_menu.bind("<<ComboboxSelected>>", timepoint_changed)
+        #     self.time_entry.bind("<Return>", timepoint_changed)
+        #     self.timepoint_menu1.bind("<<ComboboxSelected>>", timepoint_changed)
 
-        def check_entries(self):
-            # Check before confirming the data
-            try:
-                self.selected_folder
-                pass
-            except Exception as e:
-                    messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
-                    raise 
+        # def check_entries(self):
+        #     # Check before confirming the data
+        #     try:
+        #         self.selected_folder
+        #         pass
+        #     except Exception as e:
+        #             messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
+        #             raise 
 
-            if not self.entries_value_ID[1].get():
-                messagebox.showerror("XNAT-PIC", "Insert the name of the project")
-                raise 
+        #     if not self.entries_value_ID[1].get():
+        #         messagebox.showerror("XNAT-PIC", "Insert the name of the project")
+        #         raise 
 
-            if not self.entries_value_ID[2].get():
-                messagebox.showerror("XNAT-PIC", "Insert the name of the subject")
-                raise
+        #     if not self.entries_value_ID[2].get():
+        #         messagebox.showerror("XNAT-PIC", "Insert the name of the subject")
+        #         raise
 
-            if self.entries_value_ID[4].get():
-                try:
-                    datetime.datetime.strptime(self.entries_value_ID[4].get(), '%Y-%m-%d')
-                except Exception as e:
-                    messagebox.showerror("XNAT-PIC", "Incorrect data format in acquisition date, should be YYYY-MM-DD")
-                    raise
+        #     if self.entries_value_ID[4].get():
+        #         try:
+        #             datetime.datetime.strptime(self.entries_value_ID[4].get(), '%Y-%m-%d')
+        #         except Exception as e:
+        #             messagebox.showerror("XNAT-PIC", "Incorrect data format in acquisition date, should be YYYY-MM-DD")
+        #             raise
 
-            if self.entries_value_CV[1].get() and '-' in  self.entries_value_CV[1].get(): 
-                if not str(self.entries_value_CV[1].get()).split('-')[0] in self.OPTIONS:
-                    messagebox.showerror("XNAT-PIC", "Select pre/post in timepoint")
-                    raise
-                if not str(self.entries_value_CV[1].get()).split('-')[2] in self.OPTIONS1:
-                    messagebox.showerror("XNAT-PIC", "Select seconds, minutes, hours, days, weeks, months, years in timepoint")
-                    raise
+        #     if self.entries_value_CV[1].get() and '-' in  self.entries_value_CV[1].get(): 
+        #         if not str(self.entries_value_CV[1].get()).split('-')[0] in self.OPTIONS:
+        #             messagebox.showerror("XNAT-PIC", "Select pre/post in timepoint")
+        #             raise
+        #         if not str(self.entries_value_CV[1].get()).split('-')[2] in self.OPTIONS1:
+        #             messagebox.showerror("XNAT-PIC", "Select seconds, minutes, hours, days, weeks, months, years in timepoint")
+        #             raise
 
-                input_num = str(self.entries_value_CV[1].get()).split('-')[1]
-                try:
-                    float(input_num)
-                except Exception as e: 
-                    messagebox.showerror("XNAT-PIC", "Insert a number in timepoint between pre/post and seconds, minutes, hours..")  
-                    raise
-        # Update the values and save the values in a txt file        
-        def save_entries(self, my_key, multiple):
+        #         input_num = str(self.entries_value_CV[1].get()).split('-')[1]
+        #         try:
+        #             float(input_num)
+        #         except Exception as e: 
+        #             messagebox.showerror("XNAT-PIC", "Insert a number in timepoint between pre/post and seconds, minutes, hours..")  
+        #             raise
+        # # Update the values and save the values in a txt file        
+        # def save_entries(self, my_key, multiple):
             
-            if multiple == 0:
-            # Single confirm
-                array_ID = range(1, len(self.entries_variable_ID))
-                array_CV = range(0, len(self.entries_variable_CV))
-            elif multiple ==1:
-            # Multple confirm
-                array_ID = self.list_ID
-                array_CV = self.list_CV
+        #     if multiple == 0:
+        #     # Single confirm
+        #         array_ID = range(1, len(self.entries_variable_ID))
+        #         array_CV = range(0, len(self.entries_variable_CV))
+        #     elif multiple ==1:
+        #     # Multple confirm
+        #         array_ID = self.list_ID
+        #         array_CV = self.list_CV
                 
-            tmp_ID = {}
-            # Update the info in the txt file ID
-            for i in array_ID:
-                tmp_ID.update({self.entries_variable_ID[i].get() : self.entries_value_ID[i].get()})     
-                self.entries_variable_ID[i]['state'] = tk.DISABLED
-                self.entries_value_ID[i]['state'] = tk.DISABLED 
+        #     tmp_ID = {}
+        #     # Update the info in the txt file ID
+        #     for i in array_ID:
+        #         tmp_ID.update({self.entries_variable_ID[i].get() : self.entries_value_ID[i].get()})     
+        #         self.entries_variable_ID[i]['state'] = tk.DISABLED
+        #         self.entries_value_ID[i]['state'] = tk.DISABLED 
             
-            tmp_ID.update({"C_V" : ""}) 
+        #     tmp_ID.update({"C_V" : ""}) 
 
-            # Update the info in the txt file CV
-            for i in array_CV:
-                tmp_ID.update({self.entries_variable_CV[i].get() : self.entries_value_CV[i].get()})     
-                self.entries_variable_CV[i]['state'] = tk.DISABLED
-                self.entries_value_CV[i]['state'] = tk.DISABLED 
+        #     # Update the info in the txt file CV
+        #     for i in array_CV:
+        #         tmp_ID.update({self.entries_variable_CV[i].get() : self.entries_value_CV[i].get()})     
+        #         self.entries_variable_CV[i]['state'] = tk.DISABLED
+        #         self.entries_value_CV[i]['state'] = tk.DISABLED 
 
-            self.results_dict[my_key].update(tmp_ID)
+        #     self.results_dict[my_key].update(tmp_ID)
            
-            # Clear all 
-            self.selected_group.set('')
-            self.selected_dose.set('')
-            self.selected_timepoint.set('')
-            self.selected_timepoint1.set('')
-            self.time_entry.delete(0, tk.END)
-            self.cal.delete(0, tk.END)
-            disable_buttons([self.dose_menu, self.group_menu, self.timepoint_menu, self.time_entry, self.timepoint_menu1, self.cal])
-            # Saves the changes made by the user in the txt file
-            substring = str(my_key).replace('#','/')
-            index = [i for i, s in enumerate(self.path_list) if substring in s]
-            name_txt = str(my_key).rsplit('#', 1)[1] + "_" + "Custom_Variables.txt"
-            tmp_path = self.path_list[index[0]] + "\\" + name_txt
-            try:
-                with open(tmp_path.replace('\\', '/'), 'w+') as meta_file:
-                    meta_file.write(tabulate(self.results_dict[my_key].items(), headers=['Variable', 'Value']))
-            except Exception as e: 
-                    messagebox.showerror("XNAT-PIC", "Confirmation failed: " + str(e))  
-                    raise    
-        def confirm_metadata(self):
-            try:
-                self.check_entries()
-            except Exception as e: 
-                messagebox.showerror("XNAT-PIC", "Error in checking fields" + str(e))  
-                raise
+        #     # Clear all 
+        #     self.selected_group.set('')
+        #     self.selected_dose.set('')
+        #     self.selected_timepoint.set('')
+        #     self.selected_timepoint1.set('')
+        #     self.time_entry.delete(0, tk.END)
+        #     self.cal.delete(0, tk.END)
+        #     disable_buttons([self.dose_menu, self.group_menu, self.timepoint_menu, self.time_entry, self.timepoint_menu1, self.cal])
+        #     # Saves the changes made by the user in the txt file
+        #     substring = str(my_key).replace('#','/')
+        #     index = [i for i, s in enumerate(self.path_list) if substring in s]
+        #     name_txt = str(my_key).rsplit('#', 1)[1] + "_" + "Custom_Variables.txt"
+        #     tmp_path = self.path_list[index[0]] + "\\" + name_txt
+        #     try:
+        #         with open(tmp_path.replace('\\', '/'), 'w+') as meta_file:
+        #             meta_file.write(tabulate(self.results_dict[my_key].items(), headers=['Variable', 'Value']))
+        #     except Exception as e: 
+        #             messagebox.showerror("XNAT-PIC", "Confirmation failed: " + str(e))  
+        #             raise    
+        # def confirm_metadata(self):
+        #     try:
+        #         self.check_entries()
+        #     except Exception as e: 
+        #         messagebox.showerror("XNAT-PIC", "Error in checking fields" + str(e))  
+        #         raise
 
-            try:
-                self.save_entries(self.selected_folder, multiple=0)
-            except Exception as e: 
-                messagebox.showerror("XNAT-PIC", "Error in saving" + str(e))  
-                raise
+        #     try:
+        #         self.save_entries(self.selected_folder, multiple=0)
+        #     except Exception as e: 
+        #         messagebox.showerror("XNAT-PIC", "Error in saving" + str(e))  
+        #         raise
 
-        #################### Confirm multiple metadata ####################
-        def confirm_multiple_metadata(self, master):
+        # #################### Confirm multiple metadata ####################
+        # def confirm_multiple_metadata(self, master):
 
-            disable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.my_listbox])
-            tab_names = [self.notebook.tab(i, state='disable') for i in self.notebook.tabs()]  
+        #     disable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.my_listbox])
+        #     tab_names = [self.notebook.tab(i, state='disable') for i in self.notebook.tabs()]  
                      
-            try:
-                self.selected_folder
-                pass
-            except Exception as e:
-                enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.my_listbox])
-                messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
-                raise
+        #     try:
+        #         self.selected_folder
+        #         pass
+        #     except Exception as e:
+        #         enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.my_listbox])
+        #         messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
+        #         raise
 
-            messagebox.showinfo("Project Data","Select the ID fields you want to copy.")
+        #     messagebox.showinfo("Project Data","Select the ID fields you want to copy.")
 
-            # Select the fields that you want to copy
-            self.list_ID = []
-            # Confirm ID
-            def multiple_confirm_ID(row):
-                self.list_ID.append(row)
-                btn_multiple_confirm_ID[row].destroy()
-                btn_multiple_delete_ID[row].destroy()
-                count_list.pop()
-                # If the user has finished all the selections of the ID, he moves on to the selection of CV
-                if len(count_list) == 1:
-                    self.select_CV(master)
+        #     # Select the fields that you want to copy
+        #     self.list_ID = []
+        #     # Confirm ID
+        #     def multiple_confirm_ID(row):
+        #         self.list_ID.append(row)
+        #         btn_multiple_confirm_ID[row].destroy()
+        #         btn_multiple_delete_ID[row].destroy()
+        #         count_list.pop()
+        #         # If the user has finished all the selections of the ID, he moves on to the selection of CV
+        #         if len(count_list) == 1:
+        #             self.select_CV(master)
 
-            # Delete ID
-            def multiple_delete_ID(row):
-                btn_multiple_confirm_ID[row].destroy()
-                btn_multiple_delete_ID[row].destroy()
-                count_list.pop()
-                # If the user has finished all the selections of the ID, he moves on to the selection of CV
-                if len(count_list) == 1:
-                    self.select_CV(master)
+        #     # Delete ID
+        #     def multiple_delete_ID(row):
+        #         btn_multiple_confirm_ID[row].destroy()
+        #         btn_multiple_delete_ID[row].destroy()
+        #         count_list.pop()
+        #         # If the user has finished all the selections of the ID, he moves on to the selection of CV
+        #         if len(count_list) == 1:
+        #             self.select_CV(master)
 
-            btn_multiple_confirm_ID = []
-            btn_multiple_delete_ID = []
-            count_list = []
-            for i in range(0, len(self.entries_variable_ID)):
-                btn_multiple_confirm_ID.append(ttk.Button(self.frame_ID, image = master.logo_accept, 
-                                                command=lambda row=i: multiple_confirm_ID(row), cursor=CURSOR_HAND))
-                btn_multiple_confirm_ID[-1].grid(row=i, column=2, padx = 5, pady = 5, sticky=NW)
-                btn_multiple_confirm_ID[0].destroy()
-                btn_multiple_delete_ID.append(ttk.Button(self.frame_ID, image = master.logo_delete, 
-                                                command=lambda row=i: multiple_delete_ID(row), cursor=CURSOR_HAND))
-                btn_multiple_delete_ID[-1].grid(row=i, column=3, padx = 5, pady = 5, sticky=NW)
-                btn_multiple_delete_ID[0].destroy()
-                count_list = btn_multiple_confirm_ID.copy()
+        #     btn_multiple_confirm_ID = []
+        #     btn_multiple_delete_ID = []
+        #     count_list = []
+        #     for i in range(0, len(self.entries_variable_ID)):
+        #         btn_multiple_confirm_ID.append(ttk.Button(self.frame_ID, image = master.logo_accept, 
+        #                                         command=lambda row=i: multiple_confirm_ID(row), cursor=CURSOR_HAND))
+        #         btn_multiple_confirm_ID[-1].grid(row=i, column=2, padx = 5, pady = 5, sticky=NW)
+        #         btn_multiple_confirm_ID[0].destroy()
+        #         btn_multiple_delete_ID.append(ttk.Button(self.frame_ID, image = master.logo_delete, 
+        #                                         command=lambda row=i: multiple_delete_ID(row), cursor=CURSOR_HAND))
+        #         btn_multiple_delete_ID[-1].grid(row=i, column=3, padx = 5, pady = 5, sticky=NW)
+        #         btn_multiple_delete_ID[0].destroy()
+        #         count_list = btn_multiple_confirm_ID.copy()
             
-        def select_CV(self, master):
-            messagebox.showinfo("Project Data","Select the Custom Variables you want to copy.")
+        # def select_CV(self, master):
+        #     messagebox.showinfo("Project Data","Select the Custom Variables you want to copy.")
 
-            # Select the fields that you want to copy
-            self.list_CV = []
-            # Confirm ID
-            def multiple_confirm_CV(row):
-                self.list_CV.append(row)
-                btn_multiple_confirm_CV[row].destroy()
-                btn_multiple_delete_CV[row].destroy()
-                count_list.pop()
-                # If the user has finished all the selections of the CV, he moves on to the selection of experiments
-                if len(count_list) == 0:
-                    self.select_exp(master)
+        #     # Select the fields that you want to copy
+        #     self.list_CV = []
+        #     # Confirm ID
+        #     def multiple_confirm_CV(row):
+        #         self.list_CV.append(row)
+        #         btn_multiple_confirm_CV[row].destroy()
+        #         btn_multiple_delete_CV[row].destroy()
+        #         count_list.pop()
+        #         # If the user has finished all the selections of the CV, he moves on to the selection of experiments
+        #         if len(count_list) == 0:
+        #             self.select_exp(master)
 
-            # Delete ID
-            def multiple_delete_CV(row):
-                btn_multiple_confirm_CV[row].destroy()
-                btn_multiple_delete_CV[row].destroy()
-                count_list.pop()
-                # If the user has finished all the selections of the CV, he moves on to the selection of experiments
-                if len(count_list) == 0:
-                    self.select_exp(master)
+        #     # Delete ID
+        #     def multiple_delete_CV(row):
+        #         btn_multiple_confirm_CV[row].destroy()
+        #         btn_multiple_delete_CV[row].destroy()
+        #         count_list.pop()
+        #         # If the user has finished all the selections of the CV, he moves on to the selection of experiments
+        #         if len(count_list) == 0:
+        #             self.select_exp(master)
 
-            btn_multiple_confirm_CV = []
-            btn_multiple_delete_CV = []
-            count_list = []
-            for i in range(0, len(self.entries_variable_CV)):
-                btn_multiple_confirm_CV.append(ttk.Button(self.frame_CV, image = master.logo_accept, 
-                                                command=lambda row=i: multiple_confirm_CV(row), cursor=CURSOR_HAND))
-                btn_multiple_confirm_CV[-1].grid(row=i, column=5, padx = 5, pady = 5, sticky=NW)
-                btn_multiple_delete_CV.append(ttk.Button(self.frame_CV, image = master.logo_delete, 
-                                                command=lambda row=i: multiple_delete_CV(row), cursor=CURSOR_HAND))
-                btn_multiple_delete_CV[-1].grid(row=i, column=6, padx = 5, pady = 5, sticky=NW)
-                count_list = btn_multiple_confirm_CV.copy()
+        #     btn_multiple_confirm_CV = []
+        #     btn_multiple_delete_CV = []
+        #     count_list = []
+        #     for i in range(0, len(self.entries_variable_CV)):
+        #         btn_multiple_confirm_CV.append(ttk.Button(self.frame_CV, image = master.logo_accept, 
+        #                                         command=lambda row=i: multiple_confirm_CV(row), cursor=CURSOR_HAND))
+        #         btn_multiple_confirm_CV[-1].grid(row=i, column=5, padx = 5, pady = 5, sticky=NW)
+        #         btn_multiple_delete_CV.append(ttk.Button(self.frame_CV, image = master.logo_delete, 
+        #                                         command=lambda row=i: multiple_delete_CV(row), cursor=CURSOR_HAND))
+        #         btn_multiple_delete_CV[-1].grid(row=i, column=6, padx = 5, pady = 5, sticky=NW)
+        #         count_list = btn_multiple_confirm_CV.copy()
             
-        def select_exp(self, master):
-            messagebox.showinfo("Metadata","1. Select the folders from the box on the left for which to copy the info!\n 2. Always remaining in the box on the left, press ENTER to confirm or ESC to cancel!")
-            enable_buttons([self.my_listbox])
-            tab_names = [self.notebook.tab(i, state='normal') for i in self.notebook.tabs()]
-            self.my_listbox.selection_set(self.selected_index)    
-            self.my_listbox['selectmode'] = MULTIPLE
+        # def select_exp(self, master):
+        #     messagebox.showinfo("Metadata","1. Select the folders from the box on the left for which to copy the info!\n 2. Always remaining in the box on the left, press ENTER to confirm or ESC to cancel!")
+        #     enable_buttons([self.my_listbox])
+        #     tab_names = [self.notebook.tab(i, state='normal') for i in self.notebook.tabs()]
+        #     self.my_listbox.selection_set(self.selected_index)    
+        #     self.my_listbox['selectmode'] = MULTIPLE
             
-            # Obtain the subject-experiment list to be modified
-            self.list_tab_listbox = []
-            def select_listbox(event):
-                self.seltext = [self.tab_name + '#' + self.my_listbox.get(index) for index in self.my_listbox.curselection()]
-            self.my_listbox.bind("<<ListboxSelect>>", select_listbox)
+        #     # Obtain the subject-experiment list to be modified
+        #     self.list_tab_listbox = []
+        #     def select_listbox(event):
+        #         self.seltext = [self.tab_name + '#' + self.my_listbox.get(index) for index in self.my_listbox.curselection()]
+        #     self.my_listbox.bind("<<ListboxSelect>>", select_listbox)
 
-            def select_tab_listbox(event):
-                tab_id = self.notebook.select()
-                self.tab_name = self.notebook.tab(tab_id, "text")
-                # Update the listbox
-                self.my_listbox.delete(0, END)
-                self.my_listbox.insert(tk.END, *self.todos[self.tab_name])
-                self.list_tab_listbox.append(self.seltext)
+        #     def select_tab_listbox(event):
+        #         tab_id = self.notebook.select()
+        #         self.tab_name = self.notebook.tab(tab_id, "text")
+        #         # Update the listbox
+        #         self.my_listbox.delete(0, END)
+        #         self.my_listbox.insert(tk.END, *self.todos[self.tab_name])
+        #         self.list_tab_listbox.append(self.seltext)
                 
-            self.notebook.bind("<<NotebookTabChanged>>", select_tab_listbox)  
+        #     self.notebook.bind("<<NotebookTabChanged>>", select_tab_listbox)  
 
-            # The user presses 'enter' to confirm 
-            def items_selected2(event):
-                self.list_tab_listbox.append(self.seltext)
-                result = messagebox.askquestion("Multiple Confirm", "Are you sure you want to save data for the selected folders?\n", icon='warning')
+        #     # The user presses 'enter' to confirm 
+        #     def items_selected2(event):
+        #         self.list_tab_listbox.append(self.seltext)
+        #         result = messagebox.askquestion("Multiple Confirm", "Are you sure you want to save data for the selected folders?\n", icon='warning')
                 
-                if result == 'yes':
-                    try:
-                        self.check_entries()
-                    except Exception as e: 
-                        messagebox.showerror("XNAT-PIC", "Error in checking fields" + str(e))  
-                        raise
+        #         if result == 'yes':
+        #             try:
+        #                 self.check_entries()
+        #             except Exception as e: 
+        #                 messagebox.showerror("XNAT-PIC", "Error in checking fields" + str(e))  
+        #                 raise
                 
-                for x in range(len(self.list_tab_listbox)):
-                    for y in range(len(self.list_tab_listbox[x])):
-                        try:
-                            self.save_entries(self.list_tab_listbox[x][y], multiple=1)
-                        except Exception as e: 
-                            messagebox.showerror("XNAT-PIC", "Error in saving" + str(e))  
-                            raise
+        #         for x in range(len(self.list_tab_listbox)):
+        #             for y in range(len(self.list_tab_listbox[x])):
+        #                 try:
+        #                     self.save_entries(self.list_tab_listbox[x][y], multiple=1)
+        #                 except Exception as e: 
+        #                     messagebox.showerror("XNAT-PIC", "Error in saving" + str(e))  
+        #                     raise
                 
-                # Clear all 
-                self.selected_group.set('')
-                self.selected_dose.set('')
-                self.selected_timepoint.set('')
-                self.selected_timepoint1.set('')
-                self.time_entry.delete(0, tk.END)
-                self.cal.delete(0, tk.END)
-                disable_buttons([self.dose_menu, self.group_menu, self.timepoint_menu, self.time_entry, self.timepoint_menu1, self.cal])
-                # Clear the focus and the select mode of the listbox is single
-                enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn])
-                self.my_listbox.selection_clear(0, 'end')
-                self.my_listbox['selectmode'] = SINGLE
+        #         # Clear all 
+        #         self.selected_group.set('')
+        #         self.selected_dose.set('')
+        #         self.selected_timepoint.set('')
+        #         self.selected_timepoint1.set('')
+        #         self.time_entry.delete(0, tk.END)
+        #         self.cal.delete(0, tk.END)
+        #         disable_buttons([self.dose_menu, self.group_menu, self.timepoint_menu, self.time_entry, self.timepoint_menu1, self.cal])
+        #         # Clear the focus and the select mode of the listbox is single
+        #         enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn])
+        #         self.my_listbox.selection_clear(0, 'end')
+        #         self.my_listbox['selectmode'] = SINGLE
                 
 
-            self.my_listbox.bind("<Return>", items_selected2)
+        #     self.my_listbox.bind("<Return>", items_selected2)
             
-            # The user presses 'esc' to cancel
-            def items_cancel(event):
-                    # Clear the focus and the select mode of the listbox is single
-                messagebox.showinfo("Metadata","The information was not saved for the selected folders!")
-                enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn])
-                self.my_listbox.selection_clear(0, 'end')
-                self.my_listbox['selectmode'] = SINGLE
-            self.my_listbox.bind("<Escape>", items_cancel)
+        #     # The user presses 'esc' to cancel
+        #     def items_cancel(event):
+        #             # Clear the focus and the select mode of the listbox is single
+        #         messagebox.showinfo("Metadata","The information was not saved for the selected folders!")
+        #         enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn])
+        #         self.my_listbox.selection_clear(0, 'end')
+        #         self.my_listbox['selectmode'] = SINGLE
+        #     self.my_listbox.bind("<Escape>", items_cancel)
                 
-        #################### Add ID #################
-        def add_ID(self, master):
-             # Check before confirming the data
-            try:
-                self.selected_folder
-                pass
-            except Exception as e:
-                    messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
-                    raise 
-            # Disable btns
-            disable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn])
-            # I use len(all_entries) to get nuber of next free row
-            next_row = len(self.entries_variable_ID)
+        # #################### Add ID #################
+        # def add_ID(self, master):
+        #      # Check before confirming the data
+        #     try:
+        #         self.selected_folder
+        #         pass
+        #     except Exception as e:
+        #             messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
+        #             raise 
+        #     # Disable btns
+        #     disable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn])
+        #     # I use len(all_entries) to get nuber of next free row
+        #     next_row = len(self.entries_variable_ID)
             
-            # Add entry variable ID
-            ent_variable = ttk.Entry(self.frame_ID, font=SMALL_FONT_4, takefocus = 0, width=15, style = 'Metadata.TEntry')
-            ent_variable.grid(row=next_row, column=0, padx = 5, pady = 5, sticky=W)
-            self.entries_variable_ID.append(ent_variable)                 
+        #     # Add entry variable ID
+        #     ent_variable = ttk.Entry(self.frame_ID, font=SMALL_FONT_4, takefocus = 0, width=15, style = 'Metadata.TEntry')
+        #     ent_variable.grid(row=next_row, column=0, padx = 5, pady = 5, sticky=W)
+        #     self.entries_variable_ID.append(ent_variable)                 
 
-            # Add entry value ID in second col
-            ent_value = ttk.Entry(self.frame_ID, font=SMALL_FONT_4, takefocus = 0, width=44, style = 'Metadata.TEntry')
-            ent_value.grid(row=next_row, column=1, padx = 5, pady = 5, sticky=W)
-            self.entries_value_ID.append(ent_value)
+        #     # Add entry value ID in second col
+        #     ent_value = ttk.Entry(self.frame_ID, font=SMALL_FONT_4, takefocus = 0, width=44, style = 'Metadata.TEntry')
+        #     ent_value.grid(row=next_row, column=1, padx = 5, pady = 5, sticky=W)
+        #     self.entries_value_ID.append(ent_value)
 
-            # Confirm
-            def confirm_ID(next_row):
-                pos = list(self.results_dict[self.selected_folder].keys()).index('C_V')
-                items = list(self.results_dict[self.selected_folder].items())
-                items.insert(pos, (self.entries_variable_ID[next_row].get(), self.entries_value_ID[next_row].get()))
-                self.results_dict[self.selected_folder] = dict(items)
-                state = self.entries_value_ID[1]['state']
-                self.entries_variable_ID[next_row]['state'] = tk.DISABLED
-                self.entries_value_ID[next_row]['state'] = state
-                enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn])
-                btn_confirm_ID.destroy()
-                btn_reject_ID.destroy()
+        #     # Confirm
+        #     def confirm_ID(next_row):
+        #         pos = list(self.results_dict[self.selected_folder].keys()).index('C_V')
+        #         items = list(self.results_dict[self.selected_folder].items())
+        #         items.insert(pos, (self.entries_variable_ID[next_row].get(), self.entries_value_ID[next_row].get()))
+        #         self.results_dict[self.selected_folder] = dict(items)
+        #         state = self.entries_value_ID[1]['state']
+        #         self.entries_variable_ID[next_row]['state'] = tk.DISABLED
+        #         self.entries_value_ID[next_row]['state'] = state
+        #         enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn])
+        #         btn_confirm_ID.destroy()
+        #         btn_reject_ID.destroy()
                  
-            btn_confirm_ID = ttk.Button(self.frame_ID, image = master.logo_accept, 
-                                            command=lambda: confirm_ID(next_row), cursor=CURSOR_HAND)
-            btn_confirm_ID.grid(row=next_row, column=2, padx = 5, pady = 5, sticky=NW)
+        #     btn_confirm_ID = ttk.Button(self.frame_ID, image = master.logo_accept, 
+        #                                     command=lambda: confirm_ID(next_row), cursor=CURSOR_HAND)
+        #     btn_confirm_ID.grid(row=next_row, column=2, padx = 5, pady = 5, sticky=NW)
 
-            # Delete
-            def reject_ID(next_row):
-                enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn])
-                self.entries_variable_ID[next_row].destroy()
-                self.entries_value_ID[next_row].destroy()
-                btn_confirm_ID.destroy()
-                btn_reject_ID.destroy()
-            btn_reject_ID = ttk.Button(self.frame_ID, image = master.logo_delete,  
-                                            command=lambda: reject_ID(next_row), cursor=CURSOR_HAND)
-            btn_reject_ID.grid(row=next_row, column=3, padx = 5, pady = 5, sticky=NW)
+        #     # Delete
+        #     def reject_ID(next_row):
+        #         enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn])
+        #         self.entries_variable_ID[next_row].destroy()
+        #         self.entries_value_ID[next_row].destroy()
+        #         btn_confirm_ID.destroy()
+        #         btn_reject_ID.destroy()
+        #     btn_reject_ID = ttk.Button(self.frame_ID, image = master.logo_delete,  
+        #                                     command=lambda: reject_ID(next_row), cursor=CURSOR_HAND)
+        #     btn_reject_ID.grid(row=next_row, column=3, padx = 5, pady = 5, sticky=NW)
 
 
-        #################### Add Custom Variable #################
-        def add_custom_variable(self, master):
-             # Check before confirming the data
-            try:
-                self.selected_folder
-                pass
-            except Exception as e:
-                    messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
-                    raise 
-            # Disable btns
-            disable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn])
-            # I get number of next free row
-            next_row = len(self.entries_variable_CV)
+        # #################### Add Custom Variable #################
+        # def add_custom_variable(self, master):
+        #      # Check before confirming the data
+        #     try:
+        #         self.selected_folder
+        #         pass
+        #     except Exception as e:
+        #             messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
+        #             raise 
+        #     # Disable btns
+        #     disable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn])
+        #     # I get number of next free row
+        #     next_row = len(self.entries_variable_CV)
             
-            # Add entry variable CV
-            ent_variable = ttk.Entry(self.frame_CV, font=SMALL_FONT_4, takefocus = 0, width=15, style = 'Metadata.TEntry')
-            ent_variable.grid(row=next_row, column=0, padx = 5, pady = 5, sticky=W)
-            self.entries_variable_CV.append(ent_variable)                 
+        #     # Add entry variable CV
+        #     ent_variable = ttk.Entry(self.frame_CV, font=SMALL_FONT_4, takefocus = 0, width=15, style = 'Metadata.TEntry')
+        #     ent_variable.grid(row=next_row, column=0, padx = 5, pady = 5, sticky=W)
+        #     self.entries_variable_CV.append(ent_variable)                 
 
-            # Add entry value in second col
-            ent_value = ttk.Entry(self.frame_CV, font=SMALL_FONT_4, takefocus = 0, width=25, style = 'Metadata.TEntry')
-            ent_value.grid(row=next_row, column=1, padx = 5, pady = 5, sticky=W)
-            self.entries_value_CV.append(ent_value)
+        #     # Add entry value in second col
+        #     ent_value = ttk.Entry(self.frame_CV, font=SMALL_FONT_4, takefocus = 0, width=25, style = 'Metadata.TEntry')
+        #     ent_value.grid(row=next_row, column=1, padx = 5, pady = 5, sticky=W)
+        #     self.entries_value_CV.append(ent_value)
             
-            # Confirm
-            def confirm_CV(next_row):
-                if self.entries_variable_CV[next_row].get():
-                    tmp_CV = {self.entries_variable_CV[next_row].get() : self.entries_value_CV[next_row].get()}
-                    self.results_dict[self.selected_folder].update(tmp_CV) 
-                    state = self.entries_value_ID[1]['state']    
-                    self.entries_variable_CV[next_row]['state'] = tk.DISABLED
-                    self.entries_value_CV[next_row]['state'] = state
-                    enable_buttons([self.modify_btn, self.confirm_btn])
-                    btn_confirm_CV.destroy()
-                    btn_reject_CV.destroy()
-                else:
-                    messagebox.showerror("XNAT-PIC", "Insert Custom Variable")
+        #     # Confirm
+        #     def confirm_CV(next_row):
+        #         if self.entries_variable_CV[next_row].get():
+        #             tmp_CV = {self.entries_variable_CV[next_row].get() : self.entries_value_CV[next_row].get()}
+        #             self.results_dict[self.selected_folder].update(tmp_CV) 
+        #             state = self.entries_value_ID[1]['state']    
+        #             self.entries_variable_CV[next_row]['state'] = tk.DISABLED
+        #             self.entries_value_CV[next_row]['state'] = state
+        #             enable_buttons([self.modify_btn, self.confirm_btn])
+        #             btn_confirm_CV.destroy()
+        #             btn_reject_CV.destroy()
+        #         else:
+        #             messagebox.showerror("XNAT-PIC", "Insert Custom Variable")
                      
-            btn_confirm_CV = ttk.Button(self.frame_CV, image = master.logo_accept, 
-                                            command=lambda: confirm_CV(next_row), cursor=CURSOR_HAND)
-            btn_confirm_CV.grid(row=next_row, column=2, padx = 5, pady = 5, sticky=tk.NW)
+        #     btn_confirm_CV = ttk.Button(self.frame_CV, image = master.logo_accept, 
+        #                                     command=lambda: confirm_CV(next_row), cursor=CURSOR_HAND)
+        #     btn_confirm_CV.grid(row=next_row, column=2, padx = 5, pady = 5, sticky=tk.NW)
 
-            # Delete
-            def reject_CV(next_row):
-                self.entries_variable_CV[next_row].destroy()
-                self.entries_value_CV[next_row].destroy()
-                enable_buttons([self.modify_btn, self.confirm_btn])
-                btn_confirm_CV.destroy()
-                btn_reject_CV.destroy()
-            btn_reject_CV = ttk.Button(self.frame_CV, image = master.logo_delete, 
-                                            command=lambda: reject_CV(next_row), cursor=CURSOR_HAND)
-            btn_reject_CV.grid(row=next_row, column=2, padx = 5, pady = 5, sticky=tk.N)
+        #     # Delete
+        #     def reject_CV(next_row):
+        #         self.entries_variable_CV[next_row].destroy()
+        #         self.entries_value_CV[next_row].destroy()
+        #         enable_buttons([self.modify_btn, self.confirm_btn])
+        #         btn_confirm_CV.destroy()
+        #         btn_reject_CV.destroy()
+        #     btn_reject_CV = ttk.Button(self.frame_CV, image = master.logo_delete, 
+        #                                     command=lambda: reject_CV(next_row), cursor=CURSOR_HAND)
+        #     btn_reject_CV.grid(row=next_row, column=2, padx = 5, pady = 5, sticky=tk.N)
 
-        #################### Clear the metadata ####################              
-        def clear_metadata(self):
-            # Clear all the combobox and the entry
-            self.selected_dose.set('')
-            self.selected_group.set('')
-            self.selected_timepoint.set('')
-            self.selected_timepoint1.set('')
-            self.cal.delete(0, tk.END)
-            self.time_entry.delete(0, tk.END)
+        # #################### Clear the metadata ####################              
+        # def clear_metadata(self):
+        #     # Clear all the combobox and the entry
+        #     self.selected_dose.set('')
+        #     self.selected_group.set('')
+        #     self.selected_timepoint.set('')
+        #     self.selected_timepoint1.set('')
+        #     self.cal.delete(0, tk.END)
+        #     self.time_entry.delete(0, tk.END)
 
-            state = self.entries_value_ID[1]['state']
-            # Set empty string in all the entries
-            for i in range(0, len(self.entries_variable_CV)):
-                    self.entries_value_CV[i]['state'] = tk.NORMAL
-                    self.entries_value_CV[i].delete(0, tk.END)
-                    self.entries_value_CV[i]['state'] = state
+        #     state = self.entries_value_ID[1]['state']
+        #     # Set empty string in all the entries
+        #     for i in range(0, len(self.entries_variable_CV)):
+        #             self.entries_value_CV[i]['state'] = tk.NORMAL
+        #             self.entries_value_CV[i].delete(0, tk.END)
+        #             self.entries_value_CV[i]['state'] = state
 
-        #################### Save all the metadata ####################
-        def save_metadata(self):
-            tmp_global_path = str(self.information_folder) + "\\" + self.project_name + '_' + 'Custom_Variables.xlsx'
-            try:
-                df = pandas.DataFrame.from_dict(self.results_dict, orient='index')
-                writer = pandas.ExcelWriter(tmp_global_path.replace('\\', '/'), engine='xlsxwriter')
-                df.to_excel(writer, sheet_name='Sheet1')
-                writer.save()
-                messagebox.showinfo("XNAT-PIC", "File saved successfully")
-            except Exception as e: 
-                    messagebox.showerror("XNAT-PIC", "Save failed: " + str(e))  
-                    raise
+        # #################### Save all the metadata ####################
+        # def save_metadata(self):
+        #     tmp_global_path = str(self.information_folder) + "\\" + self.project_name + '_' + 'Custom_Variables.xlsx'
+        #     try:
+        #         df = pandas.DataFrame.from_dict(self.results_dict, orient='index')
+        #         writer = pandas.ExcelWriter(tmp_global_path.replace('\\', '/'), engine='xlsxwriter')
+        #         df.to_excel(writer, sheet_name='Sheet1')
+        #         writer.save()
+        #         messagebox.showinfo("XNAT-PIC", "File saved successfully")
+        #     except Exception as e: 
+        #             messagebox.showerror("XNAT-PIC", "Save failed: " + str(e))  
+        #             raise
             
-        #################### Exit the metadata ####################
-        def exit_metadata(self, master):
-            result = messagebox.askquestion("Exit", "Do you want to exit?", icon='warning')
-            if result == 'yes':
-                destroy_widgets([self.menu, self.notebook, self.label_frame_ID, self.label_frame_CV, self.modify_btn,
-                self.confirm_btn, self.multiple_confirm_btn, self.hscrollbar, self.my_xscrollbar, self.my_yscrollbar, self.my_listbox, self.canvas_notebook])
-                delete_widgets(master.my_canvas, [self.frame_title, self.name_selected_project])
+        # #################### Exit the metadata ####################
+        # def exit_metadata(self, master):
+        #     result = messagebox.askquestion("Exit", "Do you want to exit?", icon='warning')
+        #     if result == 'yes':
+        #         destroy_widgets([self.menu, self.notebook, self.label_frame_ID, self.label_frame_CV, self.modify_btn,
+        #         self.confirm_btn, self.multiple_confirm_btn, self.hscrollbar, self.my_xscrollbar, self.my_yscrollbar, self.my_listbox, self.canvas_notebook])
+        #         delete_widgets(master.my_canvas, [self.frame_title, self.name_selected_project])
 
-                xnat_pic_gui.choose_your_action(master)
+        #         xnat_pic_gui.choose_your_action(master)
     
     class XNATUploader():
 
