@@ -262,16 +262,11 @@ class xnat_pic_gui():
     # Choose to upload files, fill in the info, convert files, process images
     def choose_your_action(self):
         
-        # if not 2 in self.my_canvas.find_all():
-        #     self.img2 = self.my_canvas.create_image(int(self.my_width/5 + ((4*self.my_width/5)/2)), int(self.my_height*10/100), 
-        #                                         anchor=tk.CENTER,im=self.logo)
+        if self.logo.label.winfo_exists() == 0:
+            self.logo.label= ttk.Label(self.frame, image=self.logo)
+            self.logo.label.place(relx=0.3, rely=0, anchor=tk.NW, relheight=0.3, relwidth=0.8)
 
         # Action buttons           
-        # Positions for action button parametric with respect to the size of the canvas
-        x_btn = int(self.my_width/5)
-        y_btn = int(self.my_height)
-        width_btn = int(self.my_width/5)
-
         # Convert files Bruker2DICOM
         self.convert_btn = ttk.Button(self.frame, text="DICOM Converter",
                                     command=partial(self.bruker2dicom_conversion, self), cursor=CURSOR_HAND)
@@ -279,7 +274,7 @@ class xnat_pic_gui():
         Hovertip(self.convert_btn,'Convert images from Bruker ParaVision format to DICOM standard')
         
         # Fill in the info
-        self.info_btn = ttk.Button(self.frame, text="Project Data", style="TButton",
+        self.info_btn = ttk.Button(self.frame, text="Project Data", 
                                     command=partial(self.metadata, self), cursor=CURSOR_HAND)
         self.info_btn.place(relx=0.6, rely=0.6, anchor=tk.CENTER, relwidth=0.2)
         Hovertip(self.info_btn,'Fill in the information about the acquisition')
@@ -287,7 +282,7 @@ class xnat_pic_gui():
         # Upload files
         def upload_callback(*args):
             self.XNATUploader(self)
-        self.upload_btn = ttk.Button(self.frame, text="Uploader", style="TButton",
+        self.upload_btn = ttk.Button(self.frame, text="Uploader",
                                         command=upload_callback, cursor=CURSOR_HAND)
         self.upload_btn.place(relx=0.6, rely=0.7, anchor=tk.CENTER, relwidth=0.2)
         Hovertip(self.upload_btn,'Upload DICOM images to XNAT')
@@ -296,8 +291,9 @@ class xnat_pic_gui():
         def close_window(*args):
             self.root.destroy()
         self.close_btn = ttk.Button(self.frame, text="Quit", command=close_window,
-                                        cursor=CURSOR_HAND,)
-        self.my_canvas.create_window(5*x_btn -30, y_btn*0.85, anchor=tk.NE, window=self.close_btn)
+                                        cursor=CURSOR_HAND)
+        self.close_btn.place(relx=0.9, rely=0.9, anchor=tk.CENTER, relwidth=0.1)
+        
 
     class bruker2dicom_conversion():
         
@@ -306,24 +302,18 @@ class xnat_pic_gui():
             self.params = {}
 
             try:
-                destroy_widgets([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn])
-                master.my_canvas.delete(master.img2)
+                destroy_widgets([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn, master.logo.label])
             except:
                 pass
 
             # Create new frame
-            x_btn = int(master.my_width/5)
-            x_btn_init = int(x_btn + x_btn/3)
-            y_btn = int(master.my_height)
-            width_btn = int(master.my_width/5)
-
             # Frame Title
-            self.frame_title = master.my_canvas.create_text(3*x_btn, int(y_btn*0.1), anchor=tk.N, fill='black', 
-                                        font=("Ink Free", 36, "bold"), text="XNAT-PIC Converter")
+            self.frame_title = ttk.Label(master.frame, text="XNAT-PIC Converter")
+            self.frame_title.place(relx=0.2, rely=0, anchor=tk.NW, relwidth=0.2)
 
             # Label Frame for Select Converter
-            self.conv_selection = ttk.LabelFrame(master.my_canvas, text="Converter Selection")
-            master.my_canvas.create_window(x_btn_init, int(y_btn*0.2), anchor=tk.NW, window=self.conv_selection)
+            self.conv_selection = ttk.LabelFrame(master.frame, text="Converter Selection")
+            self.conv_selection.place(relx=0.25, rely=0.2, anchor=tk.NW, relwidth=0.75)
 
             self.conv_flag = tk.IntVar()
             self.folder_to_convert = tk.StringVar()
@@ -374,9 +364,8 @@ class xnat_pic_gui():
             Hovertip(self.exp_conv_btn, "Convert an experiment from Bruker format to DICOM standard")
 
             # Label Frame for Checkbuttons
-            self.label_frame_checkbtn = ttk.LabelFrame(master.my_canvas, text="Options")
-            master.my_canvas.create_window(5*x_btn - x_btn/3, int(y_btn*0.2), anchor=tk.NE, window=self.label_frame_checkbtn)
-
+            self.label_frame_checkbtn = ttk.LabelFrame(master.frame, text="Options")
+            self.label_frame_checkbtn.place(relx=0.8, rely=0.3, anchor=tk.CENTER, relwidth=0.1)
             # Overwrite button
             self.overwrite_flag = tk.IntVar()
             self.btn_overwrite = ttk.Checkbutton(self.label_frame_checkbtn, text="Overwrite existing folders",                               
@@ -471,8 +460,8 @@ class xnat_pic_gui():
                     self.tree_to_convert.set(0, column="#2", value=str(round(total_weight/1024, 2)) + "GB")
             
             # Treeview Label Frame pre_convertion
-            self.tree_labelframe = ttk.LabelFrame(master.my_canvas, text="Folder to Convert")
-            master.my_canvas.create_window(x_btn_init, y_btn*0.3, anchor=tk.NW, window=self.tree_labelframe)
+            self.tree_labelframe = ttk.LabelFrame(master.frame, text="Folder to Convert")
+            self.tree_labelframe.place(relx=0.25, rely=0.35, anchor=tk.NW, relwidth=0.3)
 
             # Clear Tree buttons
             def clear_tree(*args):
@@ -598,8 +587,8 @@ class xnat_pic_gui():
                     enable_buttons([self.prj_conv_btn, self.sbj_conv_btn, self.exp_conv_btn])
 
             # Treeview Label Frame post_convertion
-            self.tree_labelframe_post = ttk.LabelFrame(master.my_canvas, text="Converted Folder")
-            master.my_canvas.create_window(3*x_btn, y_btn*0.3, anchor=tk.NW, window=self.tree_labelframe_post)
+            self.tree_labelframe_post = ttk.LabelFrame(master.frame, text="Converted Folder")
+            self.tree_labelframe_post.place(relx=0.6, rely=0.35, anchor=tk.NW, relwidth=0.3)
 
             self.clear_tree_btn_post = ttk.Button(self.tree_labelframe_post, image=master.logo_clear,
                                     cursor=CURSOR_HAND, command=clear_tree, style="WithoutBack.TButton")
@@ -629,15 +618,14 @@ class xnat_pic_gui():
                 if result == 'yes':
                     # Destroy all the existent widgets (Button, Checkbutton, ...)
                     destroy_widgets([self.conv_selection, self.exit_btn, self.label_frame_checkbtn, self.next_btn, 
-                                    self.tree_labelframe, self.tree_labelframe_post])
-                    delete_widgets(master.my_canvas, [self.frame_title])
+                                    self.tree_labelframe, self.tree_labelframe_post, self.frame_title])
                     # Restore the main frame
                     xnat_pic_gui.choose_your_action(master)
 
-            self.exit_btn = ttk.Button(master.my_canvas, cursor=CURSOR_HAND,
+            self.exit_btn = ttk.Button(master.frame, cursor=CURSOR_HAND,
                                      text="Back", command=exit_converter)
             # self.exit_btn.configure(command=exit_converter)
-            master.my_canvas.create_window(x_btn + 30, y_btn*0.1, anchor=tk.NW, window=self.exit_btn)
+            self.exit_btn.place(relx=0.2, rely=0.9, anchor=tk.NW, relwidth=0.1)
 
             # NEXT Button
             def next_btn_handler(*args):
@@ -658,9 +646,9 @@ class xnat_pic_gui():
                 else:
                     self.converted_folder.set('')
 
-            self.next_btn = ttk.Button(master.my_canvas, text="Next", cursor=CURSOR_HAND, command=next_btn_handler,
+            self.next_btn = ttk.Button(master.frame, text="Next", cursor=CURSOR_HAND, command=next_btn_handler,
                                     state='disabled')
-            master.my_canvas.create_window(5*x_btn - 30, y_btn*0.1, anchor=tk.NE, window=self.next_btn)
+            self.next_btn.place(relx=0.8, rely=0.9, anchor=tk.NW, relwidth=0.1)
             
         def prj_convertion(self, master):
 
@@ -1019,15 +1007,11 @@ class xnat_pic_gui():
                 self.results_dict.update(tmp_dict)
 
             #################### Update the frame ####################
-            destroy_widgets([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn])
-            master.my_canvas.delete(master.img2)
-            x_btn = int(master.my_width/5)
-            y_btn = int(master.my_height)
+            destroy_widgets([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn, master.logo.label])
            
             # Frame Title
-            self.frame_title = master.my_canvas.create_text(3*x_btn, int(y_btn*0.05), anchor=tk.CENTER, fill='black', font=("Ink Free", 36, "bold", "underline"),
-                                         text="XNAT-PIC Project Data")
-            
+            self.frame_title = ttk.Label(master.frame, text="XNAT-PIC Project Data")
+            self.frame_title.place(relx=0.2, rely=0, anchor=tk.NW, relwidth=0.2)
             #################### Menu ###########################
             self.menu = ttk.Menu(master.root)
             file_menu = ttk.Menu(self.menu, tearoff=0)
@@ -1046,56 +1030,45 @@ class xnat_pic_gui():
 
             #################### Folder list #################### 
             ### Selected folder label
-            x_folder_list = int(master.my_width*23/100)
-            self.name_selected_project = master.my_canvas.create_text(3*x_btn, int(y_btn*0.11), anchor=tk.CENTER, fill='black', font=("Ink Free", 22),
-                                         text='Selected Project: ' + self.project_name)
-            
-            y_folder_list1 = int(master.my_height*15/100)
-            h_notebook = int(master.my_height*52/100)
-            w_notebook = int(master.my_width*20.5/100)
+            self.name_selected_project = ttk.Label(master.frame, text='Selected Project: ' + self.project_name)
+            self.name_selected_project.place(relx=0.2, rely=0.1, anchor=tk.NW, relwidth=0.2)
 
             ### Tab Notebook
-            self.canvas_notebook = tk.Canvas(master.my_canvas, borderwidth = 0, highlightbackground="white")
-            master.my_canvas.create_window(x_folder_list, y_folder_list1, width = w_notebook, height = h_notebook, anchor = tk.NW, window=self.canvas_notebook)
+            self.canvas_notebook = tk.Canvas(master.frame, borderwidth = 0, highlightbackground="white")
+            self.canvas_notebook.place(relx=0.2, rely=0.2, anchor=tk.NW, relwidth=0.2)
             
             self.frame_nb = tk.Frame(self.canvas_notebook)
             self.canvas_notebook.create_window((0,0), window=self.frame_nb, anchor="nw", tags="frame")
 
             # Create an object of horizontal scrollbar to scroll tab
             self.hscrollbar = tk.Scrollbar(master.root, orient="horizontal", command=self.canvas_notebook.xview)
-            y_scrollbar = int(master.my_height*70/100)
-            x_scrollbar = int(master.my_width*32/100)
-            master.my_canvas.create_window(x_scrollbar, y_scrollbar, anchor = tk.NW, window=self.hscrollbar)
+            self.hscrollbar.place(relx=0.2, rely=0.8, anchor=tk.NW, relwidth=0.2)
 
             self.notebook = ttk.Notebook(self.frame_nb) 
-            self.notebook.config(width = w_notebook, height = h_notebook)
+            self.notebook.config(width = 10, height = 10)
             self.notebook.pack()
             
             ### Tab Content is a listbox
-            self.my_listbox = tk.Listbox(master.my_canvas, background = LIGHT_GREY, borderwidth=2, highlightbackground = "#008ad7", selectbackground = AZURE, relief=tk.FLAT, font=SMALL_FONT_3, selectmode=SINGLE, takefocus = 0)
-            x_listbox = int(master.my_width*23.5/100)
-            y_listbox = int(master.my_height*19/100)
-            h_listbox = int(master.my_height*47/100)
-            w_listbox = int(master.my_width*19.5/100)
-            master.my_canvas.create_window(x_listbox, y_listbox, width = w_listbox, height = h_listbox, anchor = tk.NW, window=self.my_listbox)
-            
-            # # Yscrollbar for listbox
-            self.my_yscrollbar = ttk.Scrollbar(master.my_canvas, orient="vertical")
-            self.my_listbox.config(yscrollcommand = self.my_yscrollbar.set)
-            self.my_yscrollbar.config(command = self.my_listbox.yview)
-            x_my_yscrollbar = int(master.my_width*22.2/100)
-            y_my_yscrollbar = int(master.my_height*19.1/100)
-            h_yscrollbar = int(master.my_height*47.8/100)
-            master.my_canvas.create_window(x_my_yscrollbar, y_my_yscrollbar, height = h_yscrollbar, anchor = tk.NW, window=self.my_yscrollbar)
+            self.my_listbox = tk.Listbox(master.frame, background = LIGHT_GREY, borderwidth=2, highlightbackground = "#008ad7", selectbackground = AZURE, relief=tk.FLAT, font=SMALL_FONT_3, selectmode=SINGLE, takefocus = 0)
+            self.my_listbox.place(relx=0.2, rely=0.6, anchor=tk.NW, relwidth=0.2)
 
-            # Xscrollbar for listbox
-            self.my_xscrollbar = ttk.Scrollbar(master.my_canvas, orient="horizontal")
-            self.my_listbox.config(xscrollcommand = self.my_xscrollbar.set)
-            self.my_xscrollbar.config(command = self.my_listbox.xview)
-            x_my_xscrollbar = int(master.my_width*23.1/100)
-            y_my_xscrollbar = int(master.my_height*68/100)
-            w_my_xscrollbar = int(master.my_width*20.4/100)
-            master.my_canvas.create_window(x_my_xscrollbar, y_my_xscrollbar, width = w_my_xscrollbar, anchor = tk.NW, window=self.my_xscrollbar)
+            # # # Yscrollbar for listbox
+            # self.my_yscrollbar = ttk.Scrollbar(master.my_canvas, orient="vertical")
+            # self.my_listbox.config(yscrollcommand = self.my_yscrollbar.set)
+            # self.my_yscrollbar.config(command = self.my_listbox.yview)
+            # x_my_yscrollbar = int(master.my_width*22.2/100)
+            # y_my_yscrollbar = int(master.my_height*19.1/100)
+            # h_yscrollbar = int(master.my_height*47.8/100)
+            # master.my_canvas.create_window(x_my_yscrollbar, y_my_yscrollbar, height = h_yscrollbar, anchor = tk.NW, window=self.my_yscrollbar)
+
+            # # Xscrollbar for listbox
+            # self.my_xscrollbar = ttk.Scrollbar(master.my_canvas, orient="horizontal")
+            # self.my_listbox.config(xscrollcommand = self.my_xscrollbar.set)
+            # self.my_xscrollbar.config(command = self.my_listbox.xview)
+            # x_my_xscrollbar = int(master.my_width*23.1/100)
+            # y_my_xscrollbar = int(master.my_height*68/100)
+            # w_my_xscrollbar = int(master.my_width*20.4/100)
+            # master.my_canvas.create_window(x_my_xscrollbar, y_my_xscrollbar, width = w_my_xscrollbar, anchor = tk.NW, window=self.my_xscrollbar)
             
             # Sorts the tabs first by length and then alphabetically
             for key in sorted(self.todos, key=len):

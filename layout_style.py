@@ -32,7 +32,8 @@ class MyStyle():
     def __init__(self):
     
         self.style = ttk.Style('cerculean')
-
+        
+        
         self.style.configure('TButton', font = SMALL_FONT)
         # self.style.configure("TLabel", background=LIGHT_GREY, foreground="black", font=SMALL_FONT_2)
         # self.style.configure("Popup.TLabel", background=WHITE, foreground="black", font=SMALL_FONT_2)
