@@ -235,9 +235,9 @@ class xnat_pic_gui():
     # Choose to upload files, fill in the info, convert files, process images
     def choose_your_action(self):
         
-        if self.logo.label.winfo_exists() == 0:
-            self.logo.label= ttk.Label(self.frame, image=self.logo)
-            self.logo.label.place(relx=0.3, rely=0, anchor=tk.NW, relheight=0.3, relwidth=0.8)
+        if self.xnat_pic_logo.label.winfo_exists() == 0:
+            self.xnat_pic_logo.label= ttk.Label(self.frame, image=self.xnat_pic_logo)
+            self.xnat_pic_logo.label.place(relx=0.3, rely=0, anchor=tk.NW, relheight=0.3, relwidth=0.8)
 
         # Action buttons           
         # Convert files Bruker2DICOM
@@ -275,7 +275,7 @@ class xnat_pic_gui():
             self.params = {}
 
             try:
-                destroy_widgets([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn, master.logo.label])
+                destroy_widgets([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn, master.xnat_pic_logo.label])
             except:
                 pass
 
@@ -286,7 +286,7 @@ class xnat_pic_gui():
 
             # Label Frame for Select Converter
             self.conv_selection = ttk.LabelFrame(master.frame, text="Converter Selection")
-            self.conv_selection.place(relx=0.25, rely=0.2, anchor=tk.NW, relwidth=0.75)
+            self.conv_selection.place(relx=0.25, rely=0.2, anchor=tk.NW, relwidth=0.6)
 
             self.conv_flag = tk.IntVar()
             self.folder_to_convert = tk.StringVar()
@@ -338,7 +338,7 @@ class xnat_pic_gui():
 
             # Label Frame for Checkbuttons
             self.label_frame_checkbtn = ttk.LabelFrame(master.frame, text="Options")
-            self.label_frame_checkbtn.place(relx=0.8, rely=0.3, anchor=tk.CENTER, relwidth=0.1)
+            self.label_frame_checkbtn.place(relx=0.8, rely=0.2, anchor=tk.CENTER, relwidth=0.1)
             # Overwrite button
             self.overwrite_flag = tk.IntVar()
             self.btn_overwrite = ttk.Checkbutton(self.label_frame_checkbtn, text="Overwrite existing folders",                               
@@ -980,7 +980,7 @@ class xnat_pic_gui():
                 self.results_dict.update(tmp_dict)
 
             #################### Update the frame ####################
-            destroy_widgets([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn, master.logo.label])
+            destroy_widgets([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn, master.xnat_pic_logo.label])
            
             # Frame Title
             self.frame_title = ttk.Label(master.frame, text="XNAT-PIC Project Data")
@@ -1007,23 +1007,22 @@ class xnat_pic_gui():
             self.name_selected_project.place(relx=0.2, rely=0.1, anchor=tk.NW, relwidth=0.2)
 
             ### Tab Notebook
-            self.canvas_notebook = tk.Canvas(master.frame, borderwidth = 0, highlightbackground="white")
-            self.canvas_notebook.place(relx=0.2, rely=0.2, anchor=tk.NW, relwidth=0.2)
+            self.canvas_notebook = tk.Canvas(master.frame, bg = 'green')
+            self.canvas_notebook.place(relx=0.25, rely=0.2, anchor=tk.NW, relwidth=0.2, relheight=0.5)
             
-            self.frame_nb = tk.Frame(self.canvas_notebook)
-            self.canvas_notebook.create_window((0,0), window=self.frame_nb, anchor="nw", tags="frame")
+            # self.frame_nb = tk.Frame(self.canvas_notebook, bg = 'red')
+            # self.canvas_notebook.create_window((0,0), window=self.frame_nb, anchor="nw", tags="frame")
 
             # Create an object of horizontal scrollbar to scroll tab
-            self.hscrollbar = tk.Scrollbar(master.root, orient="horizontal", command=self.canvas_notebook.xview)
-            self.hscrollbar.place(relx=0.2, rely=0.8, anchor=tk.NW, relwidth=0.2)
+            # self.hscrollbar = tk.Scrollbar(master.frame, orient="horizontal", command=self.canvas_notebook.xview)
+            # self.hscrollbar.place(relx=0.2, rely=0.8, anchor=tk.NW, relwidth=0.2)
 
-            self.notebook = ttk.Notebook(self.frame_nb) 
-            self.notebook.config(width = 10, height = 10)
-            self.notebook.pack()
+            # self.notebook = ttk.Notebook(self.frame_nb) 
+            # self.notebook.pack(fill=tk.BOTH, expand=1)
             
             ### Tab Content is a listbox
-            self.my_listbox = tk.Listbox(master.frame, background = LIGHT_GREY, borderwidth=2, highlightbackground = "#008ad7", selectbackground = AZURE, relief=tk.FLAT, font=SMALL_FONT_3, selectmode=SINGLE, takefocus = 0)
-            self.my_listbox.place(relx=0.2, rely=0.6, anchor=tk.NW, relwidth=0.2)
+            # self.my_listbox = tk.Listbox(master.frame, background = LIGHT_GREY, borderwidth=2, highlightbackground = "#008ad7", selectbackground = AZURE, relief=tk.FLAT, font=SMALL_FONT_3, selectmode=SINGLE, takefocus = 0)
+            # self.my_listbox.place(relx=0.25, rely=0.6, anchor=tk.NW, relwidth=0.2, relheight=0.8)
 
             # # # Yscrollbar for listbox
             # self.my_yscrollbar = ttk.Scrollbar(master.my_canvas, orient="vertical")
