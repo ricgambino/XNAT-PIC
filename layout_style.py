@@ -19,6 +19,7 @@ TEXT_LBL_COLOR = "black"
 BG_BTN_COLOR = "#E5EAF0"
 BG_LBL_COLOR = "black"
 DISABLE_LBL_COLOR = '#D3D3D3'
+TITLE_FONT = ("Ink Free", 36, "bold")
 LARGE_FONT = ("Calibri", 22, "bold")
 SMALL_FONT = ("Calibri", 16, "bold")
 SMALL_FONT_2 = ("Calibri", 10)
@@ -29,13 +30,12 @@ BORDERWIDTH = 3
 
 class MyStyle():
 
-    def __init__(self):
+    def __init__(self, style):
     
-        self.style = ttk.Style('cerculean')
-        
+        self.style = ttk.Style(style)
         
         self.style.configure('TButton', font = SMALL_FONT)
-        # self.style.configure("TLabel", background=LIGHT_GREY, foreground="black", font=SMALL_FONT_2)
+        self.style.configure("Title.TLabel", background=LIGHT_GREY, foreground="black", font=TITLE_FONT)
         # self.style.configure("Popup.TLabel", background=WHITE, foreground="black", font=SMALL_FONT_2)
         # self.style.configure("Attach.TLabel", background=WHITE, foreground="blue", font=("Calibri", 8, "underline"))
 
