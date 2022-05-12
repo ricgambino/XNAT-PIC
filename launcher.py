@@ -9,6 +9,7 @@ from tkinter.font import Font
 from turtle import bgcolor, width
 from unicodedata import name
 from unittest import result
+from click import option
 # from PIL import Image, ImageTk
 #from tkinter import ttk
 import ttkbootstrap as ttk
@@ -142,7 +143,9 @@ class xnat_pic_gui():
         self.root.minsize(width=1000, height=500) # Set the minimum size of the working window
         # Define the style of the root widget
         # self.style = ttk.Style('cerculean')
-        self.style = MyStyle('cerculean').get_style()
+        self.style_label = tk.StringVar()
+        self.style_label.set('cerculean')
+        self.style = MyStyle(self.style_label.get()).get_style()
         # Get the screen resolution
         if (platform.system()=='Linux'):
             cmd_show_screen_resolution = subprocess.Popen("xrandr --query | grep -oG 'primary [0-9]*x[0-9]*'",\
@@ -158,11 +161,29 @@ class xnat_pic_gui():
         fileMenu = ttk.Menu(self.toolbar_menu, tearoff=0)
         fileMenu.add_separator()
         fileMenu.add_command(label="Exit", command=lambda: self.root.destroy())
+        def change_theme(*args):
+            self.style = MyStyle(self.style_label.get()).get_style()
+            self.frame.update()
 
+        optionMenu = ttk.Menu(self.toolbar_menu, tearoff=0)
+        themes = ["lumen", "pulse", "yeti", "cerculean", "darkly", "solar", "superhero", "cyborg"]
+        themeMenu = ttk.Menu(optionMenu, tearoff=0)
+        themeMenu.add_command(label=themes[0], command=lambda: self.style_label.set(themes[0]))
+        themeMenu.add_command(label=themes[1], command=lambda: self.style_label.set(themes[1]))
+        themeMenu.add_command(label=themes[2], command=lambda: self.style_label.set(themes[2]))
+        themeMenu.add_command(label=themes[3], command=lambda: self.style_label.set(themes[3]))
+        themeMenu.add_command(label=themes[4], command=lambda: self.style_label.set(themes[4]))
+        themeMenu.add_command(label=themes[5], command=lambda: self.style_label.set(themes[5]))
+        themeMenu.add_command(label=themes[6], command=lambda: self.style_label.set(themes[6]))
+        themeMenu.add_command(label=themes[7], command=lambda: self.style_label.set(themes[7]))
+
+        optionMenu.add_cascade(label="Themes", menu=themeMenu)
+        
         self.toolbar_menu.add_cascade(label="File", menu=fileMenu)
         self.toolbar_menu.add_cascade(label="Edit")
-        self.toolbar_menu.add_cascade(label="Options")
+        self.toolbar_menu.add_cascade(label="Options", menu=optionMenu)
         self.root.config(menu=self.toolbar_menu)
+        self.style_label.trace('w', change_theme)
 
         # Adjust size based on screen resolution
         self.width = self.root.screenwidth
@@ -180,43 +201,37 @@ class xnat_pic_gui():
         self.my_height = int(self.height*PERCENTAGE_SCREEN)
 
         def resize_window(*args):
-            if self.root.winfo_width() != self.width or self.root.winfo_height() != self.height:
-                # Get the current window size
-                self.width = self.root.winfo_width()
-                self.height = self.root.winfo_height()
-                # Update the working area size
-                self.my_width = int(self.width*PERCENTAGE_SCREEN)
-                self.my_height = int(self.height*PERCENTAGE_SCREEN)
-
-                # Load Side Logo Panel
-                self.panel_img = open_image(PATH_IMAGE + "logo-panel.png", self.my_width/5, self.my_height)
-                self.panel_img.label = ttk.Label(self.frame, image=self.panel_img)
-                self.panel_img.label.place(x=0, y=0, anchor=tk.NW, relheight=1, relwidth=0.2)
-
-                # Load XNAT-PIC Logo
-                self.xnat_pic_logo = open_image(PATH_IMAGE + "XNAT-PIC-logo.png", 3*self.my_width/5, self.my_height/3)
-                self.xnat_pic_logo.label= ttk.Label(self.frame, image=self.xnat_pic_logo)
-                self.xnat_pic_logo.label.place(relx=0.3, rely=0, anchor=tk.NW, relheight=0.3, relwidth=0.8)
-
-                # Load Accept icon
-                self.logo_accept = open_image(PATH_IMAGE + "Done.png", 15, 15)
-
-                # Load Delete icon
-                self.logo_delete = open_image(PATH_IMAGE + "Reject.png", 15, 15)
-
-                # Load Edit icon
-                self.logo_edit = open_image(PATH_IMAGE + "Edit.png", 15, 15)
-
-                # Load Clear icon
-                self.logo_clear = open_image(PATH_IMAGE + "delete.png", 15, 15)
-
-                # Change font according to window size
-                if self.width > 1700:
-                    self.style.configure('TButton', font = LARGE_FONT)
-                elif self.width > 1000 and self.width < 1700:
-                    self.style.configure('TButton', font = SMALL_FONT)
-                elif self.width < 1000:
-                    self.style.configure('TButton', font = SMALL_FONT_2)
+            # Get the current window size
+            self.width = self.root.winfo_width()
+            self.height = self.root.winfo_height()
+            # Update the working area size
+            self.my_width = int(self.width*PERCENTAGE_SCREEN)
+            self.my_height = int(self.height*PERCENTAGE_SCREEN)
+            # Load Side Logo Panel
+            self.panel_img = open_image(PATH_IMAGE + "logo-panel.png", self.my_width/5, self.my_height)
+            self.panel_img.label = ttk.Label(self.frame, image=self.panel_img)
+            self.panel_img.label.place(x=0, y=0, anchor=tk.NW, relheight=1, relwidth=0.2)
+            # Load XNAT-PIC Logo
+            self.xnat_pic_logo = open_image(PATH_IMAGE + "XNAT-PIC-logo.png", 3*self.my_width/5, self.my_height/3)
+            self.xnat_pic_logo.label= ttk.Label(self.frame, image=self.xnat_pic_logo)
+            self.xnat_pic_logo.label.place(relx=0.3, rely=0, anchor=tk.NW, relheight=0.3, relwidth=0.8)
+            # Load Accept icon
+            self.logo_accept = open_image(PATH_IMAGE + "Done.png", 15, 15)
+            # Load Delete icon
+            self.logo_delete = open_image(PATH_IMAGE + "Reject.png", 15, 15)
+            # Load Edit icon
+            self.logo_edit = open_image(PATH_IMAGE + "Edit.png", 15, 15)
+            # Load Clear icon
+            self.logo_clear = open_image(PATH_IMAGE + "delete.png", 15, 15)
+            # Change font according to window size
+            if self.width > 1700:
+                self.style.configure('TButton', font = LARGE_FONT)
+            elif self.width > 1000 and self.width < 1700:
+                self.style.configure('TButton', font = SMALL_FONT)
+            elif self.width < 1000:
+                self.style.configure('TButton', font = SMALL_FONT_2)
+            # Update the frame widget
+            self.frame.update()
 
         # Enter button handler method
         def enter_handler(*args):
