@@ -198,11 +198,11 @@ class xnat_pic_gui():
 
             # XNAT-PIC Logo
             logo = Image.open(PATH_IMAGE + "XNAT-PIC-logo.png").convert("RGBA")
-            logo = logo.resize((int(2*self.my_width/5), int(self.my_height/3)), Image.ANTIALIAS)
+            logo = logo.resize((int(3*self.my_width/5), int(self.my_height/3)), Image.ANTIALIAS)
             self.logo = ImageTk.PhotoImage(logo)
             self.logo.label= ttk.Label(self.frame, image=self.logo)
             # self.logo.label.grid(row=0, column=1, sticky='ns')
-            self.logo.label.place(relx=0.6, rely=0, anchor=tk.N, relheight=0.3, relwidth=0.8)
+            self.logo.label.place(relx=0.3, rely=0, anchor=tk.NW, relheight=0.3, relwidth=0.8)
             
             # # Open the image for the logo
             # logo_info = Image.open(PATH_IMAGE + "info.png")
@@ -229,16 +229,32 @@ class xnat_pic_gui():
             logo_clear = logo_clear.resize((20, 20), Image.ANTIALIAS)
             self.logo_clear = ImageTk.PhotoImage(logo_clear)
 
+            if self.width > 1700:
+                self.style = ttk.Style('cerculean')
+                self.style.configure('TButton', font = LARGE_FONT)
+
+            elif self.width in range(400,425):
+                self.style = ttk.Style('cerculean')
+                self.style.configure('TButton', font = SMALL_FONT)
+
+            elif self.width > 600:
+                self.style = ttk.Style('cerculean')
+                self.style.configure('TButton', font = SMALL_FONT_2)
+
+
+
         # Button to enter
         def enter_handler(*args):
             self.enter_btn.destroy()
             xnat_pic_gui.choose_your_action(self)
-
+        
         self.enter_btn = ttk.Button(self.frame, text="ENTER",
-                                    command=enter_handler,
-                                    cursor=CURSOR_HAND, bootstyle="primary")
+                             command=enter_handler,
+                            cursor=CURSOR_HAND, bootstyle="primary")
         # self.enter_btn.grid(row=1, column=1, sticky=tk.N)
         self.enter_btn.place(relx=0.6, rely=0.6, anchor=tk.CENTER, relwidth=0.2)
+        
+
 
         self.frame.bind("<Configure>", resize_window)
         self.root.mainloop()
@@ -279,7 +295,7 @@ class xnat_pic_gui():
         # Close button
         def close_window(*args):
             self.root.destroy()
-        self.close_btn = ttk.Button(self.my_canvas, text="Quit", command=close_window,
+        self.close_btn = ttk.Button(self.frame, text="Quit", command=close_window,
                                         cursor=CURSOR_HAND,)
         self.my_canvas.create_window(5*x_btn -30, y_btn*0.85, anchor=tk.NE, window=self.close_btn)
 
