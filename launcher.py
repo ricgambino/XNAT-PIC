@@ -9,7 +9,7 @@ from tkinter.font import Font
 from turtle import bgcolor, width
 from unicodedata import name
 from unittest import result
-from PIL import Image, ImageTk
+# from PIL import Image, ImageTk
 #from tkinter import ttk
 import ttkbootstrap as ttk
 from ttkbootstrap import Style
@@ -138,18 +138,16 @@ class xnat_pic_gui():
     def __init__(self):
                    
         self.root = tk.Tk()
-        self.root.state('zoomed')
-    
-        self.style = MyStyle().get_style
-        ### GET PRIMARY SCREEN RESOLUTION
-        ### MADE FOR MULTISCREEN ENVIRONMENTS
+        self.root.state('zoomed') # The root widget is adapted to the screen size
+        self.root.minsize(width=1000, height=500) # Set the minimum size of the working window
+        # Define the style of the root widget
+        self.style = ttk.Style('cerculean')
+        # Get the screen resolution
         if (platform.system()=='Linux'):
             cmd_show_screen_resolution = subprocess.Popen("xrandr --query | grep -oG 'primary [0-9]*x[0-9]*'",\
                                                           stdout=subprocess.PIPE, shell=True)
             screen_output =str(cmd_show_screen_resolution.communicate()).split()[1]
             self.root.screenwidth, self.root.screenheight = re.findall("[0-9]+",screen_output)
-        ###
-        ###
         else :
             self.root.screenwidth=self.root.winfo_screenwidth()
             self.root.screenheight=self.root.winfo_screenheight()
@@ -173,89 +171,63 @@ class xnat_pic_gui():
         # If you want the logo 
         self.root.iconbitmap(PATH_IMAGE + "logo3.ico")
 
-        self.frame = ttk.Frame()
+        # Initialize the Frame widget which parent is the root widget
+        self.frame = ttk.Frame(self.root)
         self.frame.pack(fill='both', expand=1)
-        # self.frame.columnconfigure(0, weight=1)
-        # self.frame.columnconfigure(1, weight=10)
-
+        # Initialize the working area size
         self.my_width = int(self.width*PERCENTAGE_SCREEN)
         self.my_height = int(self.height*PERCENTAGE_SCREEN)
 
         def resize_window(*args):
-            self.width = self.root.winfo_width()
-            self.height = self.root.winfo_height()
-            
-            self.my_width = int(self.width*PERCENTAGE_SCREEN)
-            self.my_height = int(self.height*PERCENTAGE_SCREEN)
+            if self.root.winfo_width() != self.width or self.root.winfo_height() != self.height:
+                # Get the current window size
+                self.width = self.root.winfo_width()
+                self.height = self.root.winfo_height()
+                # Update the working area size
+                self.my_width = int(self.width*PERCENTAGE_SCREEN)
+                self.my_height = int(self.height*PERCENTAGE_SCREEN)
 
-            # Logo Panel
-            panel = Image.open(PATH_IMAGE + "logo-panel.png").convert("RGBA")
-            panel = panel.resize((int(self.my_width/5), self.my_height), Image.ANTIALIAS)
-            self.panel_img = ImageTk.PhotoImage(panel)
-            self.panel_img.label = ttk.Label(self.frame, image=self.panel_img)
-            # self.panel_img.label.grid(row=0, column=0, sticky=tk.NSEW, rowspan=2)
-            self.panel_img.label.place(x=0, y=0, anchor=tk.NW, relheight=1, relwidth=0.2)
+                # Load Side Logo Panel
+                self.panel_img = open_image(PATH_IMAGE + "logo-panel.png", self.my_width/5, self.my_height)
+                self.panel_img.label = ttk.Label(self.frame, image=self.panel_img)
+                self.panel_img.label.place(x=0, y=0, anchor=tk.NW, relheight=1, relwidth=0.2)
 
-            # XNAT-PIC Logo
-            logo = Image.open(PATH_IMAGE + "XNAT-PIC-logo.png").convert("RGBA")
-            logo = logo.resize((int(3*self.my_width/5), int(self.my_height/3)), Image.ANTIALIAS)
-            self.logo = ImageTk.PhotoImage(logo)
-            self.logo.label= ttk.Label(self.frame, image=self.logo)
-            # self.logo.label.grid(row=0, column=1, sticky='ns')
-            self.logo.label.place(relx=0.3, rely=0, anchor=tk.NW, relheight=0.3, relwidth=0.8)
-            
-            # # Open the image for the logo
-            # logo_info = Image.open(PATH_IMAGE + "info.png")
-            # self.logo_info = ImageTk.PhotoImage(logo_info)
-            width_logo, height_logo = 10, 10
+                # Load XNAT-PIC Logo
+                self.xnat_pic_logo = open_image(PATH_IMAGE + "XNAT-PIC-logo.png", 3*self.my_width/5, self.my_height/3)
+                self.xnat_pic_logo.label= ttk.Label(self.frame, image=self.xnat_pic_logo)
+                self.xnat_pic_logo.label.place(relx=0.3, rely=0, anchor=tk.NW, relheight=0.3, relwidth=0.8)
 
-            # Open the image for the accept icon
-            logo_accept = Image.open(PATH_IMAGE + "Done.png").convert("RGBA")
-            logo_accept = logo_accept.resize((15, 15), Image.ANTIALIAS)
-            self.logo_accept = ImageTk.PhotoImage(logo_accept)
+                # Load Accept icon
+                self.logo_accept = open_image(PATH_IMAGE + "Done.png", 15, 15)
 
-            # Open the image for the delete icon
-            logo_delete = Image.open(PATH_IMAGE + "Reject.png").convert("RGBA")
-            logo_delete = logo_delete.resize((15, 15), Image.ANTIALIAS)
-            self.logo_delete = ImageTk.PhotoImage(logo_delete)
+                # Load Delete icon
+                self.logo_delete = open_image(PATH_IMAGE + "Reject.png", 15, 15)
 
-            # Open the image for the edit icon
-            logo_edit = Image.open(PATH_IMAGE + "Edit.png").convert("RGBA")
-            logo_edit = logo_edit.resize((15, 15), Image.ANTIALIAS)
-            self.logo_edit = ImageTk.PhotoImage(logo_edit)
+                # Load Edit icon
+                self.logo_edit = open_image(PATH_IMAGE + "Edit.png", 15, 15)
 
-            # Open the image for clear icon
-            logo_clear = Image.open(PATH_IMAGE + "delete.png").convert("RGBA")
-            logo_clear = logo_clear.resize((20, 20), Image.ANTIALIAS)
-            self.logo_clear = ImageTk.PhotoImage(logo_clear)
+                # Load Clear icon
+                self.logo_clear = open_image(PATH_IMAGE + "delete.png", 15, 15)
 
-            if self.width > 1700:
-                self.style = ttk.Style('cerculean')
-                self.style.configure('TButton', font = LARGE_FONT)
+                # Change font according to window size
+                if self.width > 1700:
+                    self.style.configure('TButton', font = LARGE_FONT)
+                elif self.width > 1000 and self.width < 1700:
+                    self.style.configure('TButton', font = SMALL_FONT)
+                elif self.width < 1000:
+                    self.style.configure('TButton', font = SMALL_FONT_2)
 
-            elif self.width in range(400,425):
-                self.style = ttk.Style('cerculean')
-                self.style.configure('TButton', font = SMALL_FONT)
-
-            elif self.width > 600:
-                self.style = ttk.Style('cerculean')
-                self.style.configure('TButton', font = SMALL_FONT_2)
-
-
-
-        # Button to enter
+        # Enter button handler method
         def enter_handler(*args):
-            self.enter_btn.destroy()
+            self.enter_btn.destroy() # Destroy the enter button and keep the Frame alive
             xnat_pic_gui.choose_your_action(self)
-        
+        # Enter button widget
         self.enter_btn = ttk.Button(self.frame, text="ENTER",
                              command=enter_handler,
                             cursor=CURSOR_HAND, bootstyle="primary")
-        # self.enter_btn.grid(row=1, column=1, sticky=tk.N)
         self.enter_btn.place(relx=0.6, rely=0.6, anchor=tk.CENTER, relwidth=0.2)
         
-
-
+        # Call the resize_window method if the window size is changed by the user
         self.frame.bind("<Configure>", resize_window)
         self.root.mainloop()
             
