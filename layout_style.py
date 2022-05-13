@@ -20,6 +20,7 @@ BG_BTN_COLOR = "#E5EAF0"
 BG_LBL_COLOR = "black"
 DISABLE_LBL_COLOR = '#D3D3D3'
 TITLE_FONT = ("Ink Free", 36, "bold")
+UNDERTITLE_FONT = ("Ink Free", 24, "bold")
 LARGE_FONT = ("Calibri", 22, "bold")
 SMALL_FONT = ("Calibri", 16, "bold")
 SMALL_FONT_2 = ("Calibri", 10)
@@ -47,6 +48,7 @@ class MyStyle():
         # Configure Labels
         self.style.configure("Title.TLabel", background=WHITE, foreground="black", font=TITLE_FONT)
         self.style.configure("Popup.TLabel", background=WHITE, foreground="blue", font=ATTACHED_FONT)
+        self.style.configure("UnderTitle.TLabel", background=WHITE, foreground="black", font=UNDERTITLE_FONT)
 
         # Configure OptionMenus
         # self.style.configure("TMenubutton", background=WHITE, foreground="#4bb1ea")
