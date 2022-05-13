@@ -46,7 +46,6 @@ import pandas
 from layout_style import MyStyle
 import babel.numbers
 from multiprocessing import Process, freeze_support
-from ScrollableNotebook import *
 
 PATH_IMAGE = "images\\"
 #PATH_IMAGE = "lib\\images\\"
