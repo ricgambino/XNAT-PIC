@@ -131,8 +131,8 @@ class MyStyle():
         # self.style.configure("Metadata.TLabelframe", background=LIGHT_GREY, anchor=tk.CENTER, highlightbackground = AZURE, highlightcolor=LIGHT_GREY, borderwidth=3, relief='solid')
         # self.style.configure("Metadata.TLabelframe.Label", font=("Calibri", 12, 'bold'), background=LIGHT_GREY)
 
-        # self.style.configure("TNotebook", tabmargins = [2, 5, 2, 0], background = AZURE_DISABLED)
-        # self.style.configure("TNotebook.Tab", padding = [5, 1], background=LIGHT_GREY, font=SMALL_FONT_3, borderwidth = 1)
+        # self.style.configure("TNotebook", tabmargins = [2, 5, 2, 0], background = WHITE)
+        # self.style.configure("TNotebook.Tab", padding = [5, 1], background=LIGHT_GREY, borderwidth = 1)
         # self.style.map("TNotebook.Tab", background = [("selected", AZURE)], foreground = [("selected", LIGHT_GREY)], expand = [("selected", [1, 1, 1, 0])])
 
         # self.style.configure("Treeview", background=LIGHT_GREY, foreground="black", relief=tk.FLAT, anchor=tk.CENTER, font=SMALL_FONT_2,
