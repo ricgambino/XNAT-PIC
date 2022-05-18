@@ -57,6 +57,7 @@ class MyStyle():
         self.style.configure("Title.TLabel", background=WHITE, foreground="black", font=TITLE_FONT)
         self.style.configure("Popup.TLabel", background=WHITE, foreground=theme_colors[style]["colors"]["primary"], font=ATTACHED_FONT)
         self.style.configure("UnderTitle.TLabel", background=WHITE, foreground="black", font=UNDERTITLE_FONT)
+        self.style.configure("Error.TLabel", font=KEYWORD_FONT, foreground=theme_colors[style]["colors"]["danger"])
 
         # Configure OptionMenus
         self.style.configure("TMenubutton", background=WHITE, foreground=theme_colors[style]["colors"]["primary"],
@@ -69,7 +70,7 @@ class MyStyle():
                                         highlightthickness=[("active", 10)])
 
         # Configure Labelframes
-        self.style.configure("Hidden.TLabelframe", background=WHITE, foreground=WHITE, borderwidth=0)
+        self.style.configure("Hidden.TLabelframe", background=WHITE, foreground=WHITE, borderwidth=0, padding=0)
 
         # self.style.configure("Popup.TLabel", background=WHITE, foreground="black", font=SMALL_FONT_2)
         # self.style.configure("Attach.TLabel", background=WHITE, foreground="blue", font=("Calibri", 8, "underline"))
