@@ -1,9 +1,11 @@
+from pyparsing import White
 import ttkbootstrap as ttk
 from ttkbootstrap import Style
 from ttkbootstrap.constants import *
 import ttkbootstrap.themes.standard 
 import tkinter as tk
 from PIL import Image, ImageTk
+import json
 
 PATH_IMAGE = "images\\"
 PERCENTAGE_SCREEN = 1  # Defines the size of the canvas. If equal to 1 (100%) ,it takes the whole screen
@@ -25,10 +27,14 @@ LARGE_FONT = ("Calibri", 22, "bold")
 SMALL_FONT = ("Calibri", 16, "bold")
 SMALL_FONT_2 = ("Calibri", 10)
 SMALL_FONT_3 = ("Calibri", 12)
+KEYWORD_FONT = ("Calibri", 8)
 ATTACHED_FONT = ("Calibri", 8, "underline")
 CURSOR_HAND = "hand2"
 QUESTION_HAND = "question_arrow"
 BORDERWIDTH = 3
+
+with open("layout_colors.json", "r") as theme_file:
+    theme_colors = json.load(theme_file)
 
 class MyStyle():
 
@@ -44,20 +50,27 @@ class MyStyle():
         self.style.configure("Popup.TButton", padding=2, background=WHITE, foreground="black", borderwidth=0, font=SMALL_FONT)
         self.style.map("Popup.TButton", background=[('active', WHITE), ('disabled', WHITE)])
         self.style.configure("MainPopup.TButton", padding=2, font=SMALL_FONT, width=15)
+        self.style.configure("Keyword.TButton", font=KEYWORD_FONT, background=WHITE, foreground=theme_colors[style]["colors"]["primary"], borderwidth=1)
+        self.style.map("Keyword.TButton", background=[("active", WHITE)], foreground=[("active", theme_colors[style]["colors"]["primary"])])
 
         # Configure Labels
         self.style.configure("Title.TLabel", background=WHITE, foreground="black", font=TITLE_FONT)
-        self.style.configure("Popup.TLabel", background=WHITE, foreground="blue", font=ATTACHED_FONT)
+        self.style.configure("Popup.TLabel", background=WHITE, foreground=theme_colors[style]["colors"]["primary"], font=ATTACHED_FONT)
         self.style.configure("UnderTitle.TLabel", background=WHITE, foreground="black", font=UNDERTITLE_FONT)
 
         # Configure OptionMenus
-        # self.style.configure("TMenubutton", background=WHITE, foreground="#4bb1ea")
-        # self.style.map("TMenubutton", background=[('active', "#eceef1"), ('disabled', "#eceef1")])
+        self.style.configure("TMenubutton", background=WHITE, foreground=theme_colors[style]["colors"]["primary"],
+                                            arrowcolor=theme_colors[style]["colors"]["primary"])
+        self.style.map("TMenubutton", background=[('active', WHITE)])
 
         # Configure Entries
-        self.style.configure("TEntry", disabledbackground=LIGHT_GREY, font=SMALL_FONT)
-        self.style.map("TEntry", background=[('active', WHITE), ('disabled', LIGHT_GREY)], disabledbackground=[('active', LIGHT_GREY), ('disabled', LIGHT_GREY)])
-      
+        self.style.configure("TEntry", disabledbackground=LIGHT_GREY)
+        self.style.map("TEntry", background=[('active', WHITE), ('disabled', LIGHT_GREY)], disabledbackground=[('active', LIGHT_GREY), ('disabled', LIGHT_GREY)],
+                                        highlightthickness=[("active", 10)])
+
+        # Configure Labelframes
+        self.style.configure("Hidden.TLabelframe", background=WHITE, foreground=WHITE, borderwidth=0)
+
         # self.style.configure("Popup.TLabel", background=WHITE, foreground="black", font=SMALL_FONT_2)
         # self.style.configure("Attach.TLabel", background=WHITE, foreground="blue", font=("Calibri", 8, "underline"))
 

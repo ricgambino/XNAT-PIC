@@ -16,8 +16,8 @@
             "selectfg": "#ffffff",
             "border": "#ced4da",
             "inputfg": "#373a3c",
-            "inputbg": "#fdfdfe",
-        },
+            "inputbg": "#fdfdfe"
+        }
     },
     "flatly": {
         "type": "light",
@@ -36,8 +36,8 @@
             "selectfg": "#ffffff",
             "border": "#ced4da",
             "inputfg": "#212529",
-            "inputbg": "#ffffff",
-        },
+            "inputbg": "#ffffff"
+        }
     },
     "litera": {
         "type": "light",
@@ -56,8 +56,8 @@
             "selectfg": "#ffffff",
             "border": "#bfbfbf",
             "inputfg": "#343a40",
-            "inputbg": "#fff",
-        },
+            "inputbg": "#fff"
+        }
     },
     "minty": {
         "type": "light",
@@ -76,8 +76,8 @@
             "selectfg": "#ffffff",
             "border": "#ced4da",
             "inputfg": "#696969",
-            "inputbg": "#fff",
-        },
+            "inputbg": "#fff"
+        }
     },
     "lumen": {
         "type": "light",
@@ -96,8 +96,8 @@
             "selectfg": "#ffffff",
             "border": "#ced4da",
             "inputfg": "#555555",
-            "inputbg": "#fff",
-        },
+            "inputbg": "#fff"
+        }
     },
     "sandstone": {
         "type": "light",
@@ -116,8 +116,8 @@
             "selectfg": "#ffffff",
             "border": "#ced4da",
             "inputfg": "#6E6D69",
-            "inputbg": "#fff",
-        },
+            "inputbg": "#fff"
+        }
     },
     "yeti": {
         "type": "light",
@@ -136,8 +136,8 @@
             "selectfg": "#ffffff",
             "border": "#cccccc",
             "inputfg": "#222222",
-            "inputbg": "#fff",
-        },
+            "inputbg": "#fff"
+        }
     },
     "pulse": {
         "type": "light",
@@ -156,8 +156,8 @@
             "selectfg": "#ffffff",
             "border": "#cbc8d0",
             "inputfg": "#444444",
-            "inputbg": "#fdfdfe",
-        },
+            "inputbg": "#fdfdfe"
+        }
     },
     "united": {
         "type": "light",
@@ -176,8 +176,8 @@
             "selectfg": "#ffffff",
             "border": "#ced4da",
             "inputfg": "#333333",
-            "inputbg": "#fff",
-        },
+            "inputbg": "#fff"
+        }
     },
     "morph": {
         "type": "light",
@@ -196,8 +196,8 @@
             "selectfg": "#FBFDFF",
             "border": "#B9C7DA",
             "inputfg": "#7F8EBA",
-            "inputbg": "#F0F5FA",
-        },
+            "inputbg": "#F0F5FA"
+        }
     },
     "journal": {
         "type": "light",
@@ -216,8 +216,8 @@
             "selectfg": "#ffffff",
             "border": "#ced4da",
             "inputfg": "#565656",
-            "inputbg": "#fff",
-        },
+            "inputbg": "#fff"
+        }
     },
     "darkly": {
         "type": "dark",
@@ -236,8 +236,8 @@
             "selectfg": "#ffffff",
             "border": "#222222",
             "inputfg": "#ffffff",
-            "inputbg": "#2f2f2f",
-        },
+            "inputbg": "#2f2f2f"
+        }
     },
     "superhero": {
         "type": "dark",
@@ -256,8 +256,8 @@
             "selectfg": "#ffffff",
             "border": "#222222",
             "inputfg": "#ebebeb",
-            "inputbg": "#32465a",
-        },
+            "inputbg": "#32465a"
+        }
     },
     "solar": {
         "type": "dark",
@@ -276,8 +276,8 @@
             "selectfg": "#ffffff",
             "border": "#00252e",
             "inputfg": "#A9BDBD",
-            "inputbg": "#073642",
-        },
+            "inputbg": "#073642"
+        }
     },
     "cyborg": {
         "type": "dark",
@@ -296,8 +296,8 @@
             "selectfg": "#ffffff",
             "border": "#060606",
             "inputfg": "#ffffff",
-            "inputbg": "#191919",
-        },
+            "inputbg": "#191919"
+        }
     },
     "vapor": {
         "type": "dark",
@@ -316,8 +316,8 @@
             "selectfg": "#ffffff",
             "border": "#060606",
             "inputfg": "#bfb6cd",
-            "inputbg": "#30115e",
-        },
+            "inputbg": "#30115e"
+        }
     },
     "simplex": {
         "type": "light",
@@ -336,8 +336,8 @@
             "selectfg": "#ffffff",
             "border": "#858e96",
             "inputfg": "#3b3d3f",
-            "inputbg": "#fcfcfc",
-        },
+            "inputbg": "#fcfcfc"
+        }
     },
     "cerculean": {
         "type": "light",
@@ -356,7 +356,7 @@
             "selectfg": "#ffffff",
             "border": "#a9b4be",
             "inputfg": "#495057",
-            "inputbg": "#ffffff",
-        },
-    },
+            "inputbg": "#ffffff"
+        }
+    }
 }

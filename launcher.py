@@ -1,4 +1,5 @@
 from doctest import master
+from email import message
 from logging import exception
 from multiprocessing.sharedctypes import Value
 import shutil
@@ -10,6 +11,7 @@ from tkinter.font import Font
 from turtle import bgcolor, right, width
 from unicodedata import name
 from unittest import result
+from winreg import REG_DWORD_LITTLE_ENDIAN
 from click import option
 # from PIL import Image, ImageTk
 #from tkinter import ttk
@@ -46,6 +48,7 @@ import pandas
 from layout_style import MyStyle
 import babel.numbers
 from multiprocessing import Process, freeze_support
+from create_objects import ObjectCreator
 
 PATH_IMAGE = "images\\"
 #PATH_IMAGE = "lib\\images\\"
@@ -289,7 +292,10 @@ class xnat_pic_gui():
 
         # Close button
         def close_window(*args):
-            self.root.destroy()
+            ans = messagebox.askyesno("XNAT-PIC", "The XNAT-PIC software will be closed. Are you sure?")
+            if ans:
+                self.root.destroy()
+
         self.close_btn = ttk.Button(self.frame, text="Quit", command=close_window,
                                         cursor=CURSOR_HAND)
         self.close_btn.place(relx=0.95, rely=0.9, anchor=tk.NE, relwidth=0.1)
@@ -476,7 +482,7 @@ class xnat_pic_gui():
             self.clear_tree_btn.grid(row=0, column=1, sticky=tk.NW, padx=5, pady=5)
 
             # Treeview widget pre_convertion
-            self.tree_to_convert = ttk.Treeview(self.tree_labelframe, selectmode='none')
+            self.tree_to_convert = ttk.Treeview(self.tree_labelframe, selectmode='none', bootstyle='primary')
             self.tree_to_convert.grid(row=1, column=0, padx=5, pady=10, sticky=tk.NW)
             self.tree_scrollbar = ttk.Scrollbar(self.tree_labelframe, orient='vertical', command=self.tree_to_convert.yview)
             self.tree_scrollbar.grid(row=1, column=1, padx=0, pady=10, sticky=tk.NS)
@@ -594,7 +600,7 @@ class xnat_pic_gui():
             self.clear_tree_btn_post.grid(row=0, column=1, sticky=tk.NW, padx=5, pady=5)
 
             # Treeview widget post_convertion
-            self.tree_converted = ttk.Treeview(self.tree_labelframe_post, selectmode='none')
+            self.tree_converted = ttk.Treeview(self.tree_labelframe_post, selectmode='none', bootstyle='primary')
             self.tree_converted.grid(row=1, column=0, padx=5, pady=5, sticky=tk.NW)
             self.tree_scrollbarconverted = ttk.Scrollbar(self.tree_labelframe_post, orient='vertical', command=self.tree_converted.yview)
             self.tree_scrollbarconverted.grid(row=1, column=1, padx=5, pady=5, sticky=tk.NS)
@@ -2283,14 +2289,16 @@ class xnat_pic_gui():
             master.frame_label.set("Uploader")
             #############################################
             ################ Main Buttons ###############
+            self.label_frame_main = ttk.LabelFrame(master.frame, text="", style="Hidden.TLabelframe")
+            self.label_frame_main.place(relx=0.2, rely=0, anchor=tk.NW, relwidth=0.8, relheight=1)
 
             # Frame Title
-            self.frame_title = ttk.Label(master.frame, text="XNAT-PIC Uploader", style="Title.TLabel", anchor=tk.CENTER)
-            self.frame_title.place(relx=0.6, rely=0.05, anchor=tk.CENTER, relwidth=0.4)
+            self.frame_title = ttk.Label(self.label_frame_main, text="XNAT-PIC Uploader", style="Title.TLabel", anchor=tk.CENTER)
+            self.frame_title.pack(fill='x', padx=25, pady=10, anchor=tk.NW)
 
             # Label Frame Uploader Selection
-            self.label_frame_uploader = ttk.LabelFrame(master.frame, text="Uploader Selection")
-            self.label_frame_uploader.place(relx=0.25, rely=0.15, anchor=tk.NW, relwidth=0.7)
+            self.label_frame_uploader = ttk.LabelFrame(self.label_frame_main, text="Uploader Selection")
+            self.label_frame_uploader.pack(fill='x', padx=25, pady=10, anchor=tk.NW)
 
             self.conv_type = tk.IntVar()
 
@@ -2301,7 +2309,7 @@ class xnat_pic_gui():
                 self.check_buttons(master, press_btn=0)
             self.prj_btn = ttk.Button(self.label_frame_uploader, text="Upload Project",
                                     command=project_handler, cursor=CURSOR_HAND, width=20)
-            self.prj_btn.grid(row=0, column=0, padx=5, pady=5, sticky=tk.NW)
+            self.prj_btn.pack(side='left', expand=True, pady=10)
             
             # Upload subject
             def subject_handler(*args):
@@ -2310,7 +2318,7 @@ class xnat_pic_gui():
                 self.check_buttons(master, press_btn=1)
             self.sub_btn = ttk.Button(self.label_frame_uploader, text="Upload Subject",
                                     command=subject_handler, cursor=CURSOR_HAND, width=20)
-            self.sub_btn.grid(row=0, column=1, padx=5, pady=5, sticky=tk.NW)
+            self.sub_btn.pack(side='left', expand=True, pady=10)
 
             # Upload experiment
             def experiment_handler(*args):
@@ -2319,7 +2327,7 @@ class xnat_pic_gui():
                 self.check_buttons(master, press_btn=2)
             self.exp_btn = ttk.Button(self.label_frame_uploader, text="Upload Experiment", 
                                     command=experiment_handler, cursor=CURSOR_HAND, width=20)
-            self.exp_btn.grid(row=0, column=2, padx=5, pady=5, sticky=tk.NW)   
+            self.exp_btn.pack(side='left', expand=True, pady=10)   
             
             # Upload file
             def file_handler(*args):
@@ -2328,11 +2336,15 @@ class xnat_pic_gui():
                 self.check_buttons(master, press_btn=3)
             self.file_btn = ttk.Button(self.label_frame_uploader, text="Upload File",
                                     command=file_handler, cursor=CURSOR_HAND, width=20)
-            self.file_btn.grid(row=0, column=3, padx=5, pady=5, sticky=tk.NW)
+            self.file_btn.pack(side='left', expand=True, pady=10)
+
+            # Define the central label frame
+            self.central_label_frame = ttk.LabelFrame(self.label_frame_main, text="", style="Hidden.TLabelframe")
+            self.central_label_frame.pack(fill='x', padx=25, pady=10, anchor=tk.NW)
 
             # Label Frame for folder selection
-            self.folder_selection_label_frame = ttk.Labelframe(master.frame, text="Folder Selection")
-            self.folder_selection_label_frame.place(relx=0.25, rely=0.25, anchor=tk.NW)
+            self.folder_selection_label_frame = ttk.Labelframe(self.central_label_frame, text="Folder Selection")
+            self.folder_selection_label_frame.pack(side='left', anchor=tk.NW)
             
             # Define a string variable in order to check the current selected item of the Treeview widget
             self.selected_item_path = tk.StringVar()
@@ -2433,7 +2445,13 @@ class xnat_pic_gui():
             self.folder_to_upload = tk.StringVar()
             self.select_folder_button = ttk.Button(self.folder_selection_label_frame, text="Select folder", style="TButton",
                                                     state='disabled', cursor=CURSOR_HAND, width=20, command=select_folder)
-            self.select_folder_button.grid(row=0, column=0, padx=10, pady=10, sticky=tk.NW)
+            self.select_folder_button.grid(row=0, column=0, sticky=tk.NW, padx=10, pady=10)
+
+            # Upload additional files
+            self.add_file_flag = tk.IntVar()
+            self.add_file_btn = ttk.Checkbutton(self.folder_selection_label_frame, variable=self.add_file_flag, onvalue=1, offvalue=0, 
+                                text="Additional Files", state='disabled', style="WithoutBack.TCheckbutton")
+            self.add_file_btn.grid(row=0, column=1, padx=10, pady=10, sticky=tk.E)
 
             # Treeview for folder visualization
             def get_selected_item(*args):
@@ -2452,14 +2470,13 @@ class xnat_pic_gui():
                             self.selected_item_path.set('/'.join([self.folder_to_upload.get(), self.tree.item(parent_item, "text"),
                                 self.tree.item(selected_item, "text")]))
 
-            self.tree = ttk.Treeview(self.folder_selection_label_frame, selectmode='browse')
+            self.tree = ttk.Treeview(self.folder_selection_label_frame, selectmode='browse', bootstyle='primary')
             self.tree.grid(row=1, column=0, padx=10, pady=10, sticky=tk.NW, columnspan=2)
             self.tree.bind("<ButtonRelease-1>", get_selected_item)
 
             # Scrollbar for Treeview widget
             self.tree_scrollbar = ttk.Scrollbar(self.folder_selection_label_frame, orient='vertical', command=self.tree.yview)
-
-            self.tree_scrollbar.grid(row=1, column=2, padx=0, pady=10, ipadx=0, sticky=tk.NS)
+            self.tree_scrollbar.grid(row=1, column=2, padx=0, pady=10, sticky=tk.NS)
             self.tree.configure(yscrollcommand=self.tree_scrollbar.set)
             self.tree["columns"] = ("#1", "#2", "#3")
             self.tree.heading("#0", text="Selected folder", anchor=tk.NW)
@@ -2482,15 +2499,9 @@ class xnat_pic_gui():
 
             self.folder_to_upload.trace('w', load_tree)
 
-            # Upload additional files
-            self.add_file_flag = tk.IntVar()
-            self.add_file_btn = ttk.Checkbutton(self.folder_selection_label_frame, variable=self.add_file_flag, onvalue=1, offvalue=0, 
-                                text="Additional Files", state='disabled', style="WithoutBack.TCheckbutton")
-            self.add_file_btn.grid(row=0, column=1, padx=5, pady=5, sticky=tk.E)
-
             # Label Frame Uploader Custom Variables
-            self.custom_var_labelframe = ttk.LabelFrame(master.frame, text="Custom Variables")
-            self.custom_var_labelframe.place(relx=0.95, rely=0.25, anchor=tk.NE, relwidth=0.2)
+            self.custom_var_labelframe = ttk.LabelFrame(self.central_label_frame, text="Custom Variables")
+            self.custom_var_labelframe.pack(side='left', padx=10, anchor=tk.NW)
 
             # Custom Variables
             self.n_custom_var = tk.IntVar()
@@ -2498,9 +2509,9 @@ class xnat_pic_gui():
             custom_var_options = list(range(0, 4))
             self.custom_var_list = ttk.OptionMenu(self.custom_var_labelframe, self.n_custom_var, 0, *custom_var_options)
             self.custom_var_list.config(width=2)
-            self.custom_var_list.grid(row=0, column=0, padx=5, pady=5, sticky=tk.NW)
+            self.custom_var_list.grid(row=0, column=0, padx=10, pady=10, sticky=tk.NW)
             self.custom_var_label = ttk.Label(self.custom_var_labelframe, text="Custom Variables")
-            self.custom_var_label.grid(row=0, column=1, padx=2, pady=5, sticky=tk.NW)
+            self.custom_var_label.grid(row=0, column=1, padx=10, pady=10, sticky=tk.NW)
 
             # Show Custom Variables
             def display_custom_var(*args):
@@ -2530,14 +2541,14 @@ class xnat_pic_gui():
                         for x in range(1, self.n_custom_var.get() + 1):
                             # Custom Variable Label
                             label_n = ttk.Label(self.custom_var_labelframe, text=custom_vars[x-1][0])
-                            label_n.grid(row=x, column=0, padx=5, pady=5, sticky=tk.NW)
+                            label_n.grid(row=x, column=0, padx=10, pady=10, sticky=tk.NW)
                             label_list.append(label_n)
                             # Custom Variable Entry
                             entry_n = ttk.Entry(self.custom_var_labelframe, show='', state='disabled')
                             entry_n.var = tk.StringVar()
                             entry_n.var.set(custom_vars[x-1][1])
                             entry_n["textvariable"] = entry_n.var
-                            entry_n.grid(row=x, column=1, padx=5, pady=5, sticky=tk.NW)
+                            entry_n.grid(row=x, column=1, padx=10, pady=10, sticky=tk.NW)
                             entry_list.append(entry_n)
 
                         # Button to modify the entry of the custom variable
@@ -2547,7 +2558,7 @@ class xnat_pic_gui():
                              
                         edit_button = ttk.Button(self.custom_var_labelframe, image=master.logo_edit, command=edit_handler,
                                                     style="WithoutBack.TButton", cursor=CURSOR_HAND)
-                        edit_button.grid(row=1, column=2, padx=5, pady=5, sticky=tk.NW)
+                        edit_button.grid(row=1, column=2, padx=10, pady=10, sticky=tk.NW)
 
                         # Button to confirm changes
                         def accept_changes(*args):
@@ -2561,7 +2572,7 @@ class xnat_pic_gui():
 
                         confirm_button = ttk.Button(self.custom_var_labelframe, image=master.logo_accept, command=accept_changes,
                                                     state='disabled', style="WithoutBack.TButton", cursor=CURSOR_HAND)
-                        confirm_button.grid(row=1, column=3, padx=5, pady=5, sticky=tk.NW)
+                        confirm_button.grid(row=1, column=3, padx=10, pady=10, sticky=tk.NW)
 
                         # Button to abort changes
                         def reject_changes(*args):
@@ -2569,15 +2580,15 @@ class xnat_pic_gui():
                             display_custom_var()
                         reject_button = ttk.Button(self.custom_var_labelframe, image=master.logo_delete, command=reject_changes,
                                                     state='disabled', style="WithoutBack.TButton", cursor=CURSOR_HAND)
-                        reject_button.grid(row=1, column=4, padx=5, pady=5, sticky=tk.NW)
+                        reject_button.grid(row=1, column=4, padx=10, pady=10, sticky=tk.NW)
 
             self.n_custom_var.trace('w', display_custom_var)
             self.selected_item_path.trace('w', display_custom_var)
             #############################################
 
             # Label Frame for Uploader Data
-            self.uploader_data = ttk.LabelFrame(master.frame, text="")
-            self.uploader_data.place(relx=0.25, rely=0.6, anchor=tk.NW)
+            self.uploader_data = ttk.LabelFrame(self.label_frame_main, text="")
+            self.uploader_data.pack(fill='x', expand=True, padx=25, pady=10, anchor=tk.NW)
 
             #############################################
             ################# Project ###################
@@ -2598,7 +2609,7 @@ class xnat_pic_gui():
                 disable_buttons([self.entry_prjname, self.confirm_new_prj, self.reject_new_prj])
 
             self.project_list_label = ttk.Label(self.uploader_data, text="Select Project")
-            self.project_list_label.grid(row=0, column=0, padx=2, pady=10, sticky=tk.NW)
+            self.project_list_label.grid(row=0, column=0, padx=10, pady=10, sticky=tk.NW)
             self.OPTIONS = list(self.session.projects)
             self.prj = tk.StringVar()
             default_value = "--"
@@ -2610,6 +2621,7 @@ class xnat_pic_gui():
             
             # Button to add a new project
             def add_project():
+                object_creator = ObjectCreator(self.session).add_project_popup()
                 enable_buttons([self.entry_prjname, self.confirm_new_prj, self.reject_new_prj])
                 self.entry_prjname.delete(0,tk.END)
             self.new_prj_btn = ttk.Button(self.uploader_data, state=tk.DISABLED, width=20, style="Secondary.TButton",
@@ -2655,7 +2667,7 @@ class xnat_pic_gui():
             else:
                 self.OPTIONS2 = []
             self.subject_list_label = ttk.Label(self.uploader_data, text="Select Subject")
-            self.subject_list_label.grid(row=1, column=0, padx=2, pady=10, sticky=tk.NW)
+            self.subject_list_label.grid(row=1, column=0, padx=10, pady=10, sticky=tk.NW)
             self.sub = tk.StringVar()
             self.subject_list = ttk.OptionMenu(self.uploader_data, self.sub, default_value, *self.OPTIONS2)
             self.subject_list.configure(state="disabled", width=30)
@@ -2665,6 +2677,7 @@ class xnat_pic_gui():
             
             # Button to add a new subject
             def add_subject():
+                object_creator = ObjectCreator(self.session).add_subject_popup()
                 enable_buttons([self.entry_subname, self.confirm_new_sub, self.reject_new_sub])
                 self.entry_subname.delete(0,tk.END)
             self.new_sub_btn = ttk.Button(self.uploader_data, state=tk.DISABLED, width=20, style="Secondary.TButton",
@@ -2699,7 +2712,7 @@ class xnat_pic_gui():
             else:
                 self.OPTIONS3 = []
             self.experiment_list_label = ttk.Label(self.uploader_data, text="Select Experiment")
-            self.experiment_list_label.grid(row=2, column=0, padx=2, pady=10, sticky=tk.NW)
+            self.experiment_list_label.grid(row=2, column=0, padx=10, pady=10, sticky=tk.NW)
             self.exp = tk.StringVar()
             self.experiment_list = ttk.OptionMenu(self.uploader_data, self.exp, default_value, *self.OPTIONS3)
             self.experiment_list.configure(state="disabled", width=30)
@@ -2730,6 +2743,9 @@ class xnat_pic_gui():
             self.reject_new_exp.grid(row=2, column=5, padx=2, pady=10, sticky=tk.NW)
             #############################################
 
+            self.bottom_label_frame = ttk.Labelframe(self.label_frame_main, text="", style="Hidden.TLabelframe")
+            self.bottom_label_frame.pack(side='bottom', padx=25, pady=25, fill='x')
+
             #############################################
             ################ EXIT Button ################
             def exit_uploader():
@@ -2748,10 +2764,10 @@ class xnat_pic_gui():
                     xnat_pic_gui.choose_your_action(master)
 
             self.exit_text = tk.StringVar() 
-            self.exit_btn = ttk.Button(master.frame, textvariable=self.exit_text)
+            self.exit_btn = ttk.Button(self.bottom_label_frame, textvariable=self.exit_text)
             self.exit_btn.configure(command=exit_uploader)
             self.exit_text.set("Exit")
-            self.exit_btn.place(relx=0.25, rely=0.9, anchor=tk.NW, relwidth=0.1)
+            self.exit_btn.pack(side='left', padx=25, pady=25, anchor=tk.NW)
             #############################################
 
             #############################################
@@ -2769,10 +2785,10 @@ class xnat_pic_gui():
                     pass
 
             self.next_text = tk.StringVar() 
-            self.next_btn = ttk.Button(master.frame, textvariable=self.next_text, state='disabled',
+            self.next_btn = ttk.Button(self.bottom_label_frame, textvariable=self.next_text, state='disabled',
                                         command=next)
             self.next_text.set("Next")
-            self.next_btn.place(relx=0.95, rely=0.9, anchor=tk.NE, relwidth=0.1)
+            self.next_btn.pack(side='right', padx=25, pady=25, anchor=tk.NE)
             #############################################
 
         def check_buttons(self, master, press_btn=0):
