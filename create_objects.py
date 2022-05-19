@@ -1,8 +1,9 @@
-from tkinter import messagebox
+from tkinter import END, messagebox
 import ttkbootstrap as ttk
 import tkinter as tk
 from accessory_functions import disable_buttons, enable_buttons, open_image
 from datetime import date
+from logging import exception
 
 PATH_IMAGE = "images\\"
 CURSOR_HAND = "hand2"
@@ -107,9 +108,10 @@ class ProjectManager():
         self.project_keywords_entry.bind("<Key>", set_keyword)
         keyword_to_remove.trace('w', remove_keyword)
         # INVESTIGATORS
+        self.project_investigator = tk.StringVar()
         self.project_investigators_label = ttk.Label(self.project_labelframe, text="Investigators")
         self.project_investigators_label.grid(row=5, column=0, padx=5, pady=5, sticky=tk.W)
-        self.project_investigators_entry = ttk.Entry(self.project_labelframe, width=50)
+        self.project_investigators_entry = ttk.Entry(self.project_labelframe, width=50, textvariable=self.project_investigator)
         self.project_investigators_entry.grid(row=5, column=1, padx=5, pady=5, sticky=tk.W)
 
         # Callbacks
@@ -157,11 +159,15 @@ class ProjectManager():
         if result is False:
             self.master.deiconify()
             return
-        # try:
-        #     project = self.session.classes.ProjectData(
-        #                     name=self.project_id.get(), parent=self.session)
-        # except exception as e:
-        #     messagebox.showerror("Error!", str(e))
+        try:
+            project = self.session.classes.ProjectData(
+                            name=self.project_id.get(), parent=self.session)
+            project.description = self.project_description_entry.get("1.0", END)
+            project.keywords = "\t".join(self.project_keywords_list)
+            # Missing investigators set method
+        except exception as e:
+            messagebox.showerror("Error!", str(e))
+        
         
         # self.session.clearcache()
         messagebox.showinfo('XNAT-PIC Uploader', 'A new project is created.')
@@ -217,7 +223,7 @@ class SubjectManager():
 
         # Subject Gender
         self.subject_gender = tk.StringVar()
-        self.gender_values = ["Male", "Female"]
+        self.gender_values = ["Male", "Female", "Other"]
         self.subject_gender_label = ttk.Label(self.subject_labelframe, text="Gender")
         self.subject_gender_label.grid(row=2, column=0, padx=5, pady=5, sticky=tk.W)
         self.subject_gender_menu = ttk.OptionMenu(self.subject_labelframe, self.subject_gender, 0, *self.gender_values)
@@ -225,30 +231,30 @@ class SubjectManager():
 
         # Subject Age
         today = date.today()
-        today = today.strftime("%d/%m/%Y")
+        today = today.strftime("%m/%d/%Y")
         self.subject_age = tk.StringVar()
         self.subject_age.set(today)
         self.subject_age_label = ttk.Label(self.subject_labelframe, text="Age")
         self.subject_age_label.grid(row=3, column=0, padx=5, pady=5, sticky=tk.W)
-        self.subject_age_entry = ttk.DateEntry(self.subject_labelframe)
+        self.subject_age_entry = ttk.DateEntry(self.subject_labelframe, dateformat="%m/%d/%Y")
         self.subject_age_entry.entry.config(textvariable=self.subject_age)
         self.subject_age_entry.grid(row=3, column=1, padx=5, pady=5, sticky=tk.W)
         def check_date(*args):
             if self.subject_age.get() > today:
-                self.subject_age.set("")
+                self.subject_age.set(today)
             else:
                 pass
         self.subject_age.trace('w', check_date)
 
         # Subject Weight
-        self.subject_weight = tk.StringVar()
+        self.subject_weight = tk.IntVar()
         self.subject_weight.unit = tk.StringVar()
         self.subject_weight_label = ttk.Label(self.subject_labelframe, text="Weight")
         self.subject_weight_label.grid(row=4, column=0, padx=5, pady=5, sticky=tk.W)
         self.subject_weight_entry = ttk.Entry(self.subject_labelframe, width=50, textvariable=self.subject_weight)
         self.subject_weight_entry.grid(row=4, column=1, padx=5, pady=5, sticky=tk.W)
-        units = ["Kg", "hg", "g", "mg"]
-        self.subject_weight_menu = ttk.OptionMenu(self.subject_labelframe, self.subject_weight.unit, units[2], *units)
+        units = ["g", "lbs"]
+        self.subject_weight_menu = ttk.OptionMenu(self.subject_labelframe, self.subject_weight.unit, units[1], *units)
         self.subject_weight_menu.grid(row=4, column=3, padx=5, pady=5, sticky=tk.W)
 
         # Subject Notes
@@ -284,6 +290,11 @@ class SubjectManager():
                         pass
                     self.submit_btn.config(state='normal')
             else:
+                try:
+                    self.error.set("")
+                    self.error.label.destroy()
+                except:
+                    pass
                 self.submit_btn.config(state='disabled')
         self.subject_id.trace('w', enable_submit)
 
@@ -306,15 +317,18 @@ class SubjectManager():
         if result is False:
             self.master.deiconify()
             return
-        # try:
-        #     project = self.session.projects[self.project_id.get()]
-        # except:
-        #     project = self.session.classes.ProjectData(
-        #                     name=self.project_id.get(), parent=self.session)
-        #     self.session.clearcache()
+        try:
+            project = self.session.projects[self.parent_project.get()]
 
-        # subject = self.session.classes.SubjectData(
-        #                     parent=project, label=self.subject_id.get())
+            subject = self.session.classes.SubjectData(
+                                parent=project, label=self.subject_id.get())
+            subject.demographics.gender = self.subject_gender.get().lower()
+            # Missing weight, Age, DOB and Notes set methods
+            # subject.demographics.age = self.subject_age.get().split('/')[1]
+            subject.demographics.dob = self.subject_age.get()
+            subject.demographics.yob = self.subject_age.get().split('/')[-1]
+        except exception as e:
+            messagebox.showerror("Error!", str(e))
         # self.session.clearcache()
         messagebox.showinfo('XNAT-PIC Uploader', 'A new subject is created.') 
         self.master.destroy()
@@ -462,19 +476,13 @@ class ExperimentManager():
         if result is False:
             self.master.deiconify()
             return
-        # try:
-        #     project = self.session.projects[self.project_id.get()]
-        #     subject = project.subjects[self.subject_id.get()]
-        # except:
-        #     project = self.session.classes.ProjectData(
-        #                     name=self.project_id.get(), parent=self.session)
-        #     self.session.clearcache()
-        #     subject = self.session.classes.SubjectData(
-        #                     parent=project, label=self.subject_id.get())
-
-        # experiment = self.session.classes.ExperimentData(
-        #                 parent=subject, label=self.experiment_id.get())
-        # self.session.clearcache()
+        try:
+            project = self.session.projects[self.parent_project.get()]
+            subject = project.subjects[self.parent_subject.get()]
+            # experiment = self.session.classes.ExperimentData(
+            #                 parent=subject, label=self.experiment_id.get())
+        except exception as e:
+            messagebox.showerror("Error!", str(e))
         messagebox.showinfo('XNAT-PIC Uploader', 'A new subject is created.') 
         self.master.destroy()
         self.master.quit()

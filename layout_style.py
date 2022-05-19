@@ -9,7 +9,6 @@ import json
 
 PATH_IMAGE = "images\\"
 PERCENTAGE_SCREEN = 1  # Defines the size of the canvas. If equal to 1 (100%) ,it takes the whole screen
-WHITE = "#ffffff"
 LIGHT_GREY = "#F1FFFE"
 LIGHT_GREY_DISABLED = "#91A3B1"
 AZURE = "#008ad7"
@@ -47,33 +46,32 @@ class MyStyle():
         self.style.configure('TButton', font=SMALL_FONT)
         self.style.configure("Secondary.TButton", font=SMALL_FONT_3)
         self.style.configure("Secondary1.TButton", font=SMALL_FONT_4)
-        self.style.configure("WithoutBack.TButton", padding=2, background=WHITE, foreground="black", borderwidth=0)
-        self.style.map("WithoutBack.TButton", background=[('active', WHITE), ('disabled', WHITE)])
-        self.style.configure("Popup.TButton", padding=2, background=WHITE, foreground="black", borderwidth=0, font=SMALL_FONT)
-        self.style.map("Popup.TButton", background=[('active', WHITE), ('disabled', WHITE)])
+        self.style.configure("WithoutBack.TButton", padding=2, background=theme_colors[style]["colors"]["bg"], foreground=theme_colors[style]["colors"]["light"], borderwidth=0)
+        self.style.map("WithoutBack.TButton", background=[('active', theme_colors[style]["colors"]["bg"]), ('disabled', theme_colors[style]["colors"]["bg"])])
+        self.style.configure("Popup.TButton", padding=2, background=theme_colors[style]["colors"]["bg"], foreground="black", borderwidth=0, font=SMALL_FONT)
+        self.style.map("Popup.TButton", background=[('active', theme_colors[style]["colors"]["bg"]), ('disabled', theme_colors[style]["colors"]["bg"])])
         self.style.configure("MainPopup.TButton", padding=2, font=SMALL_FONT, width=15)
-        self.style.configure("Keyword.TButton", font=KEYWORD_FONT, background=WHITE, foreground=theme_colors[style]["colors"]["primary"], borderwidth=1)
-        self.style.map("Keyword.TButton", background=[("active", WHITE)], foreground=[("active", theme_colors[style]["colors"]["primary"])])
-        
+        self.style.configure("Keyword.TButton", font=KEYWORD_FONT, background=theme_colors[style]["colors"]["bg"], foreground=theme_colors[style]["colors"]["primary"], borderwidth=1)
+        self.style.map("Keyword.TButton", background=[("active", theme_colors[style]["colors"]["bg"])], foreground=[("active", theme_colors[style]["colors"]["primary"])])
 
         # Configure Labels
-        self.style.configure("Title.TLabel", background=WHITE, foreground="black", font=TITLE_FONT)
-        self.style.configure("Popup.TLabel", background=WHITE, foreground=theme_colors[style]["colors"]["primary"], font=ATTACHED_FONT)
-        self.style.configure("UnderTitle.TLabel", background=WHITE, foreground="black", font=UNDERTITLE_FONT)
+        self.style.configure("Title.TLabel", background=theme_colors[style]["colors"]["bg"], foreground="black", font=TITLE_FONT)
+        self.style.configure("Popup.TLabel", background=theme_colors[style]["colors"]["bg"], foreground=theme_colors[style]["colors"]["primary"], font=ATTACHED_FONT)
+        self.style.configure("UnderTitle.TLabel", background=theme_colors[style]["colors"]["bg"], foreground="black", font=UNDERTITLE_FONT)
         self.style.configure("Error.TLabel", font=KEYWORD_FONT, foreground=theme_colors[style]["colors"]["danger"])
 
         # Configure OptionMenus
-        self.style.configure("TMenubutton", background=WHITE, foreground=theme_colors[style]["colors"]["primary"],
+        self.style.configure("TMenubutton", background=theme_colors[style]["colors"]["bg"], foreground=theme_colors[style]["colors"]["primary"],
                                             arrowcolor=theme_colors[style]["colors"]["primary"])
-        self.style.map("TMenubutton", background=[('active', WHITE)])
+        self.style.map("TMenubutton", background=[('active', theme_colors[style]["colors"]["bg"])])
 
         # Configure Entries
         self.style.configure("TEntry", disabledbackground=LIGHT_GREY)
-        self.style.map("TEntry", background=[('active', WHITE), ('disabled', LIGHT_GREY)], disabledbackground=[('active', LIGHT_GREY), ('disabled', LIGHT_GREY)],
+        self.style.map("TEntry", background=[('active', theme_colors[style]["colors"]["bg"]), ('disabled', LIGHT_GREY)], disabledbackground=[('active', LIGHT_GREY), ('disabled', LIGHT_GREY)],
                                         highlightthickness=[("active", 10)])
 
         # Configure Labelframes
-        self.style.configure("Hidden.TLabelframe", background=WHITE, foreground=WHITE, borderwidth=0, padding=0)
+        self.style.configure("Hidden.TLabelframe", background=theme_colors[style]["colors"]["bg"], foreground=theme_colors[style]["colors"]["bg"], borderwidth=0, padding=0)
 
         # self.style.configure("Popup.TLabel", background=WHITE, foreground="black", font=SMALL_FONT_2)
         # self.style.configure("Attach.TLabel", background=WHITE, foreground="blue", font=("Calibri", 8, "underline"))
