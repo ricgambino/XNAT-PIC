@@ -1,3 +1,4 @@
+from cgitb import text
 from doctest import master
 from logging import exception
 from multiprocessing.sharedctypes import Value
@@ -31,13 +32,13 @@ import xnat
 from read_visupars import read_visupars_parameters
 import pyAesCrypt
 from tabulate import tabulate
-import datetime
+import datetime 
+from datetime import date
 import threading
 from dotenv import load_dotenv
 from xnat_uploader import Dicom2XnatUploader, FileUploader
 import datefinder
 import pydicom, webbrowser
-from tkcalendar import DateEntry
 from accessory_functions import *
 from idlelib.tooltip import Hovertip
 from multiprocessing import Pool, cpu_count
@@ -1107,8 +1108,9 @@ class xnat_pic_gui():
                 count += 1
 
             # Calendar for acq. date
-            self.datevar = ttk.IntVar()
+            self.datevar = tk.StringVar()
             self.cal = ttk.DateEntry(self.frame_ID, dateformat = '%Y-%m-%d')
+            self.cal.entry.config(textvariable=self.datevar)         
             self.cal.entry.configure(width=10)
             self.cal.entry['state'] = 'normal'
             self.cal.entry.delete(0, tk.END)
@@ -1180,8 +1182,9 @@ class xnat_pic_gui():
             self.timepoint_menu['values'] = self.OPTIONS
             self.timepoint_menu['state'] = 'disabled'
             self.timepoint_menu.grid(row=1, column=2, padx = 5, pady = 5, sticky=W)
-
-            self.time_entry = ttk.Entry(self.frame_CV, state='disabled', takefocus = 0, width=5)
+            
+            self.time_entry_value = tk.StringVar()
+            self.time_entry = ttk.Entry(self.frame_CV, state='disabled', takefocus = 0, width=5, textvariable=self.time_entry_value)
             self.time_entry.grid(row=1, column=3, padx = 5, pady = 5, sticky=W)
 
             self.OPTIONS1 = ["seconds", "minutes", "hours", "days", "weeks", "months", "years"]
@@ -1224,10 +1227,6 @@ class xnat_pic_gui():
             
         def load_info(self, master):
             def items_selected(event):
-                # self.selected_index = self.my_listbox.curselection()[0]
-                # self.selected_folder = self.tab_name + '#' + self.my_listbox.get(self.selected_index)
-                # print(self.selected_index)
-                # print(self.selected_folder)
                 # Clear all the combobox and the entry
                 self.selected_group.set('')
                 self.selected_timepoint.set('')
@@ -1323,24 +1322,42 @@ class xnat_pic_gui():
             for i in range(1, len(self.entries_value_ID)):
                 self.entries_value_ID[i]['state'] = 'normal'
 
+            self.entries_value_ID[4]['state'] = 'disabled'
+
             for i in range(0, len(self.entries_value_CV)):
                 self.entries_value_CV[i]['state'] = 'normal'
             
+            self.entries_value_CV[1]['state'] = 'disabled'
+
             self.cal.entry['state'] = 'normal'
             self.cal.button['state'] = 'normal'
             # Acquisition date has a default format in entry but you can modify date with the calendar
             #self.cal.configure(state="normal")
             
-            def date_entry_selected(event):
+            def date_entry_selected(*args):
                 self.entries_value_ID[4]['state'] = tk.NORMAL
                 self.entries_value_ID[4].delete(0, tk.END)
                 self.entries_value_ID[4].insert(0, str(self.cal.entry.get()))
+                if self.entries_value_ID[4].get():
+                    try:
+                        acq_date = datetime.datetime.strptime(self.entries_value_ID[4].get(), '%Y-%m-%d')
+                        self.today = date.today()
+                        self.today = self.today.strftime('%Y-%m-%d')
+                        a = acq_date.strftime('%Y-%m-%d')
+                        if acq_date.strftime('%Y-%m-%d') > self.today:
+                            messagebox.showerror("XNAT-PIC", "The date entered is greater than today's date")
+                            raise
+                    except Exception as e:
+                        if str(e) != 'No active exception to reraise':
+                            messagebox.showerror("XNAT-PIC", str(e))
+                        self.entries_value_ID[4].delete(0, tk.END)
+                        self.entries_value_ID[4]['state'] = tk.DISABLED
+                        raise
+
                 self.entries_value_ID[4]['state'] = tk.DISABLED
                 self.my_listbox.selection_set(self.selected_index)
             
-            self.cal.entry.bind("<FocusOut>", date_entry_selected)
-
-            #self.cal.entry.bind("<Return>", date_entry_selected)
+            self.datevar.trace('w', date_entry_selected)
             # Option menu for the group
             self.group_menu['state'] = 'readonly'
 
@@ -1383,7 +1400,7 @@ class xnat_pic_gui():
             self.time_entry['state'] = 'normal'
             self.timepoint_menu['state'] = 'readonly'
 
-            def timepoint_changed(event):
+            def timepoint_changed(*args):
                 self.entries_value_CV[1].config(state=tk.NORMAL)
                 """ handle the timepoint changed event """
                 if str(self.time_entry.get()) or str(self.selected_timepoint1.get()):
@@ -1404,7 +1421,9 @@ class xnat_pic_gui():
                 self.entries_value_CV[1].config(state=tk.DISABLED)
 
             self.timepoint_menu.bind("<<ComboboxSelected>>", timepoint_changed)
-            self.time_entry.bind("<<FocusOut>>", timepoint_changed)
+
+            #self.time_entry.bind("<<FocusOut>>", timepoint_changed)
+            self.time_entry_value.trace('w', timepoint_changed)
             self.timepoint_menu1.bind("<<ComboboxSelected>>", timepoint_changed)
 
         def check_entries(self):
@@ -1509,14 +1528,14 @@ class xnat_pic_gui():
         # #################### Confirm multiple metadata ####################
         def confirm_multiple_metadata(self, master):
 
-            disable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.my_listbox])
+            disable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.my_listbox, self.browse_btn])
             tab_names = [self.notebook.tab(i, state='disable') for i in self.notebook.tabs()]  
                      
             try:
                 self.selected_folder
                 pass
             except Exception as e:
-                enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.my_listbox])
+                enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.my_listbox, self.browse_btn])
                 messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
                 raise
 
@@ -1645,7 +1664,7 @@ class xnat_pic_gui():
                 self.cal.entry.delete(0, tk.END)
                 disable_buttons([self.dose_menu, self.group_menu, self.timepoint_menu, self.time_entry, self.timepoint_menu1, self.cal])
                 # Clear the focus and the select mode of the listbox is single
-                enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn])
+                enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.browse_btn])
                 self.my_listbox.selection_clear(0, 'end')
                 self.my_listbox['selectmode'] = SINGLE
                 
@@ -1656,7 +1675,7 @@ class xnat_pic_gui():
             def items_cancel(event):
                     # Clear the focus and the select mode of the listbox is single
                 messagebox.showinfo("Metadata","The information was not saved for the selected folders!")
-                enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn])
+                enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.browse_btn])
                 self.my_listbox.selection_clear(0, 'end')
                 self.my_listbox['selectmode'] = SINGLE
             self.my_listbox.bind("<Escape>", items_cancel)
