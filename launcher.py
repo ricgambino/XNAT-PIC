@@ -46,11 +46,8 @@ import pandas
 from layout_style import MyStyle
 import babel.numbers
 from multiprocessing import Process, freeze_support
-<<<<<<< HEAD
 from ScrollableNotebook import *
-=======
 from create_objects import ProjectManager, SubjectManager, ExperimentManager
->>>>>>> b7b1df75f25ca05a7cfa0d1e83ace7e917ecab18
 
 PATH_IMAGE = "images\\"
 #PATH_IMAGE = "lib\\images\\"
@@ -2431,15 +2428,8 @@ class xnat_pic_gui():
             
             # Button to add a new project
             def add_project():
-<<<<<<< HEAD
                 enable_buttons([self.entry_prjname, self.confirm_new_prj, self.reject_new_prj])
                 self.entry_prjname.delete(0,tk.END)
-=======
-                createdProject = ProjectManager(self.session)
-                self.session.clearcache()
-                self.prj.set(createdProject.project_id.get())
-
->>>>>>> b7b1df75f25ca05a7cfa0d1e83ace7e917ecab18
             self.new_prj_btn = ttk.Button(self.uploader_data, state=tk.DISABLED, width=20, style="Secondary.TButton",
                                         command=add_project, cursor=CURSOR_HAND, text="Add New Project")
             self.new_prj_btn.grid(row=0, column=2, padx=20, pady=10, sticky=tk.NW)
@@ -2463,16 +2453,8 @@ class xnat_pic_gui():
             
             # Button to add a new subject
             def add_subject():
-<<<<<<< HEAD
                 enable_buttons([self.entry_subname, self.confirm_new_sub, self.reject_new_sub])
                 self.entry_subname.delete(0,tk.END)
-=======
-                createdSubject = SubjectManager(self.session)
-                self.session.clearcache()
-                self.prj.set(createdSubject.parent_project.get())
-                self.sub.set(createdSubject.subject_id.get())
-
->>>>>>> b7b1df75f25ca05a7cfa0d1e83ace7e917ecab18
             self.new_sub_btn = ttk.Button(self.uploader_data, state=tk.DISABLED, width=20, style="Secondary.TButton",
                                         command=add_subject, cursor=CURSOR_HAND, text="Add New Subject")
             self.new_sub_btn.grid(row=1, column=2, padx=20, pady=10, sticky=tk.NW)
