@@ -49,6 +49,7 @@ from layout_style import MyStyle
 import babel.numbers
 from multiprocessing import Process, freeze_support
 from create_objects import ProjectManager, SubjectManager, ExperimentManager
+from access_manager import AccessManager
 
 PATH_IMAGE = "images\\"
 #PATH_IMAGE = "lib\\images\\"
@@ -146,7 +147,6 @@ class xnat_pic_gui():
         self.root.state('zoomed') # The root widget is adapted to the screen size
         self.root.minsize(width=1000, height=500) # Set the minimum size of the working window
         # Define the style of the root widget
-        # self.style = ttk.Style('cerculean')
         self.style_label = tk.StringVar()
         self.style_label.set('cerculean')
         self.style = MyStyle(self.style_label.get()).get_style()
@@ -165,29 +165,10 @@ class xnat_pic_gui():
         fileMenu = ttk.Menu(self.toolbar_menu, tearoff=0)
         fileMenu.add_separator()
         fileMenu.add_command(label="Exit", command=lambda: self.root.destroy())
-        def change_theme(*args):
-            self.style = MyStyle(self.style_label.get()).get_style()
-            self.frame.update()
-
-        optionMenu = ttk.Menu(self.toolbar_menu, tearoff=0)
-        themes = ["lumen", "pulse", "yeti", "cerculean", "darkly", "solar", "superhero", "cyborg"]
-        themeMenu = ttk.Menu(optionMenu, tearoff=0)
-        themeMenu.add_command(label=themes[0], command=lambda: self.style_label.set(themes[0]))
-        themeMenu.add_command(label=themes[1], command=lambda: self.style_label.set(themes[1]))
-        themeMenu.add_command(label=themes[2], command=lambda: self.style_label.set(themes[2]))
-        themeMenu.add_command(label=themes[3], command=lambda: self.style_label.set(themes[3]))
-        themeMenu.add_command(label=themes[4], command=lambda: self.style_label.set(themes[4]))
-        themeMenu.add_command(label=themes[5], command=lambda: self.style_label.set(themes[5]))
-        themeMenu.add_command(label=themes[6], command=lambda: self.style_label.set(themes[6]))
-        themeMenu.add_command(label=themes[7], command=lambda: self.style_label.set(themes[7]))
-
-        optionMenu.add_cascade(label="Themes", menu=themeMenu)
         
         self.toolbar_menu.add_cascade(label="File", menu=fileMenu)
         self.toolbar_menu.add_cascade(label="Edit")
-        self.toolbar_menu.add_cascade(label="Options", menu=optionMenu)
         self.root.config(menu=self.toolbar_menu)
-        self.style_label.trace('w', change_theme)
 
         # Adjust size based on screen resolution
         self.width = self.root.screenwidth
@@ -218,6 +199,10 @@ class xnat_pic_gui():
         self.open_eye = open_image(PATH_IMAGE + "open_eye.png", 15, 15)
         # Load closed eye
         self.closed_eye = open_image(PATH_IMAGE + "closed_eye.png", 15, 15)
+        # Load sun icon DARK
+        self.sun_icon_dark = open_image(PATH_IMAGE + "sun_icon_dark.png", 20, 20)
+        # Load sun icon LIGHT
+        self.sun_icon_light = open_image(PATH_IMAGE + "sun_icon_light.png", 20, 20)
 
         def resize_window(*args):
             # Get the current window size
@@ -231,10 +216,33 @@ class xnat_pic_gui():
             self.panel_img.label = ttk.Label(self.frame, image=self.panel_img)
             self.panel_img.label.place(x=0, y=0, anchor=tk.NW, relheight=1, relwidth=0.2)
             # Load XNAT-PIC Logo
+            self.xnat_pic_logo_dark = open_image(PATH_IMAGE + "XNAT-PIC-logo-dark.png", 3*self.my_width/5, self.my_height/3)
+            self.xnat_pic_logo_light = open_image(PATH_IMAGE + "XNAT-PIC-logo-light.png", 3*self.my_width/5, self.my_height/3)
+            if self.style_label.get() == 'cerculean':
+                self.xnat_pic_logo_label = ttk.Label(self.frame, image=self.xnat_pic_logo_dark)
+            else:
+                self.xnat_pic_logo_label = ttk.Label(self.frame, image=self.xnat_pic_logo_light)
             if self.frame_label.get() in ["Enter", "Main"]:
-                self.xnat_pic_logo = open_image(PATH_IMAGE + "XNAT-PIC-logo.png", 3*self.my_width/5, self.my_height/3)
-                self.xnat_pic_logo.label= ttk.Label(self.frame, image=self.xnat_pic_logo)
-                self.xnat_pic_logo.label.place(relx=0.3, rely=0, anchor=tk.NW, relheight=0.3, relwidth=0.8)
+                self.xnat_pic_logo_label.place(relx=0.3, rely=0.1, anchor=tk.NW, relheight=0.3, relwidth=0.7)
+
+            # Load Sun icon to swith to dark/light mode
+            def switch_mode(*args):
+                if self.style_label.get() == 'cerculean':
+                    self.style_label.set('darkly')
+                    self.style = MyStyle('darkly').get_style()
+                    self.dark_mode_btn.config(image=self.sun_icon_light)
+                    self.xnat_pic_logo_label.config(image=self.xnat_pic_logo_light)
+                    self.frame.update()
+                else:
+                    self.style_label.set('cerculean')
+                    self.style = MyStyle('cerculean').get_style()
+                    self.dark_mode_btn.config(image=self.sun_icon_dark)
+                    self.xnat_pic_logo_label.config(image=self.xnat_pic_logo_dark)
+                    self.frame.update()
+
+            self.dark_mode_btn = ttk.Button(self.frame, cursor=CURSOR_HAND, image=self.sun_icon_dark,
+                                            command=switch_mode, style="WithoutBack.TButton")
+            self.dark_mode_btn.place(relx=0.98, rely=0.02, anchor=tk.NE)
             # Change font according to window size
             if self.width > 1700:
                 self.style.configure('TButton', font = LARGE_FONT)
@@ -259,14 +267,30 @@ class xnat_pic_gui():
         
         # Call the resize_window method if the window size is changed by the user
         self.frame.bind("<Configure>", resize_window)
+
+        def closed_window():
+            self.root.destroy()
+            self.root.quit()
+        self.root.protocol("WM_DELETE_WINDOW", closed_window)
+
         self.root.mainloop()
             
     # Choose to upload files, fill in the info, convert files, process images
     def choose_your_action(self):
         
-        if self.xnat_pic_logo.label.winfo_exists() == 0:
-            self.xnat_pic_logo.label= ttk.Label(self.frame, image=self.xnat_pic_logo)
-            self.xnat_pic_logo.label.place(relx=0.3, rely=0, anchor=tk.NW, relheight=0.3, relwidth=0.8)
+        if self.xnat_pic_logo_label.winfo_exists() == 0:
+            if self.style_label.get() == 'cerculean':
+                self.xnat_pic_logo_label = ttk.Label(self.frame, image=self.xnat_pic_logo_dark)
+            else:
+                self.xnat_pic_logo_label = ttk.Label(self.frame, image=self.xnat_pic_logo_light)
+            self.xnat_pic_logo_label.place(relx=0.3, rely=0.1, anchor=tk.NW, relheight=0.3, relwidth=0.7)
+
+        if self.dark_mode_btn.winfo_exists() == 0:
+            if self.style_label.get() == 'cerculean':
+                self.dark_mode_btn = ttk.Label(self.frame, image=self.sun_icon_dark)
+            else:
+                self.dark_mode_btn = ttk.Label(self.frame, image=self.sun_icon_light)
+            self.dark_mode_btn.place(relx=0.3, rely=0.1, anchor=tk.NW, relheight=0.3, relwidth=0.7)
 
         self.frame_label.set("Main")
         # Action buttons           
@@ -308,7 +332,7 @@ class xnat_pic_gui():
             self.params = {}
 
             try:
-                destroy_widgets([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn, master.xnat_pic_logo.label])
+                destroy_widgets([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn, master.xnat_pic_logo_label])
             except:
                 pass
 
@@ -629,7 +653,6 @@ class xnat_pic_gui():
 
             self.exit_btn = ttk.Button(master.frame, cursor=CURSOR_HAND,
                                      text="Back", command=exit_converter)
-            # self.exit_btn.configure(command=exit_converter)
             self.exit_btn.place(relx=0.25, rely=0.9, anchor=tk.NW, relwidth=0.1)
 
             # NEXT Button
@@ -778,7 +801,6 @@ class xnat_pic_gui():
             # project_foldername = tail.split('.',1)[0]
             # self.sub_dst = os.path.join(head, project_foldername).replace('\\', '/')
             self.sub_dst = self.converted_folder.get()
-            print(self.converted_folder.get())
 
             # Start converter
             self.converter = Bruker2DicomConverter(self.params)
@@ -1010,7 +1032,7 @@ class xnat_pic_gui():
                 self.results_dict.update(tmp_dict)
 
             #################### Update the frame ####################
-            destroy_widgets([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn, master.xnat_pic_logo.label])
+            destroy_widgets([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn, master.xnat_pic_logo_label])
             self.frame_metadata = ttk.Frame(master.frame)
             self.frame_metadata.place(relx = 0.2, rely= 0, relheight=1, relwidth=0.8, anchor=tk.NW)
             self.frame_metadata.update()
@@ -1848,307 +1870,16 @@ class xnat_pic_gui():
             # Disable main frame buttons
             disable_buttons([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn])
 
-            # Start with a popup to get credentials
-            login_popup = tk.Toplevel(background=WHITE)
-            login_popup.title("XNAT-PIC ~ Login")
-            login_popup.geometry("%dx%d+%d+%d" % (410, 240, master.my_width/3, master.my_height/4))
-            login_popup.resizable(False, False)
+            self.session = AccessManager(master.style_label.get()).session
 
-            # Closing window event: if it occurs, the popup must be destroyed and the main frame buttons must be enabled
-            def closed_window():
-                login_popup.destroy()
-                #Enable all buttons
+            if self.session == None:
                 enable_buttons([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn])
-            login_popup.protocol("WM_DELETE_WINDOW", closed_window)
-
-            # Credentials Label Frame
-            login_popup.cred_frame = ttk.LabelFrame(login_popup, text="Credentials", style="Popup.TLabelframe")
-            login_popup.cred_frame.grid(row=1, column=0, padx=10, pady=5, sticky=tk.E+tk.W+tk.N+tk.S, columnspan=2)
-
-            # XNAT ADDRESS      
-            login_popup.label_address = ttk.Label(login_popup.cred_frame, text="XNAT web address")   
-            login_popup.label_address.grid(row=1, column=0, padx=2, pady=2, sticky=tk.E)
-            login_popup.entry_address = ttk.Entry(login_popup.cred_frame, width=25)
-            login_popup.entry_address.var = tk.StringVar()
-            login_popup.entry_address["textvariable"] = login_popup.entry_address.var
-            login_popup.entry_address.grid(row=1, column=1, padx=2, pady=2)
-
-            def enable_address_modification(*args):
-                if login_popup.modify_address_flag.get() == 1:
-                    login_popup.entry_address.configure(state='normal')
-                else:
-                    login_popup.entry_address.configure(state='disabled')
-            login_popup.modify_address_flag = tk.IntVar()
-            login_popup.modify_address_btn = ttk.Checkbutton(login_popup.cred_frame, text="Change address", state='disabled', 
-                                                            style="Popup.TCheckbutton",
-                                                            onvalue=1, offvalue=0, variable=login_popup.modify_address_flag)
-            login_popup.modify_address_btn.grid(row=1, column=2, padx=2, pady=2, sticky=tk.W)
-            login_popup.modify_address_flag.trace('w', enable_address_modification)
-           
-            # XNAT USER 
-            login_popup.label_user = ttk.Label(login_popup.cred_frame, text="Username")
-            login_popup.label_user.grid(row=2, column=0, padx=1, ipadx=1, sticky=tk.E)
-
-            def get_list_of_users():
-                # Get the list of registered and stored users
-                try:
-                    home = os.path.expanduser("~")
-                    # Define the encrypted file path
-                    encrypted_file = os.path.join(home, "Documents", ".XNAT_login_file.txt.aes")
-                    # Define the decrypted file path
-                    decrypted_file = os.path.join(home, "Documents", ".XNAT_login_file00000.txt")
-                    # Decrypt the encrypted file
-                    pyAesCrypt.decryptFile(encrypted_file, decrypted_file, os.environ.get('secretKey'), 
-                                            int(os.environ.get('bufferSize1')) * int(os.environ.get('bufferSize2')))
-                    # Open the decrypted file
-                    with open(decrypted_file, 'r') as credentials_file:
-                        # Read the data
-                        data = json.load(credentials_file)
-                        # Get the list of users
-                        list_of_users = list(data.keys())
-                    # Clear the 'data' variable
-                    data = ''
-                    # Remove the decrypted file
-                    os.remove(decrypted_file)
-                    return list_of_users
-                except Exception as error:
-                    return []
-
-            def get_credentials(*args):
-                if login_popup.entry_user.get() != '':
-                    if login_popup.entry_user.get() in login_popup.combo_user['values']:
-                        # Load stored credentials
-                        self.load_saved_credentials(login_popup)
-                        # Disable the button to modify the web address
-                        login_popup.entry_address.configure(state='disabled')
-                        # Enable the 'Change address' button
-                        login_popup.modify_address_btn.configure(state='normal')
-                        # Enable the 'Remember me' button
-                        login_popup.btn_remember.configure(state='normal')
-                        # Enable the 'Show password' toggle button
-                        login_popup.toggle_btn.configure(state='normal')
-                    else:
-                        # Enable the 'Remember me' button
-                        login_popup.btn_remember.configure(state='normal')
-                else:
-                    # Disable the 'Remember me' button
-                    login_popup.btn_remember.configure(state='disabled')
-                    # Reset 'Remember me' button
-                    login_popup.remember.set(0)
-                    # Disable the 'Show password' toggle button
-                    login_popup.toggle_btn.configure(state='disabled')
-                    # # Reset address and password fields
-                    # login_popup.entry_psw.var.set('')
-                    # login_popup.entry_address.var.set('')
-
-            login_popup.entry_user = tk.StringVar()
-            login_popup.combo_user = ttk.Combobox(login_popup.cred_frame, font=SMALL_FONT_2, takefocus=0, textvariable=login_popup.entry_user, 
-                                                    state='normal', width=19, style="Popup.TCombobox")
-            login_popup.combo_user['values'] = get_list_of_users()
-            login_popup.entry_user.trace('w', get_credentials)
-            login_popup.combo_user.grid(row=2, column=1, padx=2, pady=2)
-
-            # XNAT PASSWORD 
-            login_popup.label_psw = ttk.Label(login_popup.cred_frame, text="Password")
-            login_popup.label_psw.grid(row=3, column=0, padx=1, ipadx=1, sticky=tk.E)
-
-            # Show/Hide the password
-            def toggle_password():
-                if login_popup.entry_psw.cget('show') == '':
-                    login_popup.entry_psw.config(show='*')
-                    login_popup.toggle_btn.config(image=master.open_eye)
-                else:
-                    if tkinter.simpledialog.askstring("PIN", "Enter PIN: ", show='*', parent=login_popup.cred_frame) == os.environ.get('secretPIN'):
-                        login_popup.entry_psw.config(show='')
-                        login_popup.toggle_btn.config(image=master.closed_eye)
-                    else:
-                        messagebox.showerror("XNAT-PIC Uploader", "Error! The PIN code does not correspond")
-                        enable_buttons([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn])
-            
-            login_popup.entry_psw = ttk.Entry(login_popup.cred_frame, show="*", width=25)
-            login_popup.entry_psw.var = tk.StringVar()
-            login_popup.entry_psw["textvariable"] = login_popup.entry_psw.var
-            login_popup.entry_psw.grid(row=3, column=1, padx=2, pady=2)
-            login_popup.toggle_btn = ttk.Button(login_popup.cred_frame, image= master.open_eye,
-                                                command=toggle_password, state='disabled', 
-                                                cursor=CURSOR_HAND, style="Popup.TButton")
-            login_popup.toggle_btn.grid(row=3, column=2, padx=2, pady=2, sticky=tk.W)
-
-            # Forgot password button
-            def forgot_psw(*args):
-                webbrowser.open("http://130.192.212.48:8080/app/template/ForgotLogin.vm#!", new=1)
-
-            login_popup.forgot_psw = ttk.Label(login_popup.cred_frame, text="Forgot password", style="Popup.TLabel", 
-                                            cursor=CURSOR_HAND)
-            login_popup.forgot_psw.grid(row=4, column=1, padx=1, ipadx=1)
-            login_popup.forgot_psw.bind("<Button-1>", forgot_psw)
-
-            # Register button
-            def register(*args):
-                webbrowser.open("http://130.192.212.48:8080/app/template/Register.vm#!", new=1)
-
-            login_popup.register_btn = ttk.Label(login_popup.cred_frame, text="Register", style="Popup.TLabel",
-                                            cursor=CURSOR_HAND)
-            login_popup.register_btn.grid(row=4, column=2, padx=2, pady=2, sticky=tk.W)
-            login_popup.register_btn.bind("<Button-1>", register)
-
-            # Label Frame for HTTP buttons
-            login_popup.label_frame_http = ttk.LabelFrame(login_popup, text="Options", style="Popup.TLabelframe")
-            login_popup.label_frame_http.grid(row=0, column=0, padx=10, pady=5, sticky=tk.E+tk.W+tk.N+tk.S, columnspan=2)
-            
-            # HTTP/HTTPS 
-            login_popup.http = tk.StringVar()
-            login_popup.button_http = ttk.Radiobutton(login_popup.label_frame_http, text=" http:// ", variable=login_popup.http, 
-                                                        value="http://", style="Popup.TRadiobutton")
-            login_popup.button_http.grid(row=1, column=0, sticky=tk.E, padx=2, pady=2)
-            login_popup.button_https = ttk.Radiobutton(login_popup.label_frame_http, text=" https:// ", variable=login_popup.http, 
-                                                        value="https://", style="Popup.TRadiobutton")
-            login_popup.button_https.grid(row=1, column=1, padx=2, pady=2, sticky=tk.E)
-            login_popup.http.set("http://")
-
-            # SAVE CREDENTIALS CHECKBUTTON
-            login_popup.remember = tk.IntVar()
-            login_popup.btn_remember = ttk.Checkbutton(login_popup.cred_frame, text="Remember me", variable=login_popup.remember, state='disabled',
-                                                        onvalue=1, offvalue=0, style="Popup.TCheckbutton")
-            login_popup.btn_remember.grid(row=2, column=2, padx=2, pady=2, sticky=tk.W)
-
-            # CONNECTION
-            login_popup.button_connect = ttk.Button(login_popup, text="Login", style="MainPopup.TButton",
-                                                    command=partial(self.login, login_popup, master))
-            login_popup.button_connect.grid(row=2, column=1, padx=5, pady=5, sticky=tk.E)
-
-            # QUIT button
-            def quit_event():
-                login_popup.destroy()
-                enable_buttons([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn])
-
-            login_popup.button_quit = ttk.Button(login_popup, text='Quit', command=quit_event, style="MainPopup.TButton")
-            login_popup.button_quit.grid(row=2, column=0, padx=10, pady=5, sticky=tk.W)
-
-        def load_saved_credentials(self, popup):
-            # REMEMBER CREDENTIALS
-            try:
-                home = os.path.expanduser("~")
-                # Define the encrypted file path
-                encrypted_file = os.path.join(home, "Documents", ".XNAT_login_file.txt.aes")
-                # Define the decrypted file path
-                decrypted_file = os.path.join(home, "Documents", ".XNAT_login_file00000.txt")
-                # Decrypt the file
-                pyAesCrypt.decryptFile(encrypted_file, decrypted_file, os.environ.get('secretKey'), 
-                                        int(os.environ.get('bufferSize1')) * int(os.environ.get('bufferSize2')))
-                # Open the decrypted file in 'read' mode
-                with open(decrypted_file, 'r') as credentials_file:
-                    # Read the data
-                    data = json.load(credentials_file)
-                    # Fill the empty fields
-                    popup.entry_address.var.set(data[popup.entry_user.get()]['Address'])
-                    popup.entry_user.set(data[popup.entry_user.get()]['Username'])
-                    popup.entry_psw.var.set(data[popup.entry_user.get()]['Password'])
-                # Clear the 'data' variable
-                data = ''
-                # Remove the decrypted file
-                os.remove(decrypted_file)
-                # Check the 'Remember me' button
-                popup.btn_remember.config(state='normal')
-                popup.remember.set(1)
-            except Exception as error:
-                messagebox.showerror("XNAT-PIC Login", "Error! The user information is not available, or you don't have access to it.")
-
-        def login(self, popup, master):
-
-            # Retireve the complete address
-            popup.entry_address_complete = popup.http.get() + popup.entry_address.var.get()
-
-            home = os.path.expanduser("~")
-            try:
-                # Start a new xnat session
-                self.session = xnat.connect(
-                    popup.entry_address_complete,
-                    popup.entry_user.get(),
-                    popup.entry_psw.var.get(),
-                )
-                # Check if the 'Remember Button' is checked
-                if popup.remember.get() == True:
-                    # Save credentials
-                    self.save_credentials(popup)
-                else:
-                    # Try to remove the existent encrypted file
-                    try:
-                        os.remove(
-                            os.path.join(home, "Documents", ".XNAT_login_file.txt.aes")
-                        )
-                    except FileNotFoundError:
-                        pass
-                popup.destroy()
-                # Go to the overall uploader
+            else:
+                destroy_widgets([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn, master.xnat_pic_logo_label])
                 self.overall_uploader(master)
-
-            except Exception as error:
-                messagebox.showerror("Error!", error)
-                popup.destroy()
-                enable_buttons([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn])
-
-        def save_credentials(self, popup):
-
-            home = os.path.expanduser("~")
-
-            if os.path.exists(os.path.join(home, "Documents")):
-                
-                # Define the path of the encrypted file
-                encrypted_file = os.path.join(home, "Documents", ".XNAT_login_file.txt.aes")
-                # Define the path of the decrypted file
-                decrypted_file = os.path.join(home, "Documents", ".XNAT_login_file00000.txt")
-
-                if os.path.isfile(encrypted_file):
-
-                    # Decrypt the encrypted file exploiting the secret key
-                    pyAesCrypt.decryptFile(encrypted_file, decrypted_file, os.environ.get('secretKey'), 
-                                            int(os.environ.get('bufferSize1')) * int(os.environ.get('bufferSize2')))
-                    # Open decrypted file and read the data stored
-                    with open(decrypted_file, 'r') as credentials_file:
-                        data = json.load(credentials_file)
-                    # Update the already stored data with the current session parameters
-                    data[str(popup.entry_user.get())] = {
-                                "Address": popup.entry_address.var.get(),
-                                "Username": popup.entry_user.get(),
-                                "Password": popup.entry_psw.var.get(),
-                                "HTTP": popup.http.get()
-                        }
-                    # Remove the decrypted file
-                    os.remove(decrypted_file)
-                
-                else:
-                    # Define empty dictionary for credentials
-                    data = {}
-                    # Add the current credentials to the dictionary
-                    data[str(popup.entry_user.get())] = {
-                                "Address": popup.entry_address.var.get(),
-                                "Username": popup.entry_user.get(),
-                                "Password": popup.entry_psw.var.get(),
-                                "HTTP": popup.http.get()
-                        }
-
-                # Define the path of the file
-                file = os.path.join(home, "Documents", ".XNAT_login_file.txt")
-                # Open the file to write in the data to be stored
-                with open(file, 'w+') as login_file:
-                    json.dump(data, login_file)
-                # Clear data variable
-                data = {}
-                # Encrypt the file
-                pyAesCrypt.encryptFile(file, encrypted_file, os.environ.get('secretKey'), 
-                                        int(os.environ.get('bufferSize1')) * int(os.environ.get('bufferSize2')))
-                # Remove the file
-                os.remove(file)
 
         def overall_uploader(self, master):
                            
-            #################### Update the frame ####################
-            try:
-                destroy_widgets([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn, master.xnat_pic_logo.label])
-                
-            except:
-                pass
             #################### Create the new frame ####################
             master.frame_label.set("Uploader")
             #############################################
@@ -2158,7 +1889,7 @@ class xnat_pic_gui():
 
             # Frame Title
             self.frame_title = ttk.Label(self.label_frame_main, text="XNAT-PIC Uploader", style="Title.TLabel", anchor=tk.CENTER)
-            self.frame_title.pack(fill='x', padx=25, pady=10, anchor=tk.NW)
+            self.frame_title.pack(fill='x', padx=25, pady=10, anchor=tk.CENTER)
 
             # Label Frame Uploader Selection
             self.label_frame_uploader = ttk.LabelFrame(self.label_frame_main, text="Uploader Selection")
@@ -2452,7 +2183,7 @@ class xnat_pic_gui():
 
             # Label Frame for Uploader Data
             self.uploader_data = ttk.LabelFrame(self.label_frame_main, text="")
-            self.uploader_data.pack(fill='x', expand=True, padx=25, pady=10, anchor=tk.NW)
+            self.uploader_data.pack(fill='x', padx=25, pady=10, anchor=tk.NW)
 
             #############################################
             ################# Project ###################
@@ -2559,7 +2290,7 @@ class xnat_pic_gui():
             self.sub.trace('w', get_experiments)
 
             self.bottom_label_frame = ttk.Labelframe(self.label_frame_main, text="", style="Hidden.TLabelframe")
-            self.bottom_label_frame.pack(side='bottom', padx=25, pady=25, fill='x')
+            self.bottom_label_frame.pack(side='bottom', fill='x', expand=True)
 
             #############################################
             ################ EXIT Button ################
@@ -2582,7 +2313,7 @@ class xnat_pic_gui():
             self.exit_btn = ttk.Button(self.bottom_label_frame, textvariable=self.exit_text)
             self.exit_btn.configure(command=exit_uploader)
             self.exit_text.set("Exit")
-            self.exit_btn.pack(side='left', padx=25, pady=25, anchor=tk.NW)
+            self.exit_btn.pack(side='left', padx=25, anchor=tk.NW)
             #############################################
 
             #############################################
@@ -2603,7 +2334,7 @@ class xnat_pic_gui():
             self.next_btn = ttk.Button(self.bottom_label_frame, textvariable=self.next_text, state='disabled',
                                         command=next)
             self.next_text.set("Next")
-            self.next_btn.pack(side='right', padx=25, pady=25, anchor=tk.NE)
+            self.next_btn.pack(side='right', padx=25, anchor=tk.NE)
             #############################################
 
         def check_buttons(self, master, press_btn=0):
@@ -2770,15 +2501,10 @@ class xnat_pic_gui():
                 messagebox.showinfo("XNAT-PIC Uploader","Done! Your subject is uploaded on XNAT platform.")
             # Destroy all the existent widgets (Button, OptionMenu, ...)
             destroy_widgets([self.prj_btn, self.sub_btn, self.exp_btn, self.file_btn, self.add_file_btn, self.custom_var_list,
-                                    self.exit_btn, self.project_list, self.new_prj_btn, self.entry_prjname,
-                                    self.confirm_new_prj, self.reject_new_prj, self.add_file_btn,
+                                    self.exit_btn, self.project_list, self.new_prj_btn,
+                                    self.add_file_btn,
                                     self.subject_list, self.new_sub_btn, self.experiment_list, self.new_exp_btn,
-                                    self.entry_subname, self.confirm_new_sub, self.reject_new_sub,
-                                    self.entry_expname, self.confirm_new_exp, self.reject_new_exp,
                                     self.next_btn, self.exit_btn])
-            # Delete all widgets that cannot be destroyed
-            delete_widgets(master.my_canvas, [self.select_prj, self.select_sub, self.select_exp, self.check_add_files,
-                                                    self.check_n_custom_var, self.subtitle])
             # Clear and update session cache
             self.session.clearcache()
             self.overall_uploader(master)
@@ -2886,15 +2612,9 @@ class xnat_pic_gui():
                 messagebox.showinfo("XNAT-PIC Uploader","Done! Your subject is uploaded on XNAT platform.")
             # Destroy all the existent widgets (Button, OptionMenu, ...)
             destroy_widgets([self.prj_btn, self.sub_btn, self.exp_btn, self.file_btn, self.add_file_btn, self.custom_var_list,
-                                    self.exit_btn, self.project_list, self.new_prj_btn, self.entry_prjname,
-                                    self.confirm_new_prj, self.reject_new_prj, self.add_file_btn,
+                                    self.exit_btn, self.project_list, self.new_prj_btn, self.add_file_btn,
                                     self.subject_list, self.new_sub_btn, self.experiment_list, self.new_exp_btn,
-                                    self.entry_subname, self.confirm_new_sub, self.reject_new_sub,
-                                    self.entry_expname, self.confirm_new_exp, self.reject_new_exp,
                                     self.next_btn, self.exit_btn])
-            # Delete all widgets that cannot be destroyed
-            delete_widgets(master.my_canvas, [self.select_prj, self.select_sub, self.select_exp, self.check_add_files,
-                                                    self.check_n_custom_var, self.subtitle])
             # Clear and update session cache
             self.session.clearcache()
             self.overall_uploader(master)
@@ -3002,15 +2722,9 @@ class xnat_pic_gui():
                 messagebox.showinfo("XNAT-PIC Uploader","Done! Your subject is uploaded on XNAT platform.")
             # Destroy all the existent widgets (Button, OptionMenu, ...)
             destroy_widgets([self.prj_btn, self.sub_btn, self.exp_btn, self.file_btn, self.add_file_btn, self.custom_var_list,
-                                    self.exit_btn, self.project_list, self.new_prj_btn, self.entry_prjname,
-                                    self.confirm_new_prj, self.reject_new_prj, self.add_file_btn,
+                                    self.exit_btn, self.project_list, self.new_prj_btn, self.add_file_btn,
                                     self.subject_list, self.new_sub_btn, self.experiment_list, self.new_exp_btn,
-                                    self.entry_subname, self.confirm_new_sub, self.reject_new_sub,
-                                    self.entry_expname, self.confirm_new_exp, self.reject_new_exp,
                                     self.next_btn, self.exit_btn])
-            # Delete all widgets that cannot be destroyed
-            delete_widgets(master.my_canvas, [self.select_prj, self.select_sub, self.select_exp, self.check_add_files,
-                                                    self.check_n_custom_var, self.subtitle])
             # Clear and update session cache
             self.session.clearcache()
             self.overall_uploader(master)
@@ -3049,15 +2763,9 @@ class xnat_pic_gui():
 
             # Destroy all the existent widgets (Button, OptionMenu, ...)
             destroy_widgets([self.prj_btn, self.sub_btn, self.exp_btn, self.file_btn, self.add_file_btn, self.custom_var_list,
-                                    self.exit_btn, self.project_list, self.new_prj_btn, self.entry_prjname,
-                                    self.confirm_new_prj, self.reject_new_prj, self.add_file_btn,
+                                    self.exit_btn, self.project_list, self.new_prj_btn, self.add_file_btn,
                                     self.subject_list, self.new_sub_btn, self.experiment_list, self.new_exp_btn,
-                                    self.entry_subname, self.confirm_new_sub, self.reject_new_sub,
-                                    self.entry_expname, self.confirm_new_exp, self.reject_new_exp,
                                     self.next_btn, self.exit_btn])
-            # Delete all widgets that cannot be destroyed
-            delete_widgets(master.my_canvas, [self.select_prj, self.select_sub, self.select_exp, self.check_add_files,
-                                                    self.check_n_custom_var, self.subtitle])
             # Clear and update session cache
             self.session.clearcache()
             self.overall_uploader(master)
