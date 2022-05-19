@@ -46,7 +46,11 @@ import pandas
 from layout_style import MyStyle
 import babel.numbers
 from multiprocessing import Process, freeze_support
+<<<<<<< HEAD
 from ScrollableNotebook import *
+=======
+from create_objects import ProjectManager, SubjectManager, ExperimentManager
+>>>>>>> b7b1df75f25ca05a7cfa0d1e83ace7e917ecab18
 
 PATH_IMAGE = "images\\"
 #PATH_IMAGE = "lib\\images\\"
@@ -2104,142 +2108,6 @@ class xnat_pic_gui():
                 # Remove the file
                 os.remove(file)
 
-        def check_project_name(self, *args):
-
-            if self.entry_prjname.get() != '':
-                # Method to check about project name
-                if self.entry_prjname.get() in self.OPTIONS:
-                    # Case 1 --> The project already exists
-                    messagebox.showerror(
-                        "XNAT-PIC Uploader",
-                        "Project ID %s already exists! Please, enter a different project ID."
-                        % self.entry_prjname.get(),
-                    )
-                else:
-                    # Case 2 --> The project does not exist yet
-                    result = messagebox.askyesno("XNAT-PIC Uploader", "A new project will be created. Are you sure?")
-                    if result is False:
-                            return
-                    self.prj.set(self.entry_prjname.get())
-                    disable_buttons([self.entry_prjname, self.confirm_new_prj, self.reject_new_prj])
-                    try:
-                        project = self.session.classes.ProjectData(
-                                       name=self.prj.get(), parent=self.session)
-                    except exception as e:
-                        messagebox.showerror("Error!", str(e))
-                        
-                    self.session.clearcache()
-                    # Refresh the list of projects
-                    self.OPTIONS = self.session.projects
-                    messagebox.showinfo('XNAT-PIC Uploader', 'A new project is created.')                 
-                    
-            else:
-                messagebox.showerror("XNAT-PIC Uploader", "Please enter a project ID.")
-
-        def check_subject_name(self, *args):
-
-            if self.entry_subname.get() != '':
-                # Check if the project already exists
-                if self.prj.get() in self.OPTIONS:
-                    # Method to check about project name
-                    if self.entry_subname.get() in self.OPTIONS2:
-                        # Case 1 --> The project already exists
-                        messagebox.showerror(
-                            "XNAT-PIC Uploader!",
-                            "Subject %s already exists! Please, enter a different subject ID"
-                            % self.entry_subname.get(),
-                        )
-                    else:
-                        # Case 2 --> The project does not exist yet
-                        try:
-                            result = messagebox.askyesno("XNAT-PIC Uploader", "A new subject will be created into %s. Are you sure?"
-                                                        % self.prj.get())
-                            if result is False:
-                                return
-                            self.sub.set(self.entry_subname.get())
-                            disable_buttons([self.entry_subname, self.confirm_new_sub, self.reject_new_sub])
-
-                            try:
-                                # Try to retrieve the project
-                                project = self.session.projects[self.prj.get()]
-                            except:
-                                # otherwise a new one will be created
-                                messagebox.showwarning('XNAT-PIC Uploader', 'The project you are trying to retrieve does not exist.'
-                                                                            'A new project will be created.')
-                                project = self.session.classes.ProjectData(
-                                                    name=self.prj.get(), parent=self.session)
-                                # Clear cache to refresh the catalog
-                                self.session.clearcache()
-                            # Create new subject   
-                            subject = self.session.classes.SubjectData(parent=project, label=self.sub.get())
-                            # Clear cache to refresh the catalog
-                            self.session.clearcache()
-                            # Refresh the list of subjects
-                            self.OPTIONS2 = self.session.projects[self.prj.get()].subjects
-                            messagebox.showinfo('XNAT-PIC Uploader', 'A new subject is created.')                 
-                        except exception as e:
-                            messagebox.showerror("Error!", str(e))
-                else:
-                    messagebox.showerror('XNAT-PIC Uploader', 'The current project does not exist in XNAT platform.'
-                                                            '\nPlease select an other project or create a new one.')
-            else:
-                messagebox.showerror("XNAT-PIC Uploader", "Please enter a subject ID.")
-
-        def check_experiment_name(self, *args):
-
-            if self.entry_expname.get() != '':
-                if self.prj.get() in self.OPTIONS:
-                    if self.sub.get() in self.OPTIONS2:
-
-                        if self.entry_expname.get() in self.OPTIONS3:
-                            # Case 1 --> The experiment already exists
-                            messagebox.showerror(
-                                "XNAT-PIC Uploader!",
-                                "Experiment %s already exists! Please, enter a different experiment ID"
-                                % self.entry_expname.get(),
-                            )
-                        else:
-                            # Case 2 --> The experiment does not exist yet
-                            try:
-                                result = messagebox.askyesno("XNAT-PIC Uploader", "A new experiment will be created into %s. Are you sure?"
-                                                            % self.sub.get())
-                                if result is False:
-                                    return
-                                self.exp.set(self.entry_expname.get())
-                                disable_buttons([self.entry_expname, self.confirm_new_exp, self.reject_new_exp])
-
-                                try:
-                                    # Try to retrieve the subject
-                                    subject = self.session.projects[self.prj.get()].subjects[self.sub.get()]
-                                except:
-                                    # otherwise a new one will be created
-                                    messagebox.showwarning('XNAT-PIC Uploader', 'The subject you are trying to retrieve does not exist.'
-                                                                                'A new project will be created.')
-                                    subject = self.session.classes.SubjectData(parent=self.prj.get(), label=self.sub.get())
-                                    # Clear cache to refresh the catalog
-                                    self.session.clearcache()
-                                # Create new experiment
-
-                                ...
-
-                                # Clear cache to refresh the catalog
-                                # os.remove(str(self.exp.get()))
-                                self.session.clearcache()
-                                # Refresh the list of projects and subjects
-                                self.OPTIONS2 = self.session.projects[self.prj.get()].subjects
-                                self.OPTIONS3 = self.session.projects[self.prj.get()].subjects[self.sub.get()]
-                                messagebox.showinfo('XNAT-PIC Uploader', 'A new experiment is created.')                 
-                            except exception as e:
-                                messagebox.showerror("Error!", str(e))
-                    else:
-                        messagebox.showerror('XNAT-PIC Uploader', 'The current subject does not exist in XNAT platform.'
-                                                                '\nPlease select an other subject or create a new one.')
-                else:
-                    messagebox.showerror('XNAT-PIC Uploader', 'The current project does not exist in XNAT platform.'
-                                                            '\nPlease select an other project or create a new one.')
-            else:
-                messagebox.showerror("XNAT-PIC Uploader", "Please enter a experiment ID.")
-
         def overall_uploader(self, master):
                            
             #################### Update the frame ####################
@@ -2551,21 +2419,6 @@ class xnat_pic_gui():
             #############################################
             ################# Project ###################
             # Menu
-            def get_subjects(*args):
-                if self.prj.get() != '--' and self.prj.get() in self.OPTIONS:
-                    self.OPTIONS2 = list(self.session.projects[self.prj.get()].subjects.key_map.keys())
-                else:
-                    self.OPTIONS2 = []
-                self.sub.set(default_value)
-                self.exp.set(default_value)
-                self.subject_list['menu'].delete(0, 'end')
-                for key in self.OPTIONS2:
-                    self.subject_list['menu'].add_command(label=key, command=lambda var=key:self.sub.set(var))
-            
-            def reject_project(*args):
-                self.entry_prjname.delete(0,tk.END)
-                disable_buttons([self.entry_prjname, self.confirm_new_prj, self.reject_new_prj])
-
             self.project_list_label = ttk.Label(self.uploader_data, text="Select Project")
             self.project_list_label.grid(row=0, column=0, padx=2, pady=10, sticky=tk.NW)
             self.OPTIONS = list(self.session.projects)
@@ -2573,52 +2426,29 @@ class xnat_pic_gui():
             default_value = "--"
             self.project_list = ttk.OptionMenu(self.uploader_data, self.prj, default_value, *self.OPTIONS)
             self.project_list.configure(state="disabled", width=30)
-            self.prj.trace('w', get_subjects)
-            self.prj.trace('w', reject_project)
+            
             self.project_list.grid(row=0, column=1, padx=2, pady=10, sticky=tk.NW)
             
             # Button to add a new project
             def add_project():
+<<<<<<< HEAD
                 enable_buttons([self.entry_prjname, self.confirm_new_prj, self.reject_new_prj])
                 self.entry_prjname.delete(0,tk.END)
+=======
+                createdProject = ProjectManager(self.session)
+                self.session.clearcache()
+                self.prj.set(createdProject.project_id.get())
+
+>>>>>>> b7b1df75f25ca05a7cfa0d1e83ace7e917ecab18
             self.new_prj_btn = ttk.Button(self.uploader_data, state=tk.DISABLED, width=20, style="Secondary.TButton",
                                         command=add_project, cursor=CURSOR_HAND, text="Add New Project")
             self.new_prj_btn.grid(row=0, column=2, padx=20, pady=10, sticky=tk.NW)
-            
-            # Entry to write a new project
-            self.entry_prjname = ttk.Entry(self.uploader_data)
-            self.entry_prjname.configure(state="disabled", width=30)
-            self.entry_prjname.grid(row=0, column=3, padx=2, pady=10, sticky=tk.NW)
-
-            # Button to confirm new project
-            self.confirm_new_prj = ttk.Button(self.uploader_data, image=master.logo_accept, style="WithoutBack.TButton",
-                                            command=self.check_project_name, cursor=CURSOR_HAND, state='disabled')
-            self.confirm_new_prj.grid(row=0, column=4, padx=10, pady=10, sticky=tk.NW)
-
-            # Button to reject new project
-            self.reject_new_prj = ttk.Button(self.uploader_data, image=master.logo_delete, style="WithoutBack.TButton",
-                                            command=reject_project, cursor=CURSOR_HAND, state='disabled')
-            self.reject_new_prj.grid(row=0, column=5, padx=2, pady=10, sticky=tk.NW)
             
             #############################################
 
             #############################################
             ################# Subject ###################
             # Menu
-            def get_experiments(*args):
-                if self.prj.get() != '--' and self.sub.get() != '--' and self.prj.get() in self.OPTIONS and self.sub.get() in self.OPTIONS2:
-                    self.OPTIONS3 = list(self.session.projects[self.prj.get()].subjects[self.sub.get()].experiments.key_map.keys())
-                else:
-                    self.OPTIONS3 = []
-                self.exp.set(default_value)
-                self.experiment_list['menu'].delete(0, 'end')
-                for key in self.OPTIONS3:
-                    self.experiment_list['menu'].add_command(label=key, command=lambda var=key:self.exp.set(var))
-
-            def reject_subject(*args):
-                self.entry_subname.delete(0,tk.END)
-                disable_buttons([self.entry_subname, self.confirm_new_sub, self.reject_new_sub])
-
             if self.prj.get() != '--':
                 self.OPTIONS2 = list(self.session.projects[self.prj.get()].subjects.key_map.keys())
             else:
@@ -2628,39 +2458,28 @@ class xnat_pic_gui():
             self.sub = tk.StringVar()
             self.subject_list = ttk.OptionMenu(self.uploader_data, self.sub, default_value, *self.OPTIONS2)
             self.subject_list.configure(state="disabled", width=30)
-            self.sub.trace('w', get_experiments)
-            self.sub.trace('w', reject_subject)
+            
             self.subject_list.grid(row=1, column=1, padx=2, pady=5, sticky=tk.NW)
             
             # Button to add a new subject
             def add_subject():
+<<<<<<< HEAD
                 enable_buttons([self.entry_subname, self.confirm_new_sub, self.reject_new_sub])
                 self.entry_subname.delete(0,tk.END)
+=======
+                createdSubject = SubjectManager(self.session)
+                self.session.clearcache()
+                self.prj.set(createdSubject.parent_project.get())
+                self.sub.set(createdSubject.subject_id.get())
+
+>>>>>>> b7b1df75f25ca05a7cfa0d1e83ace7e917ecab18
             self.new_sub_btn = ttk.Button(self.uploader_data, state=tk.DISABLED, width=20, style="Secondary.TButton",
                                         command=add_subject, cursor=CURSOR_HAND, text="Add New Subject")
             self.new_sub_btn.grid(row=1, column=2, padx=20, pady=10, sticky=tk.NW)
-
-            # Entry to write a new subject
-            self.entry_subname = ttk.Entry(self.uploader_data)
-            self.entry_subname.configure(state="disabled", width=30)
-            self.entry_subname.grid(row=1, column=3, padx=2, pady=10, sticky=tk.NW)
-
-            # Button to confirm new subject
-            self.confirm_new_sub = ttk.Button(self.uploader_data, image=master.logo_accept, style="WithoutBack.TButton",
-                                            command=self.check_subject_name, cursor=CURSOR_HAND, state='disabled')
-            self.confirm_new_sub.grid(row=1, column=4, padx=10, pady=10, sticky=tk.NW)
-
-            # Button to reject new subject
-            self.reject_new_sub = ttk.Button(self.uploader_data, image = master.logo_delete, style="WithoutBack.TButton",
-                                            command=reject_subject, cursor=CURSOR_HAND, state='disabled')
-            self.reject_new_sub.grid(row=1, column=5, padx=2, pady=10, sticky=tk.NW)
             #############################################
 
             #############################################
             ################# Experiment ################
-            def reject_experiment(*args):
-                self.entry_expname.delete(0,tk.END)
-                disable_buttons([self.entry_expname, self.confirm_new_exp, self.reject_new_exp])
             
             # Menu
             if self.prj.get() != '--' and self.sub.get() != '--':
@@ -2672,32 +2491,44 @@ class xnat_pic_gui():
             self.exp = tk.StringVar()
             self.experiment_list = ttk.OptionMenu(self.uploader_data, self.exp, default_value, *self.OPTIONS3)
             self.experiment_list.configure(state="disabled", width=30)
-            self.exp.trace('w', reject_experiment)
             self.experiment_list.grid(row=2, column=1, padx=2, pady=10, sticky=tk.NW)
             
             # Button to add a new experiment
             def add_experiment():
-                enable_buttons([self.entry_expname, self.confirm_new_exp, self.reject_new_exp])
-                self.entry_expname.delete(0,tk.END)
+                createdExperiment = ExperimentManager(self.session)
+                self.session.clearcache()
+                self.prj.set(createdExperiment.parent_project.get())
+                self.sub.set(createdExperiment.parent_subject.get())
+                self.exp.set(createdExperiment.experiment_id.get())
+
             self.new_exp_btn = ttk.Button(self.uploader_data, state=tk.DISABLED, style="Secondary.TButton", 
                                         text="Add New Experiment", command=add_experiment, cursor=CURSOR_HAND, width=20)
             self.new_exp_btn.grid(row=2, column=2, padx=20, pady=10, sticky=tk.NW)
-
-            # Entry to write a new experiment
-            self.entry_expname = ttk.Entry(self.uploader_data)
-            self.entry_expname.config(state='disabled', width=30)
-            self.entry_expname.grid(row=2, column=3, padx=2, pady=10, sticky=tk.NW)
-
-            # Button to confirm new experiment
-            self.confirm_new_exp = ttk.Button(self.uploader_data, image = master.logo_accept, style="WithoutBack.TButton",
-                                            command=self.check_experiment_name, cursor=CURSOR_HAND, state='disabled')
-            self.confirm_new_exp.grid(row=2, column=4, padx=10, pady=10, sticky=tk.NW)
-
-            # Button to reject new experiment
-            self.reject_new_exp = ttk.Button(self.uploader_data, image = master.logo_delete, style="WithoutBack.TButton",
-                                            command=reject_experiment, cursor=CURSOR_HAND, state='disabled')
-            self.reject_new_exp.grid(row=2, column=5, padx=2, pady=10, sticky=tk.NW)
             #############################################
+
+            # Callback methods
+            def get_subjects(*args):
+                if self.prj.get() != '--' and self.prj.get() in self.OPTIONS:
+                    self.OPTIONS2 = list(self.session.projects[self.prj.get()].subjects.key_map.keys())
+                else:
+                    self.OPTIONS2 = []
+                self.sub.set(default_value)
+                self.exp.set(default_value)
+                self.subject_list['menu'].delete(0, 'end')
+                for key in self.OPTIONS2:
+                    self.subject_list['menu'].add_command(label=key, command=lambda var=key:self.sub.set(var))
+            def get_experiments(*args):
+                if self.prj.get() != '--' and self.sub.get() != '--' and self.prj.get() in self.OPTIONS and self.sub.get() in self.OPTIONS2:
+                    self.OPTIONS3 = list(self.session.projects[self.prj.get()].subjects[self.sub.get()].experiments.key_map.keys())
+                else:
+                    self.OPTIONS3 = []
+                self.exp.set(default_value)
+                self.experiment_list['menu'].delete(0, 'end')
+                for key in self.OPTIONS3:
+                    self.experiment_list['menu'].add_command(label=key, command=lambda var=key:self.exp.set(var))
+
+            self.prj.trace('w', get_subjects)
+            self.sub.trace('w', get_experiments)
 
             #############################################
             ################ EXIT Button ################
