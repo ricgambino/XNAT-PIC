@@ -364,7 +364,7 @@ francesco.gammaraccio@unito.it | T +39 011 670 6473
 * Alessandro Paglialonga: https://github.com/pagli17
 * Stefan Klein, Hakim Achterberg and Marcel Koek - Biomedical Imaging Group Rotterdam, Erasmus Medical Center, Rotterdam
 * Matteo Caffini, “Project-Beat--Pyhton”: https://github.com/mcaffini/Project-Beat---Python
-*Sara Zullino: https://github.com/szullino
+* Sara Zullino: https://github.com/szullino
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
