@@ -162,11 +162,19 @@ class xnat_pic_gui():
         # Toolbar Menu
         self.toolbar_menu = ttk.Menu(self.root)
         fileMenu = ttk.Menu(self.toolbar_menu, tearoff=0)
+        new_menu = ttk.Menu(fileMenu, tearoff=0)
+        new_menu.add_command(label="Project")
+        new_menu.add_command(label="Subject")
+        new_menu.add_command(label="Experiment")
+
+        fileMenu.add_cascade(label="New...", menu=new_menu)
+        fileMenu.add_command(label="Login")
         fileMenu.add_separator()
         fileMenu.add_command(label="Exit", command=lambda: self.root.destroy())
         
         self.toolbar_menu.add_cascade(label="File", menu=fileMenu)
         self.toolbar_menu.add_cascade(label="Edit")
+        self.toolbar_menu.add_cascade(label="Options")
         self.root.config(menu=self.toolbar_menu)
 
         # Adjust size based on screen resolution
