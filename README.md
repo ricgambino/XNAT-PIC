@@ -294,7 +294,11 @@ Thank you!
 ## License
 
 XNAT-PIC is distributed under the terms of the GNU General Public License (GPL) v3 or any later version as stated by the Free Software Foundation. See [`LICENSE`](https://github.com/szullino/XNAT-PIC-Readme/blob/master/LICENSE.txt) for more information.
-
+  
+<!-- LINKS -->
+## Links
+  
+XNAT-PIC was built using [ttkbootstrap](https://github.com/israel-dryer/ttkbootstrap/) theme extension and [Icons8](https://icons8.com/) icons.
 
 <!-- CITATION -->
 ## Citation
@@ -317,14 +321,23 @@ Please, **cite these repositories** by using: <br>
 <!-- CONTACT -->
 ## Contact
 
-**Sara Zullino, PhD** <br> [![LinkedIn][linkedin-shield]][linkedin-url] [![Publons][publons-shield]][publons-url] [![Twitter][twitter-shield]][twitter-url]<br>
+**Riccardo Gambino** <br> [![LinkedIn][linkedin-shield]][linkedin-url] [![Publons][publons-shield]][publons-url] [![Twitter][twitter-shield]][twitter-url]<br>
 Molecular Imaging Center<br>
 Department of Molecular Biotechnology and Health Sciences <br>
 <a  href="https://en.unito.it/">
     <img src="https://innovazione.zipnews.it/wp-content/uploads/sites/6/2017/07/unito.png" alt="Logo" width="220"/> <br>
   </a>
   Via Nizza 52 | 10126 Torino, Italy<br>
-sara.zullino@unito.it | T +39 011 670 9539 
+riccardo.gambino@unito.it | T +39 011 670 6473 
+  
+**Francesco Gammaraccio** <br> [![LinkedIn][linkedin-shield]][linkedin-url] [![Publons][publons-shield]][publons-url] [![Twitter][twitter-shield]][twitter-url]<br>
+Molecular Imaging Center<br>
+Department of Molecular Biotechnology and Health Sciences <br>
+<a  href="https://en.unito.it/">
+    <img src="https://innovazione.zipnews.it/wp-content/uploads/sites/6/2017/07/unito.png" alt="Logo" width="220"/> <br>
+  </a>
+  Via Nizza 52 | 10126 Torino, Italy<br>
+francesco.gammaraccio@unito.it | T +39 011 670 6473 
 
 
 <!-- ACKNOWLEDGEMENTS -->
@@ -351,8 +364,7 @@ sara.zullino@unito.it | T +39 011 670 9539
 * Alessandro Paglialonga: https://github.com/pagli17
 * Stefan Klein, Hakim Achterberg and Marcel Koek - Biomedical Imaging Group Rotterdam, Erasmus Medical Center, Rotterdam
 * Matteo Caffini, “Project-Beat--Pyhton”: https://github.com/mcaffini/Project-Beat---Python
-
-
+*Sara Zullino: https://github.com/szullino
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
