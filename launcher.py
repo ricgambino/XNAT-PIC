@@ -1109,7 +1109,7 @@ class xnat_pic_gui():
             def OnFrameConfigure(canvas):
                     canvas.configure(scrollregion=canvas.bbox("all"))
 
-            keys_ID = ["Folder", "Project", "Subject", "Experiment", "Acq. date"]
+            keys_ID = ["Folder", "Project", "Subject", "Experiment", "Acquisition_date"]
             # Entry ID 
             self.entries_variable_ID = []  
             self.entries_value_ID = []          
@@ -1121,7 +1121,7 @@ class xnat_pic_gui():
                 self.entries_variable_ID[-1]['state'] = 'disabled'
                 self.entries_variable_ID[-1].grid(row=count, column=0, padx = 5, pady = 5, sticky=W)
                 # Value
-                if key == "Acq. date":
+                if key == "Acquisition_date":
                     self.entries_value_ID.append(ttk.Entry(self.frame_ID, state='disabled', takefocus = 0, width=20))
                     self.entries_value_ID[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=NW)
                 else:
@@ -1222,8 +1222,10 @@ class xnat_pic_gui():
             self.tab_name = self.notebook.notebookTab.tab(self.index_tab, "text")
             self.my_listbox = self.listbox_notebook[self.index_tab]
             def select_tab(event):
-                try: self.notebook.notebookContent.select(self.notebook.notebookTab.index("current"))
-                except: pass
+                try: 
+                    self.notebook.notebookContent.select(self.notebook.notebookTab.index("current"))
+                except Exception as e:
+                    pass
                 self.index_tab = self.notebook.notebookTab.index("current")
                 self.tab_name =  self.notebook.notebookTab.tab(self.index_tab, "text")
                 self.my_listbox = self.listbox_notebook[int(self.index_tab)]
@@ -1302,6 +1304,11 @@ class xnat_pic_gui():
                         if k == "Acquisition_date":
                             self.entries_value_ID.append(ttk.Entry(self.frame_ID, takefocus = 0, width=20))
                             self.entries_value_ID[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=NW)
+                            self.cal.entry['state'] = 'normal'
+                            self.cal.entry.delete(0, tk.END)
+                            self.cal.entry.insert(0, v)
+                            self.cal.entry['state'] = 'disabled'
+                            self.cal.button['state'] = 'disabled'
                         else:
                             self.entries_value_ID.append(ttk.Entry(self.frame_ID, takefocus = 0, width=44))
                             self.entries_value_ID[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=W)
@@ -1323,11 +1330,6 @@ class xnat_pic_gui():
                             self.entries_value_CV[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=W)
                             count += 1
                 
-                self.cal.entry['state'] = 'normal'
-                self.cal.entry.delete(0, tk.END)
-                self.cal.entry.insert(0, self.entries_value_ID[4].get())
-                self.cal.entry['state'] = 'disabled'
-                self.cal.button['state'] = 'disabled'
  
             self.my_listbox.bind('<Tab>', items_selected)
 
@@ -1521,7 +1523,7 @@ class xnat_pic_gui():
             self.selected_timepoint.set('')
             self.selected_timepoint1.set('')
             self.time_entry.delete(0, tk.END)
-            self.cal.entry.delete(0, tk.END)
+            #self.cal.entry.delete(0, tk.END)
             disable_buttons([self.dose_menu, self.group_menu, self.timepoint_menu, self.time_entry, self.timepoint_menu1, self.cal])
             # Saves the changes made by the user in the txt file
             substring = str(my_key).replace('#','/')
@@ -1550,8 +1552,9 @@ class xnat_pic_gui():
         # #################### Confirm multiple metadata ####################
         def confirm_multiple_metadata(self, master):
 
-            disable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.my_listbox, self.browse_btn])
-            tab_names = [self.notebook.tab(i, state='disable') for i in self.notebook.tabs()]  
+            disable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.browse_btn])
+
+            #tab_names = [self.notebook.notebookTab.tab(i, state='disable') for i in self.notebook.notebookTab.tabs()]  
                      
             try:
                 self.selected_folder
@@ -1560,8 +1563,10 @@ class xnat_pic_gui():
                 enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.my_listbox, self.browse_btn])
                 messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
                 raise
-
+            
+           
             messagebox.showinfo("Project Data","Select the ID fields you want to copy.")
+            #self.my_listbox.selection_set(self.selected_index)
 
             # Select the fields that you want to copy
             self.list_ID = []
@@ -1600,7 +1605,7 @@ class xnat_pic_gui():
             
         def select_CV(self, master):
             messagebox.showinfo("Project Data","Select the Custom Variables you want to copy.")
-
+            #self.my_listbox.selection_set(self.selected_index)
             # Select the fields that you want to copy
             self.list_CV = []
             # Confirm ID
@@ -1635,9 +1640,9 @@ class xnat_pic_gui():
                 count_list = btn_multiple_confirm_CV.copy()
             
         def select_exp(self, master):
-            messagebox.showinfo("Metadata","1. Select the folders from the box on the left for which to copy the info!\n 2. Always remaining in the box on the left, press ENTER to confirm or ESC to cancel!")
-            enable_buttons([self.my_listbox])
-            tab_names = [self.notebook.tab(i, state='normal') for i in self.notebook.tabs()]
+            messagebox.showinfo("Metadata","Select the folders from the box on the left for which to copy the info and then press confirm or cancel!")
+            #enable_buttons([self.my_listbox])
+            #tab_names = [self.notebook.tab(i, state='normal') for i in self.notebook.tabs()]
             self.my_listbox.selection_set(self.selected_index)    
             self.my_listbox['selectmode'] = MULTIPLE
             
@@ -1648,17 +1653,22 @@ class xnat_pic_gui():
             self.my_listbox.bind("<<ListboxSelect>>", select_listbox)
 
             def select_tab_listbox(event):
-                tab_id = self.notebook.select()
-                self.tab_name = self.notebook.tab(tab_id, "text")
+                try: 
+                    self.notebook.notebookContent.select(self.notebook.notebookTab.index("current"))
+                except Exception as e:
+                    pass
+                tab_id = self.notebook.notebookTab.select()
+                self.tab_name = self.notebook.notebookTab.tab(tab_id, "text")
                 # Update the listbox
-                self.my_listbox.delete(0, END)
-                self.my_listbox.insert(tk.END, *self.todos[self.tab_name])
+                self.my_listbox = self.listbox_notebook[int(self.index_tab)]
                 self.list_tab_listbox.append(self.seltext)
                 
-            self.notebook.bind("<<NotebookTabChanged>>", select_tab_listbox)  
+            self.notebook.notebookTab.bind("<<NotebookTabChanged>>", select_tab_listbox)  
 
             # The user presses 'enter' to confirm 
-            def items_selected2(event):
+            def items_selected2():
+                self.no_btn.destroy()
+                self.ok_btn.destroy()
                 self.list_tab_listbox.append(self.seltext)
                 result = messagebox.askquestion("Multiple Confirm", "Are you sure you want to save data for the selected folders?\n", icon='warning')
                 
@@ -1684,23 +1694,29 @@ class xnat_pic_gui():
                 self.selected_timepoint1.set('')
                 self.time_entry.delete(0, tk.END)
                 self.cal.entry.delete(0, tk.END)
-                disable_buttons([self.dose_menu, self.group_menu, self.timepoint_menu, self.time_entry, self.timepoint_menu1, self.cal])
+                disable_buttons([self.dose_menu, self.group_menu, self.timepoint_menu, self.time_entry, self.timepoint_menu1, self.cal.entry, self.cal.button])
                 # Clear the focus and the select mode of the listbox is single
                 enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.browse_btn])
                 self.my_listbox.selection_clear(0, 'end')
                 self.my_listbox['selectmode'] = SINGLE
                 
 
-            self.my_listbox.bind("<Return>", items_selected2)
+            #self.my_listbox.bind("<Return>", items_selected2)
+            self.ok_btn = ttk.Button(self.frame_metadata, image = master.logo_accept, command = items_selected2, cursor=CURSOR_HAND)
+            self.ok_btn.place(relx = 0.16, rely = 0.48, anchor = NW)
             
             # The user presses 'esc' to cancel
-            def items_cancel(event):
-                    # Clear the focus and the select mode of the listbox is single
+            def items_cancel():
+                self.no_btn.destroy()
+                self.ok_btn.destroy()
+                # Clear the focus and the select mode of the listbox is single
                 messagebox.showinfo("Metadata","The information was not saved for the selected folders!")
                 enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.browse_btn])
                 self.my_listbox.selection_clear(0, 'end')
                 self.my_listbox['selectmode'] = SINGLE
-            self.my_listbox.bind("<Escape>", items_cancel)
+            # self.my_listbox.bind("<Escape>", items_cancel)
+            self.no_btn = ttk.Button(self.frame_metadata, image = master.logo_delete, command = items_cancel, cursor=CURSOR_HAND)
+            self.no_btn.place(relx = 0.24, rely = 0.48, anchor = NE)
                 
         # #################### Add ID #################
         def add_ID(self, master):
@@ -1712,7 +1728,7 @@ class xnat_pic_gui():
                     messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
                     raise 
             # Disable btns
-            disable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn])
+            disable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.browse_btn])
             # I use len(all_entries) to get nuber of next free row
             next_row = len(self.entries_variable_ID)
             
@@ -1735,7 +1751,7 @@ class xnat_pic_gui():
                 state = self.entries_value_ID[1]['state']
                 self.entries_variable_ID[next_row]['state'] = tk.DISABLED
                 self.entries_value_ID[next_row]['state'] = state
-                enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn])
+                enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.browse_btn])
                 btn_confirm_ID.destroy()
                 btn_reject_ID.destroy()
                  
@@ -1745,7 +1761,7 @@ class xnat_pic_gui():
 
             # Delete
             def reject_ID(next_row):
-                enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn])
+                enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.browse_btn])
                 self.entries_variable_ID[next_row].destroy()
                 self.entries_value_ID[next_row].destroy()
                 btn_confirm_ID.destroy()
@@ -1765,7 +1781,7 @@ class xnat_pic_gui():
                     messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
                     raise 
             # Disable btns
-            disable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn])
+            disable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.browse_btn])
             # I get number of next free row
             next_row = len(self.entries_variable_CV)
             
@@ -1787,7 +1803,7 @@ class xnat_pic_gui():
                     state = self.entries_value_ID[1]['state']    
                     self.entries_variable_CV[next_row]['state'] = tk.DISABLED
                     self.entries_value_CV[next_row]['state'] = state
-                    enable_buttons([self.modify_btn, self.confirm_btn])
+                    enable_buttons([self.modify_btn, self.confirm_btn, self.browse_btn])
                     btn_confirm_CV.destroy()
                     btn_reject_CV.destroy()
                 else:
@@ -1842,7 +1858,7 @@ class xnat_pic_gui():
         def exit_metadata(self, master):
             result = messagebox.askquestion("Exit", "Do you want to exit?", icon='warning')
             if result == 'yes':
-                destroy_widgets([self.frame_metadata])
+                destroy_widgets([self.frame_metadata, self.menu])
 
                 xnat_pic_gui.choose_your_action(master)
     
