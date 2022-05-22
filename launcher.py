@@ -1892,6 +1892,9 @@ class xnat_pic_gui():
             #############################################
             ################ Main Buttons ###############
 
+            self.label_frame_main = ttk.Labelframe(master.frame, style="Hidden.TLabelframe")
+            self.label_frame_main.place(relx=0.25, rely=0, anchor=tk.NW, relwidth=0.7)
+
             # Frame Title
             self.frame_title = ttk.Label(self.label_frame_main, text="XNAT-PIC Uploader", style="Title.TLabel", anchor=tk.CENTER)
             self.frame_title.pack(fill='x', padx=25, pady=10, anchor=tk.CENTER)
@@ -2184,8 +2187,8 @@ class xnat_pic_gui():
             #############################################
 
             # Label Frame for Uploader Data
-            self.uploader_data = ttk.LabelFrame(self.label_frame_main, text="")
-            self.uploader_data.pack(fill='x', padx=25, pady=10, anchor=tk.NW)
+            self.uploader_data = ttk.LabelFrame(master.frame, text="")
+            self.uploader_data.place(relx=0.25, rely=0.65, anchor=tk.NW)
 
             #############################################
             ################# Project ###################
@@ -2202,8 +2205,10 @@ class xnat_pic_gui():
             
             # Button to add a new project
             def add_project():
-                enable_buttons([self.entry_prjname, self.confirm_new_prj, self.reject_new_prj])
-                self.entry_prjname.delete(0,tk.END)
+                createdProject = ProjectManager(self.session)
+                self.session.clearcache()
+                self.prj.set(createdProject.project_id.get())
+
             self.new_prj_btn = ttk.Button(self.uploader_data, state=tk.DISABLED, width=20, style="Secondary.TButton",
                                         command=add_project, cursor=CURSOR_HAND, text="Add New Project")
             self.new_prj_btn.grid(row=0, column=2, padx=20, pady=10, sticky=tk.NW)
@@ -2227,8 +2232,10 @@ class xnat_pic_gui():
             
             # Button to add a new subject
             def add_subject():
-                enable_buttons([self.entry_subname, self.confirm_new_sub, self.reject_new_sub])
-                self.entry_subname.delete(0,tk.END)
+                createdSubject = SubjectManager(self.session)
+                self.session.clearcache()
+                self.prj.set(createdSubject.parent_project.get())
+                self.sub.set(createdSubject.subject_id.get())
             self.new_sub_btn = ttk.Button(self.uploader_data, state=tk.DISABLED, width=20, style="Secondary.TButton",
                                         command=add_subject, cursor=CURSOR_HAND, text="Add New Subject")
             self.new_sub_btn.grid(row=1, column=2, padx=20, pady=10, sticky=tk.NW)
@@ -2286,8 +2293,8 @@ class xnat_pic_gui():
             self.prj.trace('w', get_subjects)
             self.sub.trace('w', get_experiments)
 
-            self.bottom_label_frame = ttk.Labelframe(self.label_frame_main, text="", style="Hidden.TLabelframe")
-            self.bottom_label_frame.pack(side='bottom', fill='x', expand=True)
+            self.bottom_label_frame = ttk.Labelframe(master.frame, text="", style="Hidden.TLabelframe")
+            self.bottom_label_frame.place(relx=0.25, rely=0.9, anchor=tk.NW, relwidth=0.7)
 
             #############################################
             ################ EXIT Button ################
@@ -2307,7 +2314,7 @@ class xnat_pic_gui():
                     xnat_pic_gui.choose_your_action(master)
 
             self.exit_text = tk.StringVar() 
-            self.exit_btn = ttk.Button(master.frame, textvariable=self.exit_text)
+            self.exit_btn = ttk.Button(self.bottom_label_frame, textvariable=self.exit_text)
             self.exit_btn.configure(command=exit_uploader)
             self.exit_text.set("Exit")
             self.exit_btn.pack(side='left', padx=25, anchor=tk.NW)
@@ -2328,7 +2335,7 @@ class xnat_pic_gui():
                     pass
 
             self.next_text = tk.StringVar() 
-            self.next_btn = ttk.Button(master.frame, textvariable=self.next_text, state='disabled',
+            self.next_btn = ttk.Button(self.bottom_label_frame, textvariable=self.next_text, state='disabled',
                                         command=next)
             self.next_text.set("Next")
             self.next_btn.pack(side='right', padx=25, anchor=tk.NE)
