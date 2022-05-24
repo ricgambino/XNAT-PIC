@@ -527,7 +527,7 @@ class xnat_pic_gui():
             self.tree_to_convert.column("#3", stretch=tk.YES, width=100)
 
             def tree_thread(*args):
-                progressbar_tree = ProgressBar("XNAT-PIC Converter")
+                progressbar_tree = ProgressBar(master.root, "XNAT-PIC Converter")
                 progressbar_tree.start_indeterminate_bar()
                 if self.convertion_state.get() == 0:
                     t = threading.Thread(target=display_folder_tree, args=())
@@ -541,7 +541,7 @@ class xnat_pic_gui():
             def display_converted_folder_tree(*args):
 
                 if self.converted_folder.get() != '' and self.convertion_state.get() == 1:
-                    progressbar_tree = ProgressBar("XNAT-PIC Converter")
+                    progressbar_tree = ProgressBar(master.root, "XNAT-PIC Converter")
                     progressbar_tree.start_indeterminate_bar()
                     if self.tree_converted.exists(0):
                         self.tree_converted.delete(*self.tree_converted.get_children())
@@ -767,7 +767,7 @@ class xnat_pic_gui():
             start_time = time.time()
 
             # Start the progress bar
-            progressbar = ProgressBar(bar_title='XNAT-PIC Project Converter')
+            progressbar = ProgressBar(master.root, bar_title='XNAT-PIC Project Converter')
             progressbar.start_determinate_bar()
 
             # Perform DICOM convertion through separate thread (different from the main thread)
@@ -854,7 +854,7 @@ class xnat_pic_gui():
             start_time = time.time()
 
             # Start the progress bar
-            progressbar = ProgressBar(bar_title='XNAT-PIC Subject Converter')
+            progressbar = ProgressBar(master.root, bar_title='XNAT-PIC Subject Converter')
             progressbar.start_determinate_bar()
 
             # Initialize and start convertion thread
@@ -905,7 +905,7 @@ class xnat_pic_gui():
             start_time = time.time()
 
             # Start the progress bar
-            progressbar = ProgressBar(bar_title='XNAT-PIC Experiment Converter')
+            progressbar = ProgressBar(master.root, bar_title='XNAT-PIC Experiment Converter')
             progressbar.start_indeterminate_bar()
 
             # Initialize and start convertion thread
@@ -1877,12 +1877,14 @@ class xnat_pic_gui():
             # Disable main frame buttons
             disable_buttons([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn])
 
-            self.session = AccessManager(master.style_label.get()).session
+            access_manager = AccessManager(master.root)
+            master.root.wait_window(access_manager.popup)
 
-            if self.session == None:
+            if access_manager.connected == False:
                 enable_buttons([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn])
             else:
                 destroy_widgets([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn, master.xnat_pic_logo_label])
+                self.session = access_manager.session
                 self.overall_uploader(master)
 
         def overall_uploader(self, master):
@@ -2083,7 +2085,7 @@ class xnat_pic_gui():
             self.tree.column("#3", stretch=tk.YES, width=100)
 
             def load_tree(*args):
-                progressbar_tree = ProgressBar("XNAT-PIC Uploader")
+                progressbar_tree = ProgressBar(master.root, "XNAT-PIC Uploader")
                 progressbar_tree.start_indeterminate_bar()
                 t = threading.Thread(target=folder_selected_handler, args=())
                 t.start()
@@ -2411,7 +2413,7 @@ class xnat_pic_gui():
                 messagebox.showerror('XNAT-PIC Uploader', 'Error! The selected folder is empty!')
             else:
                 # Start progress bar
-                progressbar = ProgressBar(bar_title='XNAT-PIC Uploader')
+                progressbar = ProgressBar(master.root, bar_title='XNAT-PIC Uploader')
                 progressbar.start_indeterminate_bar()
 
                 list_dirs = os.listdir(project_to_upload)
@@ -2527,7 +2529,7 @@ class xnat_pic_gui():
                 self.uploader = Dicom2XnatUploader(self.session)
 
                 # Start progress bar
-                progressbar = ProgressBar(bar_title='XNAT-PIC Uploader')
+                progressbar = ProgressBar(master.root, bar_title='XNAT-PIC Uploader')
                 progressbar.start_indeterminate_bar()
 
                 start_time = time.time()
@@ -2636,7 +2638,7 @@ class xnat_pic_gui():
                 try:
                     self.uploader = Dicom2XnatUploader(self.session)
                     # Start progress bar
-                    progressbar = ProgressBar(bar_title='XNAT-PIC Uploader')
+                    progressbar = ProgressBar(master.root, bar_title='XNAT-PIC Uploader')
                     progressbar.start_indeterminate_bar()
 
                     start_time = time.time()
@@ -2747,7 +2749,7 @@ class xnat_pic_gui():
                 vars['experiment_id'] = self.exp.get()
                 vars['folder_name'] = files_to_upload[0].split('/')[-2]
 
-                progressbar = ProgressBar('XNAT-PIC File Uploader')
+                progressbar = ProgressBar(master.root, 'XNAT-PIC File Uploader')
                 progressbar.start_indeterminate_bar()
 
                 file_paths = []
