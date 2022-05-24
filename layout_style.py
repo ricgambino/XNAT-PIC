@@ -59,6 +59,7 @@ class MyStyle():
         self.style.configure("Popup.TLabel", background=theme_colors[style]["colors"]["bg"], foreground=theme_colors[style]["colors"]["primary"], font=ATTACHED_FONT)
         self.style.configure("UnderTitle.TLabel", background=theme_colors[style]["colors"]["bg"], foreground="black", font=UNDERTITLE_FONT)
         self.style.configure("Error.TLabel", font=KEYWORD_FONT, foreground=theme_colors[style]["colors"]["danger"])
+        self.style.configure("SubTitle.TLabel", font=SMALL_FONT, foreground=theme_colors[style]["colors"]["primary"])
 
         # Configure OptionMenus
         self.style.configure("TMenubutton", background=theme_colors[style]["colors"]["bg"], foreground=theme_colors[style]["colors"]["primary"],

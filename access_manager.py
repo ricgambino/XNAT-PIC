@@ -15,23 +15,24 @@ with open("layout_colors.json", "r") as theme_file:
 
 class AccessManager():
 
-    def __init__(self, style):
+    def __init__(self, root):
 
         # Load icons
         self.open_eye = open_image(PATH_IMAGE + "open_eye.png", 15, 15)
         self.closed_eye = open_image(PATH_IMAGE + "closed_eye.png", 15, 15)
 
+        self.connected = None
+
         # Start with a popup to get credentials
-        self.popup = tk.Toplevel(background=theme_colors[style]["colors"]["bg"])
+        self.popup = tk.Toplevel(root)
         self.popup.title("XNAT-PIC ~ Login")
         self.popup.geometry("%dx%d+%d+%d" % (410, 240, 600, 400))
         self.popup.resizable(False, False)
 
         # Closing window event: if it occurs, the popup must be destroyed and the main frame buttons must be enabled
         def closed_window():
-            self.session = None
+            self.connected = False
             self.popup.destroy()
-            self.popup.quit()
         self.popup.protocol("WM_DELETE_WINDOW", closed_window)
 
         # Credentials Label Frame
@@ -132,15 +133,11 @@ class AccessManager():
 
         # QUIT button
         def quit_event():
-            self.session = None
+            self.connected = False
             self.popup.destroy()
-            self.popup.quit()
 
         self.popup.button_quit = ttk.Button(self.popup, text='Quit', command=quit_event, style="MainPopup.TButton")
         self.popup.button_quit.grid(row=2, column=0, padx=10, pady=5, sticky=tk.W)
-
-        # Mainloop method
-        self.popup.mainloop()
 
     def forgot_psw(self):
         webbrowser.open("http://130.192.212.48:8080/app/template/ForgotLogin.vm#!", new=1)
@@ -243,6 +240,7 @@ class AccessManager():
                 self.popup.entry_user.get(),
                 self.popup.entry_psw.var.get(),
             )
+            self.connected = True
             # Check if the 'Remember Button' is checked
             if self.popup.remember.get() == True:
                 # Save credentials
@@ -256,16 +254,11 @@ class AccessManager():
                 except FileNotFoundError:
                     pass
             self.popup.destroy()
-            self.popup.quit()
-            # Go to the overall uploader
-            # self.overall_uploader(master)
 
         except Exception as error:
             messagebox.showerror("Error!", error)
-            self.session = None
+            self.connected = False
             self.popup.destroy()
-            self.popup.quit()
-            # enable_buttons([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn])
 
     def save_credentials(self):
 

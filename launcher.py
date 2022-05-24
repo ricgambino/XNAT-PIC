@@ -162,11 +162,19 @@ class xnat_pic_gui():
         # Toolbar Menu
         self.toolbar_menu = ttk.Menu(self.root)
         fileMenu = ttk.Menu(self.toolbar_menu, tearoff=0)
+        new_menu = ttk.Menu(fileMenu, tearoff=0)
+        new_menu.add_command(label="Project")
+        new_menu.add_command(label="Subject")
+        new_menu.add_command(label="Experiment")
+
+        fileMenu.add_cascade(label="New...", menu=new_menu)
+        fileMenu.add_command(label="Login")
         fileMenu.add_separator()
         fileMenu.add_command(label="Exit", command=lambda: self.root.destroy())
         
         self.toolbar_menu.add_cascade(label="File", menu=fileMenu)
         self.toolbar_menu.add_cascade(label="Edit")
+        self.toolbar_menu.add_cascade(label="Options")
         self.root.config(menu=self.toolbar_menu)
 
         # Adjust size based on screen resolution
@@ -518,7 +526,7 @@ class xnat_pic_gui():
             self.tree_to_convert.column("#3", stretch=tk.YES, width=100)
 
             def tree_thread(*args):
-                progressbar_tree = ProgressBar("XNAT-PIC Converter")
+                progressbar_tree = ProgressBar(master.root, "XNAT-PIC Converter")
                 progressbar_tree.start_indeterminate_bar()
                 if self.convertion_state.get() == 0:
                     t = threading.Thread(target=display_folder_tree, args=())
@@ -532,7 +540,7 @@ class xnat_pic_gui():
             def display_converted_folder_tree(*args):
 
                 if self.converted_folder.get() != '' and self.convertion_state.get() == 1:
-                    progressbar_tree = ProgressBar("XNAT-PIC Converter")
+                    progressbar_tree = ProgressBar(master.root, "XNAT-PIC Converter")
                     progressbar_tree.start_indeterminate_bar()
                     if self.tree_converted.exists(0):
                         self.tree_converted.delete(*self.tree_converted.get_children())
@@ -758,7 +766,7 @@ class xnat_pic_gui():
             start_time = time.time()
 
             # Start the progress bar
-            progressbar = ProgressBar(bar_title='XNAT-PIC Project Converter')
+            progressbar = ProgressBar(master.root, bar_title='XNAT-PIC Project Converter')
             progressbar.start_determinate_bar()
 
             # Perform DICOM convertion through separate thread (different from the main thread)
@@ -845,7 +853,7 @@ class xnat_pic_gui():
             start_time = time.time()
 
             # Start the progress bar
-            progressbar = ProgressBar(bar_title='XNAT-PIC Subject Converter')
+            progressbar = ProgressBar(master.root, bar_title='XNAT-PIC Subject Converter')
             progressbar.start_determinate_bar()
 
             # Initialize and start convertion thread
@@ -896,7 +904,7 @@ class xnat_pic_gui():
             start_time = time.time()
 
             # Start the progress bar
-            progressbar = ProgressBar(bar_title='XNAT-PIC Experiment Converter')
+            progressbar = ProgressBar(master.root, bar_title='XNAT-PIC Experiment Converter')
             progressbar.start_indeterminate_bar()
 
             # Initialize and start convertion thread
@@ -1874,12 +1882,14 @@ class xnat_pic_gui():
             # Disable main frame buttons
             disable_buttons([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn])
 
-            self.session = AccessManager(master.style_label.get()).session
+            access_manager = AccessManager(master.root)
+            master.root.wait_window(access_manager.popup)
 
-            if self.session == None:
+            if access_manager.connected == False:
                 enable_buttons([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn])
             else:
                 destroy_widgets([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn, master.xnat_pic_logo_label])
+                self.session = access_manager.session
                 self.overall_uploader(master)
 
         def overall_uploader(self, master):
@@ -1888,6 +1898,9 @@ class xnat_pic_gui():
             master.frame_label.set("Uploader")
             #############################################
             ################ Main Buttons ###############
+
+            self.label_frame_main = ttk.Labelframe(master.frame, style="Hidden.TLabelframe")
+            self.label_frame_main.place(relx=0.25, rely=0, anchor=tk.NW, relwidth=0.7)
 
             # Frame Title
             self.frame_title = ttk.Label(self.label_frame_main, text="XNAT-PIC Uploader", style="Title.TLabel", anchor=tk.CENTER)
@@ -2077,7 +2090,7 @@ class xnat_pic_gui():
             self.tree.column("#3", stretch=tk.YES, width=100)
 
             def load_tree(*args):
-                progressbar_tree = ProgressBar("XNAT-PIC Uploader")
+                progressbar_tree = ProgressBar(master.root, "XNAT-PIC Uploader")
                 progressbar_tree.start_indeterminate_bar()
                 t = threading.Thread(target=folder_selected_handler, args=())
                 t.start()
@@ -2181,8 +2194,8 @@ class xnat_pic_gui():
             #############################################
 
             # Label Frame for Uploader Data
-            self.uploader_data = ttk.LabelFrame(self.label_frame_main, text="")
-            self.uploader_data.pack(fill='x', padx=25, pady=10, anchor=tk.NW)
+            self.uploader_data = ttk.LabelFrame(master.frame, text="")
+            self.uploader_data.place(relx=0.25, rely=0.65, anchor=tk.NW)
 
             #############################################
             ################# Project ###################
@@ -2199,8 +2212,10 @@ class xnat_pic_gui():
             
             # Button to add a new project
             def add_project():
-                enable_buttons([self.entry_prjname, self.confirm_new_prj, self.reject_new_prj])
-                self.entry_prjname.delete(0,tk.END)
+                createdProject = ProjectManager(self.session)
+                self.session.clearcache()
+                self.prj.set(createdProject.project_id.get())
+
             self.new_prj_btn = ttk.Button(self.uploader_data, state=tk.DISABLED, width=20, style="Secondary.TButton",
                                         command=add_project, cursor=CURSOR_HAND, text="Add New Project")
             self.new_prj_btn.grid(row=0, column=2, padx=20, pady=10, sticky=tk.NW)
@@ -2224,8 +2239,10 @@ class xnat_pic_gui():
             
             # Button to add a new subject
             def add_subject():
-                enable_buttons([self.entry_subname, self.confirm_new_sub, self.reject_new_sub])
-                self.entry_subname.delete(0,tk.END)
+                createdSubject = SubjectManager(self.session)
+                self.session.clearcache()
+                self.prj.set(createdSubject.parent_project.get())
+                self.sub.set(createdSubject.subject_id.get())
             self.new_sub_btn = ttk.Button(self.uploader_data, state=tk.DISABLED, width=20, style="Secondary.TButton",
                                         command=add_subject, cursor=CURSOR_HAND, text="Add New Subject")
             self.new_sub_btn.grid(row=1, column=2, padx=20, pady=10, sticky=tk.NW)
@@ -2283,8 +2300,8 @@ class xnat_pic_gui():
             self.prj.trace('w', get_subjects)
             self.sub.trace('w', get_experiments)
 
-            self.bottom_label_frame = ttk.Labelframe(self.label_frame_main, text="", style="Hidden.TLabelframe")
-            self.bottom_label_frame.pack(side='bottom', fill='x', expand=True)
+            self.bottom_label_frame = ttk.Labelframe(master.frame, text="", style="Hidden.TLabelframe")
+            self.bottom_label_frame.place(relx=0.25, rely=0.9, anchor=tk.NW, relwidth=0.7)
 
             #############################################
             ################ EXIT Button ################
@@ -2304,7 +2321,7 @@ class xnat_pic_gui():
                     xnat_pic_gui.choose_your_action(master)
 
             self.exit_text = tk.StringVar() 
-            self.exit_btn = ttk.Button(master.frame, textvariable=self.exit_text)
+            self.exit_btn = ttk.Button(self.bottom_label_frame, textvariable=self.exit_text)
             self.exit_btn.configure(command=exit_uploader)
             self.exit_text.set("Exit")
             self.exit_btn.pack(side='left', padx=25, anchor=tk.NW)
@@ -2325,7 +2342,7 @@ class xnat_pic_gui():
                     pass
 
             self.next_text = tk.StringVar() 
-            self.next_btn = ttk.Button(master.frame, textvariable=self.next_text, state='disabled',
+            self.next_btn = ttk.Button(self.bottom_label_frame, textvariable=self.next_text, state='disabled',
                                         command=next)
             self.next_text.set("Next")
             self.next_btn.pack(side='right', padx=25, anchor=tk.NE)
@@ -2401,7 +2418,7 @@ class xnat_pic_gui():
                 messagebox.showerror('XNAT-PIC Uploader', 'Error! The selected folder is empty!')
             else:
                 # Start progress bar
-                progressbar = ProgressBar(bar_title='XNAT-PIC Uploader')
+                progressbar = ProgressBar(master.root, bar_title='XNAT-PIC Uploader')
                 progressbar.start_indeterminate_bar()
 
                 list_dirs = os.listdir(project_to_upload)
@@ -2517,7 +2534,7 @@ class xnat_pic_gui():
                 self.uploader = Dicom2XnatUploader(self.session)
 
                 # Start progress bar
-                progressbar = ProgressBar(bar_title='XNAT-PIC Uploader')
+                progressbar = ProgressBar(master.root, bar_title='XNAT-PIC Uploader')
                 progressbar.start_indeterminate_bar()
 
                 start_time = time.time()
@@ -2626,7 +2643,7 @@ class xnat_pic_gui():
                 try:
                     self.uploader = Dicom2XnatUploader(self.session)
                     # Start progress bar
-                    progressbar = ProgressBar(bar_title='XNAT-PIC Uploader')
+                    progressbar = ProgressBar(master.root, bar_title='XNAT-PIC Uploader')
                     progressbar.start_indeterminate_bar()
 
                     start_time = time.time()
@@ -2737,7 +2754,7 @@ class xnat_pic_gui():
                 vars['experiment_id'] = self.exp.get()
                 vars['folder_name'] = files_to_upload[0].split('/')[-2]
 
-                progressbar = ProgressBar('XNAT-PIC File Uploader')
+                progressbar = ProgressBar(master.root, 'XNAT-PIC File Uploader')
                 progressbar.start_indeterminate_bar()
 
                 file_paths = []
