@@ -2,6 +2,10 @@ import os
 import pandas as pd
 from tabulate import tabulate
 from PIL import Image, ImageTk
+from read_visupars import read_visupars_parameters
+import pydicom
+import datetime 
+import datefinder
 
 # Accessory functions
 def disable_buttons(list_of_buttons):
@@ -98,3 +102,22 @@ def open_image(path, width=0, height=0):
         image = image.resize((int(width), int(height)), Image.ANTIALIAS)
     image = ImageTk.PhotoImage(image)
     return image
+
+#Read the acq. date from visu_pars file for Bruker file or from DICOM files
+def read_acq_date(path): 
+    match_date = ''
+    for dirpath, dirnames, filenames in os.walk(path.replace('\\', '/')):
+        # Check if the visu pars file is in the scans
+        for filename in [f for f in filenames if f.startswith("visu_pars")]:
+            acq_date = read_visupars_parameters((dirpath + "\\" + filename).replace('\\', '/'))["VisuAcqDate"]
+            # Read the date
+            matches = datefinder.find_dates(str(acq_date))
+            for match in matches:
+                match_date = match.strftime('%Y-%m-%d')
+                return match_date
+        # Check if the DICOM is in the scans
+        for filename in [f for f in filenames if f.endswith(".dcm")]:
+            dataset = pydicom.dcmread((dirpath + "\\" + filename).replace('\\', '/'))
+            match_date = datetime.datetime.strptime(dataset.AcquisitionDate, '%Y%m%d').strftime('%Y-%m-%d')
+            return match_date
+    return match_date

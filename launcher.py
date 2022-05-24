@@ -29,7 +29,6 @@ from progress_bar import ProgressBar
 from dicom_converter import Bruker2DicomConverter
 from glob import glob
 import xnat
-from read_visupars import read_visupars_parameters
 import pyAesCrypt
 from tabulate import tabulate
 import datetime 
@@ -37,7 +36,6 @@ from datetime import date
 import threading
 from dotenv import load_dotenv
 from xnat_uploader import Dicom2XnatUploader, FileUploader
-import datefinder
 import pydicom, webbrowser
 from accessory_functions import *
 from idlelib.tooltip import Hovertip
@@ -930,11 +928,11 @@ class xnat_pic_gui():
             if not self.information_folder:
                 enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
                 return
-            master.frame_label.set("Metadata")         
+            #master.frame_label.set("Metadata")         
             self.layout_metadata(master) 
 
         def select_folder(self, master): 
-            # Choose your directory
+            # Choose your directory (button and menu)
             self.information_folder = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC: Select project directory!")
             
             # If there is no folder selected, re-enable the buttons and return
@@ -942,37 +940,16 @@ class xnat_pic_gui():
                 return
 
             destroy_widgets([self.frame_metadata])  
-
             self.layout_metadata(master)  
 
         def layout_metadata(self, master): 
             self.project_name = (self.information_folder.rsplit("/",1)[1])
             self.tmp_dict = {}
             self.results_dict = {}
- 
-            # Load the acq. date from visu_pars file for Bruker file or from DICOM files
-            def read_acq_date(path): 
-                match_date = ''
-                for dirpath, dirnames, filenames in os.walk(path.replace('\\', '/')):
-                    # Check if the visu pars file is in the scans
-                    for filename in [f for f in filenames if f.startswith("visu_pars")]:
-                        acq_date = read_visupars_parameters((dirpath + "\\" + filename).replace('\\', '/'))["VisuAcqDate"]
-                        # Read the date
-                        matches = datefinder.find_dates(str(acq_date))
-                        for match in matches:
-                            match_date = match.strftime('%Y-%m-%d')
-                            return match_date
-                    # Check if the DICOM is in the scans
-                    for filename in [f for f in filenames if f.endswith(".dcm")]:
-                        dataset = pydicom.dcmread((dirpath + "\\" + filename).replace('\\', '/'))
-                        match_date = datetime.datetime.strptime(dataset.AcquisitionDate, '%Y%m%d').strftime('%Y-%m-%d')
-                        return match_date
-                return match_date
-            
+             
             # Get a list of workbook paths 
             self.path_list = []
             self.todos = {}
-            todos_tmp = {}
             exp = []
             # Scan all files contained in the folder that the user has provided
             for item in os.listdir(self.information_folder):
@@ -985,11 +962,9 @@ class xnat_pic_gui():
                         if os.path.isdir(path1):
                             self.path_list.append(path1)
                             exp.append(str(item2))
-                    todos_tmp = {item: exp}
                     exp = []
-                self.todos.update(todos_tmp)
-                todos_tmp = {}
-
+                self.todos.update({item: exp})
+            
             # Scan all files contained in the folder that the user has provided
             for path in self.path_list:
                 exp = str(path).rsplit("/",3)[3]
@@ -1120,13 +1095,8 @@ class xnat_pic_gui():
                 self.entries_variable_ID[-1].insert(0, key)
                 self.entries_variable_ID[-1]['state'] = 'disabled'
                 self.entries_variable_ID[-1].grid(row=count, column=0, padx = 5, pady = 5, sticky=W)
-                # Value
-                if key == "Acquisition_date":
-                    self.entries_value_ID.append(ttk.Entry(self.frame_ID, state='disabled', takefocus = 0, width=20))
-                    self.entries_value_ID[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=NW)
-                else:
-                    self.entries_value_ID.append(ttk.Entry(self.frame_ID, state='disabled', takefocus = 0, width=44))
-                    self.entries_value_ID[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=W)
+                self.entries_value_ID.append(ttk.Entry(self.frame_ID, state='disabled', takefocus = 0, width= 20 if key == "Acquisition_date" else 44))
+                self.entries_value_ID[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=W)
                 count += 1
 
             # Calendar for acq. date
@@ -1138,7 +1108,7 @@ class xnat_pic_gui():
             self.cal.entry.delete(0, tk.END)
             self.cal.entry['state'] = 'disabled'
             self.cal.button['state'] = 'disabled'
-            self.cal.grid(row=4, column=1, padx = 5, pady = 5, sticky=NE)
+            self.cal.grid(row=4, column=1, padx = 5, pady = 5, sticky=E)
 
             #####################################################################
             # Custom Variables (CV)
@@ -1189,14 +1159,6 @@ class xnat_pic_gui():
             self.group_menu['state'] = 'disabled'
             self.group_menu.grid(row=0, column=2, padx = 5, pady = 5, sticky=W)
             
-            # UM for dose
-            self.OPTIONS_UM = ["Mg", "kg", "mg", "µg", "ng"]
-            self.selected_dose = tk.StringVar()
-            self.dose_menu = ttk.Combobox(self.frame_CV, takefocus = 0, textvariable=self.selected_dose, width=10)
-            self.dose_menu['values'] = self.OPTIONS_UM
-            self.dose_menu['state'] = 'disabled'
-            self.dose_menu.grid(row=2, column=2, padx = 5, pady = 5, sticky=W)
-
             # Timepoint
             self.OPTIONS = ["pre", "post"]
             self.selected_timepoint = tk.StringVar()
@@ -1215,24 +1177,7 @@ class xnat_pic_gui():
             self.timepoint_menu1['values'] = self.OPTIONS1
             self.timepoint_menu1['state'] = 'disabled'
             self.timepoint_menu1.grid(row=1, column=4, padx = 5, pady = 5, sticky=W)
-
-            #################### Load the info about the selected subject ####################
-            # Find the tab
-            self.index_tab = self.notebook.notebookTab.index("current")
-            self.tab_name = self.notebook.notebookTab.tab(self.index_tab, "text")
-            self.my_listbox = self.listbox_notebook[self.index_tab]
-            def select_tab(event):
-                try: 
-                    self.notebook.notebookContent.select(self.notebook.notebookTab.index("current"))
-                except Exception as e:
-                    pass
-                self.index_tab = self.notebook.notebookTab.index("current")
-                self.tab_name =  self.notebook.notebookTab.tab(self.index_tab, "text")
-                self.my_listbox = self.listbox_notebook[int(self.index_tab)]
-                self.load_info(master)
-
-            self.notebook.notebookTab.bind("<<NotebookTabChanged>>", select_tab)
-            
+          
             #################### Browse the metadata ####################
             self.browse_btn = ttk.Button(self.frame_metadata, text="Browse", command = lambda: self.select_folder(master), cursor=CURSOR_HAND, takefocus = 0, style = "Secondary.TButton")
             self.browse_btn.place(relx=0.20, rely=0.55, anchor=tk.CENTER, relwidth=0.15)
@@ -1249,16 +1194,23 @@ class xnat_pic_gui():
             self.multiple_confirm_btn = ttk.Button(self.frame_metadata, text="Multiple Confirm", command = lambda: self.confirm_multiple_metadata(master), cursor=CURSOR_HAND, takefocus = 0, style = "Secondary1.TButton")
             self.multiple_confirm_btn.place(relx=0.80, rely=0.8, anchor=tk.CENTER, relwidth=0.2)
             
+            self.load_info(master)
+
+        #################### Load the info about the selected subject ####################
         def load_info(self, master):
+            # Find the initial tab
+            self.index_tab = self.notebook.notebookTab.index("current")
+            self.tab_name = self.notebook.notebookTab.tab(self.index_tab, "text")
+            self.my_listbox = self.listbox_notebook[self.index_tab]
+
             def items_selected(event):
                 # Clear all the combobox and the entry
                 self.selected_group.set('')
                 self.selected_timepoint.set('')
                 self.selected_timepoint1.set('')
-                self.dose_menu.set('')
                 self.time_entry.delete(0, tk.END)
 
-                disable_buttons([self.dose_menu, self.group_menu, self.timepoint_menu, self.time_entry, self.timepoint_menu1])
+                disable_buttons([self.group_menu, self.timepoint_menu, self.time_entry, self.timepoint_menu1])
 
                 # Delete entries
                 for i in range(0, len(self.entries_value_ID)):
@@ -1270,6 +1222,10 @@ class xnat_pic_gui():
                     self.entries_value_CV[i].destroy()
                 """ handle item selected event
                 """
+                self.index_tab = self.notebook.notebookTab.index("current")
+                self.tab_name =  self.notebook.notebookTab.tab(self.index_tab, "text")
+                self.my_listbox = self.listbox_notebook[self.index_tab]
+
                 # Get selected index
                 self.selected_index = self.my_listbox.curselection()[0]
                 self.selected_folder = self.tab_name + '#' + self.my_listbox.get(self.selected_index)
@@ -1277,6 +1233,7 @@ class xnat_pic_gui():
                 # Load the info (ID + CV)
                 ID = True
                 count = 1
+                a = len(self.entries_variable_ID)
                 self.entries_variable_ID = []
                 self.entries_variable_ID.append(ttk.Entry(self.frame_ID, takefocus = 0, width=15))
                 self.entries_variable_ID[-1].insert(0, "Folder")
@@ -1329,9 +1286,10 @@ class xnat_pic_gui():
                             self.entries_value_CV[-1]['state'] = 'disabled'
                             self.entries_value_CV[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=W)
                             count += 1
-                
- 
-            self.my_listbox.bind('<Tab>', items_selected)
+
+            # Add the event to the list of listbox   
+            for i in range(len(self.listbox_notebook)):
+                self.listbox_notebook[i].bind('<Tab>', items_selected)
 
         def modify_metadata(self):
                 # Check before confirming the data
@@ -1564,7 +1522,6 @@ class xnat_pic_gui():
                 messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
                 raise
             
-           
             messagebox.showinfo("Project Data","Select the ID fields you want to copy.")
             #self.my_listbox.selection_set(self.selected_index)
 
@@ -1643,13 +1600,18 @@ class xnat_pic_gui():
             messagebox.showinfo("Metadata","Select the folders from the box on the left for which to copy the info and then press confirm or cancel!")
             #enable_buttons([self.my_listbox])
             #tab_names = [self.notebook.tab(i, state='normal') for i in self.notebook.tabs()]
-            self.my_listbox.selection_set(self.selected_index)    
-            self.my_listbox['selectmode'] = MULTIPLE
-            
+            self.my_listbox.selection_set(self.selected_index) 
+            for i in range(len(self.listbox_notebook)):
+                self.listbox_notebook[i]['selectmode'] = MULTIPLE   
+                        
             # Obtain the subject-experiment list to be modified
             self.list_tab_listbox = []
             def select_listbox(event):
                 self.seltext = [self.tab_name + '#' + self.my_listbox.get(index) for index in self.my_listbox.curselection()]
+                self.list_tab_listbox.append(self.seltext)
+                print(self.seltext)
+                print(self.list_tab_listbox)
+                
             self.my_listbox.bind("<<ListboxSelect>>", select_listbox)
 
             def select_tab_listbox(event):
@@ -1657,15 +1619,17 @@ class xnat_pic_gui():
                     self.notebook.notebookContent.select(self.notebook.notebookTab.index("current"))
                 except Exception as e:
                     pass
-                tab_id = self.notebook.notebookTab.select()
-                self.tab_name = self.notebook.notebookTab.tab(tab_id, "text")
+                index_tab = self.notebook.notebookTab.index("current")
+                self.tab_name = self.notebook.notebookTab.tab(index_tab, "text")
                 # Update the listbox
-                self.my_listbox = self.listbox_notebook[int(self.index_tab)]
-                self.list_tab_listbox.append(self.seltext)
+                self.my_listbox = self.listbox_notebook[int(index_tab)]
+                a = 3
+                #self.list_tab_listbox.append(self.seltext)
+
                 
             self.notebook.notebookTab.bind("<<NotebookTabChanged>>", select_tab_listbox)  
 
-            # The user presses 'enter' to confirm 
+            # The user presses confirm 
             def items_selected2():
                 self.no_btn.destroy()
                 self.ok_btn.destroy()
@@ -1698,14 +1662,14 @@ class xnat_pic_gui():
                 # Clear the focus and the select mode of the listbox is single
                 enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.browse_btn])
                 self.my_listbox.selection_clear(0, 'end')
-                self.my_listbox['selectmode'] = SINGLE
-                
+                for i in range(len(self.listbox_notebook)):
+                    self.listbox_notebook[i]['selectmode'] = SINGLE   
+                self.load_info(master)
 
-            #self.my_listbox.bind("<Return>", items_selected2)
             self.ok_btn = ttk.Button(self.frame_metadata, image = master.logo_accept, command = items_selected2, cursor=CURSOR_HAND)
             self.ok_btn.place(relx = 0.16, rely = 0.48, anchor = NW)
             
-            # The user presses 'esc' to cancel
+            # The user presses cancel
             def items_cancel():
                 self.no_btn.destroy()
                 self.ok_btn.destroy()
@@ -1714,7 +1678,6 @@ class xnat_pic_gui():
                 enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.browse_btn])
                 self.my_listbox.selection_clear(0, 'end')
                 self.my_listbox['selectmode'] = SINGLE
-            # self.my_listbox.bind("<Escape>", items_cancel)
             self.no_btn = ttk.Button(self.frame_metadata, image = master.logo_delete, command = items_cancel, cursor=CURSOR_HAND)
             self.no_btn.place(relx = 0.24, rely = 0.48, anchor = NE)
                 
@@ -1803,7 +1766,7 @@ class xnat_pic_gui():
                     state = self.entries_value_ID[1]['state']    
                     self.entries_variable_CV[next_row]['state'] = tk.DISABLED
                     self.entries_value_CV[next_row]['state'] = state
-                    enable_buttons([self.modify_btn, self.confirm_btn, self.browse_btn])
+                    enable_buttons([self.modify_btn, self.confirm_btn, self.browse_btn, self.multiple_confirm_btn, self.browse_btn])
                     btn_confirm_CV.destroy()
                     btn_reject_CV.destroy()
                 else:
@@ -1817,7 +1780,7 @@ class xnat_pic_gui():
             def reject_CV(next_row):
                 self.entries_variable_CV[next_row].destroy()
                 self.entries_value_CV[next_row].destroy()
-                enable_buttons([self.modify_btn, self.confirm_btn])
+                enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.browse_btn])
                 btn_confirm_CV.destroy()
                 btn_reject_CV.destroy()
             btn_reject_CV = ttk.Button(self.frame_CV, image = master.logo_delete, 
