@@ -48,6 +48,7 @@ from multiprocessing import Process, freeze_support
 from ScrollableNotebook import *
 from create_objects import ProjectManager, SubjectManager, ExperimentManager
 from access_manager import AccessManager
+import itertools
 
 PATH_IMAGE = "images\\"
 #PATH_IMAGE = "lib\\images\\"
@@ -1202,6 +1203,8 @@ class xnat_pic_gui():
             self.index_tab = self.notebook.notebookTab.index("current")
             self.tab_name = self.notebook.notebookTab.tab(self.index_tab, "text")
             self.my_listbox = self.listbox_notebook[self.index_tab]
+            self.selected_index = None
+            self.selected_folder = None
 
             def items_selected(event):
                 # Clear all the combobox and the entry
@@ -1211,81 +1214,120 @@ class xnat_pic_gui():
                 self.time_entry.delete(0, tk.END)
 
                 disable_buttons([self.group_menu, self.timepoint_menu, self.time_entry, self.timepoint_menu1])
-
-                # Delete entries
-                for i in range(0, len(self.entries_value_ID)):
-                    self.entries_variable_ID[i].destroy()
-                    self.entries_value_ID[i].destroy()
-
-                for i in range(0, len(self.entries_value_CV)):
-                    self.entries_variable_CV[i].destroy()
-                    self.entries_value_CV[i].destroy()
-                """ handle item selected event
-                """
+                
+                # Find the tab
                 self.index_tab = self.notebook.notebookTab.index("current")
                 self.tab_name =  self.notebook.notebookTab.tab(self.index_tab, "text")
                 self.my_listbox = self.listbox_notebook[self.index_tab]
 
-                # Get selected index
+                # Get selected index in the listbox
                 self.selected_index = self.my_listbox.curselection()[0]
                 self.selected_folder = self.tab_name + '#' + self.my_listbox.get(self.selected_index)
 
-                # Load the info (ID + CV)
-                ID = True
-                count = 1
-                a = len(self.entries_variable_ID)
-                self.entries_variable_ID = []
-                self.entries_variable_ID.append(ttk.Entry(self.frame_ID, takefocus = 0, width=15))
-                self.entries_variable_ID[-1].insert(0, "Folder")
-                self.entries_variable_ID[-1]['state'] = 'disabled'
-                self.entries_variable_ID[-1].grid(row=0, column=0, padx = 5, pady = 5, sticky=W)
-                self.entries_variable_CV = []
-                self.entries_value_ID = []
-                self.entries_value_ID.append(ttk.Entry(self.frame_ID, takefocus = 0, width=44))
-                self.entries_value_ID[-1].insert(0, self.selected_folder)
-                self.entries_value_ID[-1]['state'] = 'disabled'
-                self.entries_value_ID[-1].grid(row=0, column=1, padx = 5, pady = 5, sticky=W)
-                self.entries_value_CV = []
-                for k, v in dict(self.results_dict[self.selected_folder]).items():
-                    if v is None:
-                        v = ''
-                    if k == "C_V":
-                        ID = False
-                        count = 0
-                    if ID:
-                        self.entries_variable_ID.append(ttk.Entry(self.frame_ID, takefocus = 0, width=15))
-                        self.entries_variable_ID[-1].insert(0, k)
-                        self.entries_variable_ID[-1]['state'] = 'disabled'
-                        self.entries_variable_ID[-1].grid(row=count, column=0, padx = 5, pady = 5, sticky=W)
-                        # Value
-                        if k == "Acquisition_date":
-                            self.entries_value_ID.append(ttk.Entry(self.frame_ID, takefocus = 0, width=20))
-                            self.entries_value_ID[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=NW)
-                            self.cal.entry['state'] = 'normal'
-                            self.cal.entry.delete(0, tk.END)
-                            self.cal.entry.insert(0, v)
-                            self.cal.entry['state'] = 'disabled'
-                            self.cal.button['state'] = 'disabled'
-                        else:
-                            self.entries_value_ID.append(ttk.Entry(self.frame_ID, takefocus = 0, width=44))
-                            self.entries_value_ID[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=W)
-                        self.entries_value_ID[-1].insert(0, v)
-                        self.entries_value_ID[-1]['state'] = 'disabled'
+                tmp_dict = self.results_dict[self.selected_folder]
+
+                # Split the dictionary into ID and CV
+                complete_list = [list(group) for key, group in itertools.groupby(tmp_dict, lambda x: x == 'C_V') if not key]
+                dict_ID = {'Folder' : self.selected_folder}
+                dict_ID.update({k: v for k, v in tmp_dict.items() if k in complete_list[0]})
+                dict_CV =  {k: v for k, v in tmp_dict.items() if k in complete_list[1]}
+                
+                # Updates the ID frame based on the selected variables and values
+                diff_ID = len(self.entries_variable_ID) - len(dict_ID) 
+                
+                # If the number of entries is equal to the number of variables, it only updates the values ​​of the entries
+                if diff_ID == 0:
+                    ind = 0
+                    for key, value in dict_ID.items():
+                        # Variable ID
+                        self.entries_variable_ID[ind]['state'] = 'normal'
+                        self.entries_variable_ID[ind].delete(0, tk.END)
+                        self.entries_variable_ID[ind].insert(0, key)
+                        self.entries_variable_ID[ind]['state'] = 'disabled'
+                        # Value ID
+                        self.entries_value_ID[ind]['state'] = 'normal'
+                        self.entries_value_ID[ind].delete(0, tk.END)
+                        self.entries_value_ID[ind].insert(0, value)
+                        self.entries_value_ID[ind]['state'] = 'disabled'
+                        ind += 1
+                # If the number of entries is greater than the number of variables, it updates the values ​​of the entries and eliminates the excess entries
+
+
+
+                # # Delete entries
+                # for i in range(0, len(self.entries_value_ID)):
+                #     self.entries_variable_ID[i].destroy()
+                #     self.entries_value_ID[i].destroy()
+
+                # for i in range(0, len(self.entries_value_CV)):
+                #     self.entries_variable_CV[i].destroy()
+                #     self.entries_value_CV[i].destroy()
+                # """ handle item selected event
+                # """
+                # self.index_tab = self.notebook.notebookTab.index("current")
+                # self.tab_name =  self.notebook.notebookTab.tab(self.index_tab, "text")
+                # self.my_listbox = self.listbox_notebook[self.index_tab]
+
+                # # Get selected index
+                # self.selected_index = self.my_listbox.curselection()[0]
+                # self.selected_folder = self.tab_name + '#' + self.my_listbox.get(self.selected_index)
+
+                # # Load the info (ID + CV)
+                # ID = True
+                # count = 1
+                # a = len(self.entries_variable_ID)
+                # self.entries_variable_ID = []
+                # self.entries_variable_ID.append(ttk.Entry(self.frame_ID, takefocus = 0, width=15))
+                # self.entries_variable_ID[-1].insert(0, "Folder")
+                # self.entries_variable_ID[-1]['state'] = 'disabled'
+                # self.entries_variable_ID[-1].grid(row=0, column=0, padx = 5, pady = 5, sticky=W)
+                # self.entries_variable_CV = []
+                # self.entries_value_ID = []
+                # self.entries_value_ID.append(ttk.Entry(self.frame_ID, takefocus = 0, width=44))
+                # self.entries_value_ID[-1].insert(0, self.selected_folder)
+                # self.entries_value_ID[-1]['state'] = 'disabled'
+                # self.entries_value_ID[-1].grid(row=0, column=1, padx = 5, pady = 5, sticky=W)
+                # self.entries_value_CV = []
+                # for k, v in dict(self.results_dict[self.selected_folder]).items():
+                #     if v is None:
+                #         v = ''
+                #     if k == "C_V":
+                #         ID = False
+                #         count = 0
+                #     if ID:
+                #         self.entries_variable_ID.append(ttk.Entry(self.frame_ID, takefocus = 0, width=15))
+                #         self.entries_variable_ID[-1].insert(0, k)
+                #         self.entries_variable_ID[-1]['state'] = 'disabled'
+                #         self.entries_variable_ID[-1].grid(row=count, column=0, padx = 5, pady = 5, sticky=W)
+                #         # Value
+                #         if k == "Acquisition_date":
+                #             self.entries_value_ID.append(ttk.Entry(self.frame_ID, takefocus = 0, width=20))
+                #             self.entries_value_ID[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=NW)
+                #             self.cal.entry['state'] = 'normal'
+                #             self.cal.entry.delete(0, tk.END)
+                #             self.cal.entry.insert(0, v)
+                #             self.cal.entry['state'] = 'disabled'
+                #             self.cal.button['state'] = 'disabled'
+                #         else:
+                #             self.entries_value_ID.append(ttk.Entry(self.frame_ID, takefocus = 0, width=44))
+                #             self.entries_value_ID[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=W)
+                #         self.entries_value_ID[-1].insert(0, v)
+                #         self.entries_value_ID[-1]['state'] = 'disabled'
     
-                        count += 1
+                #         count += 1
                         
-                    else:
-                        if k != "C_V":
-                            self.entries_variable_CV.append(ttk.Entry(self.frame_CV, takefocus = 0, width=15))
-                            self.entries_variable_CV[-1].insert(0, k)
-                            self.entries_variable_CV[-1]['state'] = 'disabled'
-                            self.entries_variable_CV[-1].grid(row=count, column=0, padx = 5, pady = 5, sticky=W)
-                            # Value
-                            self.entries_value_CV.append(ttk.Entry(self.frame_CV, takefocus = 0, width=25))
-                            self.entries_value_CV[-1].insert(0, v)
-                            self.entries_value_CV[-1]['state'] = 'disabled'
-                            self.entries_value_CV[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=W)
-                            count += 1
+                #     else:
+                #         if k != "C_V":
+                #             self.entries_variable_CV.append(ttk.Entry(self.frame_CV, takefocus = 0, width=15))
+                #             self.entries_variable_CV[-1].insert(0, k)
+                #             self.entries_variable_CV[-1]['state'] = 'disabled'
+                #             self.entries_variable_CV[-1].grid(row=count, column=0, padx = 5, pady = 5, sticky=W)
+                #             # Value
+                #             self.entries_value_CV.append(ttk.Entry(self.frame_CV, takefocus = 0, width=25))
+                #             self.entries_value_CV[-1].insert(0, v)
+                #             self.entries_value_CV[-1]['state'] = 'disabled'
+                #             self.entries_value_CV[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=W)
+                #             count += 1
 
             # Add the event to the list of listbox   
             for i in range(len(self.listbox_notebook)):
