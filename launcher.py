@@ -1240,25 +1240,39 @@ class xnat_pic_gui():
                 dict_ID.update({k: v for k, v in tmp_dict.items() if k in complete_list[0]})
                 dict_CV =  {k: v for k, v in tmp_dict.items() if k in complete_list[1]}
                 
+
+                #################################################################
                 # Updates the ID frame based on the selected variables and values
                 diff_ID = len(self.entries_variable_ID) - len(dict_ID) 
                 
-                # If the number of entries is equal to the number of variables, it only updates the values ​​of the entries
-                if diff_ID == 0:
-                    ind = 0
-                    for key, value in dict_ID.items():
-                        # Variable ID
-                        self.entries_variable_ID[ind]['state'] = 'normal'
-                        self.entries_variable_ID[ind].delete(0, tk.END)
-                        self.entries_variable_ID[ind].insert(0, key)
-                        self.entries_variable_ID[ind]['state'] = 'disabled'
-                        # Value ID
-                        self.entries_value_ID[ind]['state'] = 'normal'
-                        self.entries_value_ID[ind].delete(0, tk.END)
-                        self.entries_value_ID[ind].insert(0, value)
-                        self.entries_value_ID[ind]['state'] = 'disabled'
-                        ind += 1
-                # If the number of entries is greater than the number of variables, it updates the values ​​of the entries and eliminates the excess entries
+                # If the number of entries is greater than the number of variables, eliminate the excess entries
+                if diff_ID > 0:
+                    for i in range(len(dict_ID), len(self.entries_variable_ID)):
+                        self.entries_variable_ID[i].destroy()
+                        self.entries_value_ID[i].destroy()
+                # If the number of entries is less than the number of variables, insert the entries
+                elif diff_ID < 0:
+                    for j in range(len(self.entries_variable_ID), len(dict_ID)):
+                        self.entries_variable_ID.append(ttk.Entry(self.frame_ID, takefocus = 0, width=15))
+                        self.entries_variable_ID[-1].grid(row=j, column=0, padx = 5, pady = 5, sticky=W)
+                        self.entries_value_ID.append(ttk.Entry(self.frame_ID, state='disabled', takefocus = 0, width = 44))
+                        self.entries_value_ID[-1].grid(row=j, column=1, padx = 5, pady = 5, sticky=W)
+                
+                # Modify the values ​​of the entries with the values ​​of the selected experiment
+                ind = 0
+                for key, value in dict_ID.items():
+                    # Variable ID
+                    self.entries_variable_ID[ind]['state'] = 'normal'
+                    self.entries_variable_ID[ind].delete(0, tk.END)
+                    self.entries_variable_ID[ind].insert(0, key)
+                    self.entries_variable_ID[ind]['state'] = 'disabled'
+                    # Value ID
+                    self.entries_value_ID[ind]['state'] = 'normal'
+                    self.entries_value_ID[ind].delete(0, tk.END)
+                    self.entries_value_ID[ind].insert(0, value)
+                    self.entries_value_ID[ind]['state'] = 'disabled'
+                    ind += 1
+                
 
 
 
