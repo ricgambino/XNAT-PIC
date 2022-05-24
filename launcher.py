@@ -1,15 +1,23 @@
+from cgitb import text
 from doctest import master
 from logging import exception
+from multiprocessing.sharedctypes import Value
 import shutil
 from sqlite3 import Row
 import tkinter as tk
 from tkinter import DISABLED, END, MULTIPLE, N, NE, NW, RAISED, SINGLE, W, Menu, filedialog, messagebox
+from tkinter import font
 from tkinter.font import Font
-from turtle import bgcolor, width
+from turtle import bgcolor, right, width
 from unicodedata import name
 from unittest import result
-from PIL import Image, ImageTk
-from tkinter import ttk
+from click import option
+# from PIL import Image, ImageTk
+#from tkinter import ttk
+import ttkbootstrap as ttk
+from ttkbootstrap import Style
+from ttkbootstrap.constants import *
+import ttkbootstrap.themes.standard 
 import tkinter.simpledialog
 import time, json
 import os, re
@@ -24,13 +32,13 @@ import xnat
 from read_visupars import read_visupars_parameters
 import pyAesCrypt
 from tabulate import tabulate
-import datetime
+import datetime 
+from datetime import date
 import threading
 from dotenv import load_dotenv
 from xnat_uploader import Dicom2XnatUploader, FileUploader
 import datefinder
 import pydicom, webbrowser
-from tkcalendar import DateEntry
 from accessory_functions import *
 from idlelib.tooltip import Hovertip
 from multiprocessing import Pool, cpu_count
@@ -39,6 +47,9 @@ import pandas
 from layout_style import MyStyle
 import babel.numbers
 from multiprocessing import Process, freeze_support
+from ScrollableNotebook import *
+from create_objects import ProjectManager, SubjectManager, ExperimentManager
+from access_manager import AccessManager
 
 PATH_IMAGE = "images\\"
 #PATH_IMAGE = "lib\\images\\"
@@ -131,147 +142,193 @@ class SplashScreen(tk.Toplevel):
 class xnat_pic_gui():
 
     def __init__(self):
-        
+                   
         self.root = tk.Tk()
-        self.root.state('zoomed')
-        
-        self.style = MyStyle().get_style
-        #self.root.state('zoomed')
-        ### GET PRIMARY SCREEN RESOLUTION
-        ### MADE FOR MULTISCREEN ENVIRONMENTS
+        self.root.state('zoomed') # The root widget is adapted to the screen size
+        self.root.minsize(width=1000, height=500) # Set the minimum size of the working window
+        # Define the style of the root widget
+        self.style_label = tk.StringVar()
+        self.style_label.set('cerculean')
+        self.style = MyStyle(self.style_label.get()).get_style()
+        # Get the screen resolution
         if (platform.system()=='Linux'):
             cmd_show_screen_resolution = subprocess.Popen("xrandr --query | grep -oG 'primary [0-9]*x[0-9]*'",\
                                                           stdout=subprocess.PIPE, shell=True)
             screen_output =str(cmd_show_screen_resolution.communicate()).split()[1]
             self.root.screenwidth, self.root.screenheight = re.findall("[0-9]+",screen_output)
-        ###
-        ###
         else :
             self.root.screenwidth=self.root.winfo_screenwidth()
             self.root.screenheight=self.root.winfo_screenheight()
 
         # Toolbar Menu
-        self.toolbar_menu = tk.Menu(self.root)
-        fileMenu = tk.Menu(self.toolbar_menu, tearoff=0)
+        self.toolbar_menu = ttk.Menu(self.root)
+        fileMenu = ttk.Menu(self.toolbar_menu, tearoff=0)
+        new_menu = ttk.Menu(fileMenu, tearoff=0)
+        new_menu.add_command(label="Project")
+        new_menu.add_command(label="Subject")
+        new_menu.add_command(label="Experiment")
+
+        fileMenu.add_cascade(label="New...", menu=new_menu)
+        fileMenu.add_command(label="Login")
         fileMenu.add_separator()
         fileMenu.add_command(label="Exit", command=lambda: self.root.destroy())
-
+        
         self.toolbar_menu.add_cascade(label="File", menu=fileMenu)
         self.toolbar_menu.add_cascade(label="Edit")
         self.toolbar_menu.add_cascade(label="Options")
         self.root.config(menu=self.toolbar_menu)
 
         # Adjust size based on screen resolution
-        w = self.root.screenwidth
-        h = self.root.screenheight - 50
-        self.root.geometry("%dx%d+0+0" % (w, h))
+        self.width = self.root.screenwidth
+        self.height = self.root.screenheight
+        self.root.geometry("%dx%d+0+0" % (self.width, self.height))
         self.root.title("   XNAT-PIC   ~   Molecular Imaging Center   ~   University of Torino   ")
         # If you want the logo 
         self.root.iconbitmap(PATH_IMAGE + "logo3.ico")
 
-        # Define Canvas and logo in background
-        global my_width
-        global my_height
-        my_width = int(w*PERCENTAGE_SCREEN)
-        # my_height = int(work_height*PERCENTAGE_SCREEN)
-        my_height = int(h*PERCENTAGE_SCREEN)
-        self.my_canvas = tk.Canvas(self.root, width=my_width, height=my_height, bg=LIGHT_GREY, highlightthickness=0, 
-                                    highlightbackground=LIGHT_GREY)
-        self.my_canvas.place(x=0, y=0, anchor=tk.NW)
+        # Initialize the Frame widget which parent is the root widget
+        self.frame = ttk.Frame(self.root)
+        self.frame.pack(fill='both', expand=1)
+        self.frame_label = tk.StringVar()
+        self.frame_label.set('Enter')
+        # Initialize the working area size
+        self.my_width = int(self.width*PERCENTAGE_SCREEN)
+        self.my_height = int(self.height*PERCENTAGE_SCREEN)
 
-        # Logo Panel
-        panel = Image.open(PATH_IMAGE + "logo-panel.png").convert("RGBA")
-        panel = panel.resize((int(my_width/5), my_height), Image.ANTIALIAS)
-        self.panel = ImageTk.PhotoImage(panel)
-        # self.panel_image = tk.Button(self.my_canvas, image=self.panel, bg=BG_BTN_COLOR, borderwidth=0, 
-        #                             activebackground=BG_BTN_COLOR)
-        self.img1 = self.my_canvas.create_image(0, 0, anchor=tk.NW, im=self.panel)
+        # Load Accept icon
+        self.logo_accept = open_image(PATH_IMAGE + "Done.png", 15, 15)
+        # Load Delete icon
+        self.logo_delete = open_image(PATH_IMAGE + "Reject.png", 15, 15)
+        # Load Edit icon
+        self.logo_edit = open_image(PATH_IMAGE + "Edit.png", 15, 15)
+        # Load Clear icon
+        self.logo_clear = open_image(PATH_IMAGE + "delete.png", 15, 15)
+        # Load open eye
+        self.open_eye = open_image(PATH_IMAGE + "open_eye.png", 15, 15)
+        # Load closed eye
+        self.closed_eye = open_image(PATH_IMAGE + "closed_eye.png", 15, 15)
+        # Load sun icon DARK
+        self.sun_icon_dark = open_image(PATH_IMAGE + "sun_icon_dark.png", 20, 20)
+        # Load sun icon LIGHT
+        self.sun_icon_light = open_image(PATH_IMAGE + "sun_icon_light.png", 20, 20)
 
-        # XNAT-PIC Logo
-        logo = Image.open(PATH_IMAGE + "XNAT-PIC-logo.png").convert("RGBA")
-        logo = logo.resize((int(logo.size[0]/3), int(logo.size[1]/3)), Image.ANTIALIAS)
-        self.logo = ImageTk.PhotoImage(logo)
-        #self.logo_img = tk.Button(self.my_canvas, image=self.logo, background=LIGHT_GREY, borderwidth=0)
-        self.img2 = self.my_canvas.create_image(int(my_width/5 + ((4*my_width/5)/2)), int(my_height*10/100), 
-                                                anchor=tk.CENTER, im=self.logo)
-        
-        # # Open the image for the logo
-        # logo_info = Image.open(PATH_IMAGE + "info.png")
-        # self.logo_info = ImageTk.PhotoImage(logo_info)
-        width_logo, height_logo = 10, 10
+        def resize_window(*args):
+            # Get the current window size
+            self.width = self.root.winfo_width()
+            self.height = self.root.winfo_height()
+            # Update the working area size
+            self.my_width = int(self.width*PERCENTAGE_SCREEN)
+            self.my_height = int(self.height*PERCENTAGE_SCREEN)
+            # Load Side Logo Panel
+            self.panel_img = open_image(PATH_IMAGE + "logo-panel.png", self.my_width/5, self.my_height)
+            self.panel_img.label = ttk.Label(self.frame, image=self.panel_img)
+            self.panel_img.label.place(x=0, y=0, anchor=tk.NW, relheight=1, relwidth=0.2)
+            # Load XNAT-PIC Logo
+            self.xnat_pic_logo_dark = open_image(PATH_IMAGE + "XNAT-PIC-logo-dark.png", 3*self.my_width/5, self.my_height/3)
+            self.xnat_pic_logo_light = open_image(PATH_IMAGE + "XNAT-PIC-logo-light.png", 3*self.my_width/5, self.my_height/3)
+            if self.style_label.get() == 'cerculean':
+                self.xnat_pic_logo_label = ttk.Label(self.frame, image=self.xnat_pic_logo_dark)
+            else:
+                self.xnat_pic_logo_label = ttk.Label(self.frame, image=self.xnat_pic_logo_light)
+            if self.frame_label.get() in ["Enter", "Main"]:
+                self.xnat_pic_logo_label.place(relx=0.3, rely=0.1, anchor=tk.NW, relheight=0.3, relwidth=0.7)
 
-        # Open the image for the accept icon
-        logo_accept = Image.open(PATH_IMAGE + "Done.png").convert("RGBA")
-        logo_accept = logo_accept.resize((15, 15), Image.ANTIALIAS)
-        self.logo_accept = ImageTk.PhotoImage(logo_accept)
+            # Load Sun icon to swith to dark/light mode
+            def switch_mode(*args):
+                if self.style_label.get() == 'cerculean':
+                    self.style_label.set('darkly')
+                    self.style = MyStyle('darkly').get_style()
+                    self.dark_mode_btn.config(image=self.sun_icon_light)
+                    self.xnat_pic_logo_label.config(image=self.xnat_pic_logo_light)
+                    self.frame.update()
+                else:
+                    self.style_label.set('cerculean')
+                    self.style = MyStyle('cerculean').get_style()
+                    self.dark_mode_btn.config(image=self.sun_icon_dark)
+                    self.xnat_pic_logo_label.config(image=self.xnat_pic_logo_dark)
+                    self.frame.update()
 
-        # Open the image for the delete icon
-        logo_delete = Image.open(PATH_IMAGE + "Reject.png").convert("RGBA")
-        logo_delete = logo_delete.resize((15, 15), Image.ANTIALIAS)
-        self.logo_delete = ImageTk.PhotoImage(logo_delete)
+            self.dark_mode_btn = ttk.Button(self.frame, cursor=CURSOR_HAND, image=self.sun_icon_dark,
+                                            command=switch_mode, style="WithoutBack.TButton")
+            self.dark_mode_btn.place(relx=0.98, rely=0.02, anchor=tk.NE)
+            # Change font according to window size
+            if self.width > 1700:
+                self.style.configure('TButton', font = LARGE_FONT)
+                
+            elif self.width > 1000 and self.width < 1700:
+                self.style.configure('TButton', font = SMALL_FONT)
+            
+            elif self.width < 1000:
+                self.style.configure('TButton', font = SMALL_FONT_2)
+            # Update the frame widget
+            self.frame.update()
 
-        # Open the image for the edit icon
-        logo_edit = Image.open(PATH_IMAGE + "Edit.png").convert("RGBA")
-        logo_edit = logo_edit.resize((15, 15), Image.ANTIALIAS)
-        self.logo_edit = ImageTk.PhotoImage(logo_edit)
-
-        # Open the image for clear icon
-        logo_clear = Image.open(PATH_IMAGE + "delete.png").convert("RGBA")
-        logo_clear = logo_clear.resize((20, 20), Image.ANTIALIAS)
-        self.logo_clear = ImageTk.PhotoImage(logo_clear)
-
-        # Button to enter
+        # Enter button handler method
         def enter_handler(*args):
-            self.enter_btn.destroy()
+            self.enter_btn.destroy() # Destroy the enter button and keep the Frame alive
             xnat_pic_gui.choose_your_action(self)
+        # Enter button widget
+        self.enter_btn = ttk.Button(self.frame, text="ENTER",
+                             command=enter_handler,
+                            cursor=CURSOR_HAND, bootstyle="primary")
+        self.enter_btn.place(relx=0.6, rely=0.6, anchor=tk.CENTER, relwidth=0.2)
+        
+        # Call the resize_window method if the window size is changed by the user
+        self.frame.bind("<Configure>", resize_window)
 
-        self.enter_btn = ttk.Button(self.my_canvas, text="ENTER",
-                                    command=enter_handler,
-                                    cursor=CURSOR_HAND)
-        self.my_canvas.create_window(int(my_width/5)*3, int(my_height*70/100), 
-                                    anchor=tk.CENTER, window = self.enter_btn)
+        def closed_window():
+            self.root.destroy()
+            self.root.quit()
+        self.root.protocol("WM_DELETE_WINDOW", closed_window)
+
         self.root.mainloop()
             
     # Choose to upload files, fill in the info, convert files, process images
     def choose_your_action(self):
         
-        if not 2 in self.my_canvas.find_all():
-            self.img2 = self.my_canvas.create_image(int(my_width/5 + ((4*my_width/5)/2)), int(my_height*10/100), 
-                                                anchor=tk.CENTER,im=self.logo)
+        if self.xnat_pic_logo_label.winfo_exists() == 0:
+            if self.style_label.get() == 'cerculean':
+                self.xnat_pic_logo_label = ttk.Label(self.frame, image=self.xnat_pic_logo_dark)
+            else:
+                self.xnat_pic_logo_label = ttk.Label(self.frame, image=self.xnat_pic_logo_light)
+            self.xnat_pic_logo_label.place(relx=0.3, rely=0.1, anchor=tk.NW, relheight=0.3, relwidth=0.7)
 
+        if self.dark_mode_btn.winfo_exists() == 0:
+            if self.style_label.get() == 'cerculean':
+                self.dark_mode_btn = ttk.Label(self.frame, image=self.sun_icon_dark)
+            else:
+                self.dark_mode_btn = ttk.Label(self.frame, image=self.sun_icon_light)
+            self.dark_mode_btn.place(relx=0.3, rely=0.1, anchor=tk.NW, relheight=0.3, relwidth=0.7)
+
+        self.frame_label.set("Main")
         # Action buttons           
-        # Positions for action button parametric with respect to the size of the canvas
-        x_btn = int(my_width/5)
-        y_btn = int(my_height)
-        width_btn = int(my_width/5)
-
         # Convert files Bruker2DICOM
-        self.convert_btn = ttk.Button(self.my_canvas, text="DICOM Converter", style="TButton",
+        self.convert_btn = ttk.Button(self.frame, text="DICOM Converter",
                                     command=partial(self.bruker2dicom_conversion, self), cursor=CURSOR_HAND)
-
-        self.my_canvas.create_window(3*x_btn, y_btn*50/100, width = width_btn, anchor = tk.CENTER, window=self.convert_btn)
+        self.convert_btn.place(relx=0.6, rely=0.5, anchor=tk.CENTER, relwidth=0.2)
         Hovertip(self.convert_btn,'Convert images from Bruker ParaVision format to DICOM standard')
         
         # Fill in the info
-        self.info_btn = ttk.Button(self.my_canvas, text="Project Data", style="TButton",
+        self.info_btn = ttk.Button(self.frame, text="Project Data", 
                                     command=partial(self.metadata, self), cursor=CURSOR_HAND)
-        self.my_canvas.create_window(3*x_btn, y_btn*60/100, width = width_btn, anchor = tk.CENTER, window=self.info_btn)
+        self.info_btn.place(relx=0.6, rely=0.6, anchor=tk.CENTER, relwidth=0.2)
         Hovertip(self.info_btn,'Fill in the information about the acquisition')
 
         # Upload files
         def upload_callback(*args):
             self.XNATUploader(self)
-        self.upload_btn = ttk.Button(self.my_canvas, text="Uploader", style="TButton",
+        self.upload_btn = ttk.Button(self.frame, text="Uploader",
                                         command=upload_callback, cursor=CURSOR_HAND)
-        self.my_canvas.create_window(3*x_btn, y_btn*70/100, width = width_btn, anchor = tk.CENTER, window=self.upload_btn)
+        self.upload_btn.place(relx=0.6, rely=0.7, anchor=tk.CENTER, relwidth=0.2)
         Hovertip(self.upload_btn,'Upload DICOM images to XNAT')
 
         # Close button
         def close_window(*args):
             self.root.destroy()
-        self.close_btn = ttk.Button(self.my_canvas, text="Quit", command=close_window,
-                                        cursor=CURSOR_HAND,)
-        self.my_canvas.create_window(5*x_btn -30, y_btn*0.85, anchor=tk.NE, window=self.close_btn)
+        self.close_btn = ttk.Button(self.frame, text="Quit", command=close_window,
+                                        cursor=CURSOR_HAND)
+        self.close_btn.place(relx=0.95, rely=0.9, anchor=tk.NE, relwidth=0.1)
+        
 
     class bruker2dicom_conversion():
         
@@ -280,24 +337,19 @@ class xnat_pic_gui():
             self.params = {}
 
             try:
-                destroy_widgets([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn])
-                master.my_canvas.delete(master.img2)
+                destroy_widgets([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn, master.xnat_pic_logo_label])
             except:
                 pass
 
             # Create new frame
-            x_btn = int(my_width/5)
-            x_btn_init = int(x_btn + x_btn/3)
-            y_btn = int(my_height)
-            width_btn = int(my_width/5)
-
+            master.frame_label.set("Converter")
             # Frame Title
-            self.frame_title = master.my_canvas.create_text(3*x_btn, int(y_btn*0.1), anchor=tk.N, fill='black', 
-                                        font=("Ink Free", 36, "bold"), text="XNAT-PIC Converter")
+            self.frame_title = ttk.Label(master.frame, text="XNAT-PIC Converter", style="Title.TLabel")
+            self.frame_title.place(relx=0.6, rely=0.05, anchor=tk.CENTER, relwidth=0.4)
 
             # Label Frame for Select Converter
-            self.conv_selection = ttk.LabelFrame(master.my_canvas, text="Converter Selection")
-            master.my_canvas.create_window(x_btn_init, int(y_btn*0.2), anchor=tk.NW, window=self.conv_selection)
+            self.conv_selection = ttk.LabelFrame(master.frame, text="Converter Selection")
+            self.conv_selection.place(relx=0.25, rely=0.15, anchor=tk.NW)
 
             self.conv_flag = tk.IntVar()
             self.folder_to_convert = tk.StringVar()
@@ -348,9 +400,8 @@ class xnat_pic_gui():
             Hovertip(self.exp_conv_btn, "Convert an experiment from Bruker format to DICOM standard")
 
             # Label Frame for Checkbuttons
-            self.label_frame_checkbtn = ttk.LabelFrame(master.my_canvas, text="Options")
-            master.my_canvas.create_window(5*x_btn - x_btn/3, int(y_btn*0.2), anchor=tk.NE, window=self.label_frame_checkbtn)
-
+            self.label_frame_checkbtn = ttk.LabelFrame(master.frame, text="Options")
+            self.label_frame_checkbtn.place(relx=0.95, rely=0.15, anchor=tk.NE)
             # Overwrite button
             self.overwrite_flag = tk.IntVar()
             self.btn_overwrite = ttk.Checkbutton(self.label_frame_checkbtn, text="Overwrite existing folders",                               
@@ -445,8 +496,8 @@ class xnat_pic_gui():
                     self.tree_to_convert.set(0, column="#2", value=str(round(total_weight/1024, 2)) + "GB")
             
             # Treeview Label Frame pre_convertion
-            self.tree_labelframe = ttk.LabelFrame(master.my_canvas, text="Folder to Convert")
-            master.my_canvas.create_window(x_btn_init, y_btn*0.3, anchor=tk.NW, window=self.tree_labelframe)
+            self.tree_labelframe = ttk.LabelFrame(master.frame, text="Folder to Convert")
+            self.tree_labelframe.place(relx=0.25, rely=0.25, anchor=tk.NW)
 
             # Clear Tree buttons
             def clear_tree(*args):
@@ -476,7 +527,7 @@ class xnat_pic_gui():
             self.tree_to_convert.column("#3", stretch=tk.YES, width=100)
 
             def tree_thread(*args):
-                progressbar_tree = ProgressBar("XNAT-PIC Converter")
+                progressbar_tree = ProgressBar(master.root, "XNAT-PIC Converter")
                 progressbar_tree.start_indeterminate_bar()
                 if self.convertion_state.get() == 0:
                     t = threading.Thread(target=display_folder_tree, args=())
@@ -487,12 +538,10 @@ class xnat_pic_gui():
                     progressbar_tree.update_bar()
                 progressbar_tree.stop_progress_bar()
 
-            # self.folder_to_convert.trace('w', tree_thread)
-
             def display_converted_folder_tree(*args):
 
                 if self.converted_folder.get() != '' and self.convertion_state.get() == 1:
-                    progressbar_tree = ProgressBar("XNAT-PIC Converter")
+                    progressbar_tree = ProgressBar(master.root, "XNAT-PIC Converter")
                     progressbar_tree.start_indeterminate_bar()
                     if self.tree_converted.exists(0):
                         self.tree_converted.delete(*self.tree_converted.get_children())
@@ -572,8 +621,8 @@ class xnat_pic_gui():
                     enable_buttons([self.prj_conv_btn, self.sbj_conv_btn, self.exp_conv_btn])
 
             # Treeview Label Frame post_convertion
-            self.tree_labelframe_post = ttk.LabelFrame(master.my_canvas, text="Converted Folder")
-            master.my_canvas.create_window(3*x_btn, y_btn*0.3, anchor=tk.NW, window=self.tree_labelframe_post)
+            self.tree_labelframe_post = ttk.LabelFrame(master.frame, text="Converted Folder")
+            self.tree_labelframe_post.place(relx=0.95, rely=0.25, anchor=tk.NE)
 
             self.clear_tree_btn_post = ttk.Button(self.tree_labelframe_post, image=master.logo_clear,
                                     cursor=CURSOR_HAND, command=clear_tree, style="WithoutBack.TButton")
@@ -603,15 +652,13 @@ class xnat_pic_gui():
                 if result == 'yes':
                     # Destroy all the existent widgets (Button, Checkbutton, ...)
                     destroy_widgets([self.conv_selection, self.exit_btn, self.label_frame_checkbtn, self.next_btn, 
-                                    self.tree_labelframe, self.tree_labelframe_post])
-                    delete_widgets(master.my_canvas, [self.frame_title])
+                                    self.tree_labelframe, self.tree_labelframe_post, self.frame_title])
                     # Restore the main frame
                     xnat_pic_gui.choose_your_action(master)
 
-            self.exit_btn = ttk.Button(master.my_canvas, cursor=CURSOR_HAND,
+            self.exit_btn = ttk.Button(master.frame, cursor=CURSOR_HAND,
                                      text="Back", command=exit_converter)
-            # self.exit_btn.configure(command=exit_converter)
-            master.my_canvas.create_window(x_btn + 30, y_btn*0.1, anchor=tk.NW, window=self.exit_btn)
+            self.exit_btn.place(relx=0.25, rely=0.9, anchor=tk.NW, relwidth=0.1)
 
             # NEXT Button
             def next_btn_handler(*args):
@@ -632,9 +679,9 @@ class xnat_pic_gui():
                 else:
                     self.converted_folder.set('')
 
-            self.next_btn = ttk.Button(master.my_canvas, text="Next", cursor=CURSOR_HAND, command=next_btn_handler,
+            self.next_btn = ttk.Button(master.frame, text="Next", cursor=CURSOR_HAND, command=next_btn_handler,
                                     state='disabled')
-            master.my_canvas.create_window(5*x_btn - 30, y_btn*0.1, anchor=tk.NE, window=self.next_btn)
+            self.next_btn.place(relx=0.95, rely=0.9, anchor=tk.NE, relwidth=0.1)
             
         def prj_convertion(self, master):
 
@@ -720,7 +767,7 @@ class xnat_pic_gui():
             start_time = time.time()
 
             # Start the progress bar
-            progressbar = ProgressBar(bar_title='XNAT-PIC Project Converter')
+            progressbar = ProgressBar(master.root, bar_title='XNAT-PIC Project Converter')
             progressbar.start_determinate_bar()
 
             # Perform DICOM convertion through separate thread (different from the main thread)
@@ -759,7 +806,6 @@ class xnat_pic_gui():
             # project_foldername = tail.split('.',1)[0]
             # self.sub_dst = os.path.join(head, project_foldername).replace('\\', '/')
             self.sub_dst = self.converted_folder.get()
-            print(self.converted_folder.get())
 
             # Start converter
             self.converter = Bruker2DicomConverter(self.params)
@@ -808,7 +854,7 @@ class xnat_pic_gui():
             start_time = time.time()
 
             # Start the progress bar
-            progressbar = ProgressBar(bar_title='XNAT-PIC Subject Converter')
+            progressbar = ProgressBar(master.root, bar_title='XNAT-PIC Subject Converter')
             progressbar.start_determinate_bar()
 
             # Initialize and start convertion thread
@@ -859,7 +905,7 @@ class xnat_pic_gui():
             start_time = time.time()
 
             # Start the progress bar
-            progressbar = ProgressBar(bar_title='XNAT-PIC Experiment Converter')
+            progressbar = ProgressBar(master.root, bar_title='XNAT-PIC Experiment Converter')
             progressbar.start_indeterminate_bar()
 
             # Initialize and start convertion thread
@@ -892,8 +938,8 @@ class xnat_pic_gui():
             if not self.information_folder:
                 enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
                 return
-                        
-            self.frame_metadata(master) 
+            master.frame_label.set("Metadata")         
+            self.layout_metadata(master) 
 
         def select_folder(self, master): 
             # Choose your directory
@@ -901,16 +947,13 @@ class xnat_pic_gui():
             
             # If there is no folder selected, re-enable the buttons and return
             if not self.information_folder:
-                enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
                 return
 
-            destroy_widgets([self.menu, self.notebook, self.label_frame_ID, self.label_frame_CV, self.modify_btn,
-            self.confirm_btn, self.multiple_confirm_btn, self.hscrollbar, self.my_xscrollbar, self.my_yscrollbar, self.my_listbox, self.canvas_notebook])
-            delete_widgets(master.my_canvas, [self.frame_title, self.name_selected_project])  
+            destroy_widgets([self.frame_metadata])  
 
-            self.frame_metadata(master)  
+            self.layout_metadata(master)  
 
-        def frame_metadata(self, master): 
+        def layout_metadata(self, master): 
             self.project_name = (self.information_folder.rsplit("/",1)[1])
             self.tmp_dict = {}
             self.results_dict = {}
@@ -993,18 +1036,15 @@ class xnat_pic_gui():
                 self.results_dict.update(tmp_dict)
 
             #################### Update the frame ####################
-            destroy_widgets([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn])
-            master.my_canvas.delete(master.img2)
-            x_btn = int(my_width/5)
-            y_btn = int(my_height)
-           
+            destroy_widgets([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn, master.xnat_pic_logo_label])
+            self.frame_metadata = ttk.Frame(master.frame)
+            self.frame_metadata.place(relx = 0.2, rely= 0, relheight=1, relwidth=0.8, anchor=tk.NW)
             # Frame Title
-            self.frame_title = master.my_canvas.create_text(3*x_btn, int(y_btn*0.05), anchor=tk.CENTER, fill='black', font=("Ink Free", 36, "bold", "underline"),
-                                         text="XNAT-PIC Project Data")
-            
+            self.frame_title = ttk.Label(self.frame_metadata, text="XNAT-PIC Project Data", style='Title.TLabel')
+            self.frame_title.place(relx = 0.5, rely = 0.05, anchor = CENTER)
             #################### Menu ###########################
-            self.menu = tk.Menu(master.root)
-            file_menu = tk.Menu(self.menu, tearoff=0)
+            self.menu = ttk.Menu(master.root)
+            file_menu = ttk.Menu(self.menu, tearoff=0)
             file_menu.add_command(label="Select Folder", command = lambda: self.select_folder(master))
             file_menu.add_separator()
             file_menu.add_command(label="Add ID", command = lambda: self.add_ID(master))
@@ -1020,85 +1060,47 @@ class xnat_pic_gui():
 
             #################### Folder list #################### 
             ### Selected folder label
-            x_folder_list = int(my_width*23/100)
-            self.name_selected_project = master.my_canvas.create_text(3*x_btn, int(y_btn*0.11), anchor=tk.CENTER, fill='black', font=("Ink Free", 22),
-                                         text='Selected Project: ' + self.project_name)
-            
-            y_folder_list1 = int(my_height*15/100)
-            h_notebook = int(my_height*52/100)
-            w_notebook = int(my_width*20.5/100)
-
-            ### Tab Notebook
-            self.canvas_notebook = tk.Canvas(master.my_canvas, borderwidth = 0, highlightbackground="white")
-            master.my_canvas.create_window(x_folder_list, y_folder_list1, width = w_notebook, height = h_notebook, anchor = tk.NW, window=self.canvas_notebook)
-            
-            self.frame_nb = tk.Frame(self.canvas_notebook)
-            self.canvas_notebook.create_window((0,0), window=self.frame_nb, anchor="nw", tags="frame")
-
-            # Create an object of horizontal scrollbar to scroll tab
-            self.hscrollbar = tk.Scrollbar(master.root, orient="horizontal", command=self.canvas_notebook.xview)
-            y_scrollbar = int(my_height*70/100)
-            x_scrollbar = int(my_width*32/100)
-            master.my_canvas.create_window(x_scrollbar, y_scrollbar, anchor = tk.NW, window=self.hscrollbar)
-
-            self.notebook = ttk.Notebook(self.frame_nb) 
-            self.notebook.config(width = w_notebook, height = h_notebook)
-            self.notebook.pack()
-            
-            ### Tab Content is a listbox
-            self.my_listbox = tk.Listbox(master.my_canvas, background = LIGHT_GREY, borderwidth=2, highlightbackground = "#008ad7", selectbackground = AZURE, relief=tk.FLAT, font=SMALL_FONT_3, selectmode=SINGLE, takefocus = 0)
-            x_listbox = int(my_width*23.5/100)
-            y_listbox = int(my_height*19/100)
-            h_listbox = int(my_height*47/100)
-            w_listbox = int(my_width*19.5/100)
-            master.my_canvas.create_window(x_listbox, y_listbox, width = w_listbox, height = h_listbox, anchor = tk.NW, window=self.my_listbox)
-            
-            # # Yscrollbar for listbox
-            self.my_yscrollbar = ttk.Scrollbar(master.my_canvas, orient="vertical")
-            self.my_listbox.config(yscrollcommand = self.my_yscrollbar.set)
-            self.my_yscrollbar.config(command = self.my_listbox.yview)
-            x_my_yscrollbar = int(my_width*22.2/100)
-            y_my_yscrollbar = int(my_height*19.1/100)
-            h_yscrollbar = int(my_height*47.8/100)
-            master.my_canvas.create_window(x_my_yscrollbar, y_my_yscrollbar, height = h_yscrollbar, anchor = tk.NW, window=self.my_yscrollbar)
-
-            # Xscrollbar for listbox
-            self.my_xscrollbar = ttk.Scrollbar(master.my_canvas, orient="horizontal")
-            self.my_listbox.config(xscrollcommand = self.my_xscrollbar.set)
-            self.my_xscrollbar.config(command = self.my_listbox.xview)
-            x_my_xscrollbar = int(my_width*23.1/100)
-            y_my_xscrollbar = int(my_height*68/100)
-            w_my_xscrollbar = int(my_width*20.4/100)
-            master.my_canvas.create_window(x_my_xscrollbar, y_my_xscrollbar, width = w_my_xscrollbar, anchor = tk.NW, window=self.my_xscrollbar)
+            self.name_selected_project = ttk.Label(self.frame_metadata, text='Selected Project: ' + self.project_name, style = "UnderTitle.TLabel")
+            self.name_selected_project.place(relx = 0.5, rely = 0.13, anchor = CENTER)
+            # ### Tab Notebook
+            self.notebook = ScrollableNotebook(self.frame_metadata, wheelscroll=True, tabmenu=True)
+            self.notebook.place(relx = 0.2, rely = 0.35, relheight=0.25, relwidth=0.25, anchor = tk.CENTER)
             
             # Sorts the tabs first by length and then alphabetically
+            frame_notebook = []
+            self.listbox_notebook = []
             for key in sorted(self.todos, key=len):
-                self.notebook.add(tk.Frame(self.notebook, background="#99D0EF"), text=key, underline=0, sticky=tk.NE + tk.SW)
+                frame_notebook.append(tk.Frame(self.notebook))
+                frame_notebook[-1].pack()
+                self.notebook.add(frame_notebook[-1], text=key, underline=0, sticky=tk.NE + tk.SW)
+                self.listbox_notebook.append(tk.Listbox(frame_notebook[-1], selectbackground = AZURE, relief=tk.FLAT, font=SMALL_FONT_3, selectmode=SINGLE, takefocus = 0))
+                self.listbox_notebook[-1].insert(tk.END, *self.todos[key])
+                self.listbox_notebook[-1].pack(side=LEFT, fill = BOTH, expand = 1, padx = 5, pady=5)
+
+                self.my_yscrollbar = ttk.Scrollbar(self.listbox_notebook[-1], orient="vertical")
+                self.listbox_notebook[-1].config(yscrollcommand = self.my_yscrollbar.set)
+                self.my_yscrollbar.config(command = self.listbox_notebook[-1].yview)
+                self.my_yscrollbar.pack(side="right", fill="y")
+
+                # Xscrollbar for listbox
+                self.my_xscrollbar = ttk.Scrollbar(self.listbox_notebook[-1], orient="horizontal")
+                self.listbox_notebook[-1].config(xscrollcommand = self.my_xscrollbar.set)
+                self.my_xscrollbar.config(command = self.listbox_notebook[-1].xview)
+                self.my_xscrollbar.pack(side="bottom", fill="x")
 
             self.notebook.enable_traversal()
-            
-            def frame_configure(event):
-                self.canvas_notebook.configure(scrollregion=self.canvas_notebook.bbox("all"))
-
-            self.frame_nb.bind("<Configure>", frame_configure)
-          
+           
             #################### Subject form ####################
             # ID
-            # Label frame for ID: folder selected, project, subject and acq. date
-            self.label_frame_ID = ttk.LabelFrame(master.my_canvas, text="ID", style = "Metadata.TLabelframe")
-
-            #
-            x_lbl_ID = int(my_width*46/100)
-            y_lbl_ID = int(my_height*18/100)
-            w_lbl_ID = int(my_width*42/100)
-            h_lbl_ID = int(my_height*25/100)
+            # Label frame for ID: folder selected, project, subject, exp and acq. date
+            self.label_frame_ID = ttk.LabelFrame(self.frame_metadata, text="ID", padding=5)
             #
             # Scroll bar in the Label frame ID
-            self.canvas_ID = tk.Canvas(self.label_frame_ID, bg=LIGHT_GREY)
-            self.frame_ID = tk.Frame(self.canvas_ID, bg=LIGHT_GREY)
+            self.canvas_ID = tk.Canvas(self.label_frame_ID)
+            self.frame_ID = tk.Frame(self.canvas_ID)
 
             self.vsb_ID = ttk.Scrollbar(self.label_frame_ID, orient="vertical", command=self.canvas_ID.yview)
-            self.canvas_ID.configure(yscrollcommand=self.vsb_ID.set, width=w_lbl_ID, height=h_lbl_ID)  
+            self.canvas_ID.configure(yscrollcommand=self.vsb_ID.set)  
 
             self.hsb_ID = ttk.Scrollbar(self.label_frame_ID, orient="horizontal", command=self.canvas_ID.xview)
             self.canvas_ID.configure(xscrollcommand=self.hsb_ID.set)     
@@ -1106,67 +1108,68 @@ class xnat_pic_gui():
             self.vsb_ID.pack(side="right", fill="y")
             self.hsb_ID.pack(side="bottom", fill="x")
 
-            self.canvas_ID.pack(side="left", fill="both", expand=True)
+            self.canvas_ID.pack(side = LEFT, fill = BOTH, expand = 1)
             self.canvas_ID.create_window((0,0), window=self.frame_ID, anchor="nw")
 
             # Be sure that we call OnFrameConfigure on the right canvas
             self.frame_ID.bind("<Configure>", lambda event, canvas=self.canvas_ID: OnFrameConfigure(canvas))
-            master.my_canvas.create_window(x_lbl_ID, y_lbl_ID, anchor='nw', height = h_lbl_ID, window=self.label_frame_ID)
-            
+            self.label_frame_ID.place(relx = 0.4, rely = 0.22, relheight=0.25, relwidth=0.43, anchor = tk.NW)
             def OnFrameConfigure(canvas):
                     canvas.configure(scrollregion=canvas.bbox("all"))
 
-            keys_ID = ["Folder", "Project", "Subject", "Experiment", "Acq. date"]
+            keys_ID = ["Folder", "Project", "Subject", "Experiment", "Acquisition_date"]
             # Entry ID 
             self.entries_variable_ID = []  
             self.entries_value_ID = []          
             count = 0
             for key in keys_ID:
                 # Variable
-                self.entries_variable_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT_4, takefocus = 0, width=15, style = 'Metadata.TEntry'))
+                self.entries_variable_ID.append(ttk.Entry(self.frame_ID, takefocus = 0, width=15))
                 self.entries_variable_ID[-1].insert(0, key)
                 self.entries_variable_ID[-1]['state'] = 'disabled'
                 self.entries_variable_ID[-1].grid(row=count, column=0, padx = 5, pady = 5, sticky=W)
                 # Value
-                if key == "Acq. date":
-                    self.entries_value_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT_4, state='disabled', takefocus = 0, width=20, style = 'Metadata.TEntry'))
+                if key == "Acquisition_date":
+                    self.entries_value_ID.append(ttk.Entry(self.frame_ID, state='disabled', takefocus = 0, width=20))
                     self.entries_value_ID[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=NW)
                 else:
-                    self.entries_value_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT_4, state='disabled', takefocus = 0, width=44, style = 'Metadata.TEntry'))
+                    self.entries_value_ID.append(ttk.Entry(self.frame_ID, state='disabled', takefocus = 0, width=44))
                     self.entries_value_ID[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=W)
                 count += 1
 
             # Calendar for acq. date
-            self.cal = DateEntry(self.frame_ID,  state = tk.DISABLED, width=11, font = SMALL_FONT_3, background=AZURE, date_pattern = 'y-mm-dd', foreground='white', borderwidth=0, selectbackground = AZURE_DISABLED, selectforeground = "black", style = 'Metadata.TCombobox')
-            self.cal.delete(0, tk.END)
+            self.datevar = tk.StringVar()
+            self.cal = ttk.DateEntry(self.frame_ID, dateformat = '%Y-%m-%d')
+            self.cal.entry.config(textvariable=self.datevar)         
+            self.cal.entry.configure(width=10)
+            self.cal.entry['state'] = 'normal'
+            self.cal.entry.delete(0, tk.END)
+            self.cal.entry['state'] = 'disabled'
+            self.cal.button['state'] = 'disabled'
             self.cal.grid(row=4, column=1, padx = 5, pady = 5, sticky=NE)
 
-            ####################################################################
+            #####################################################################
             # Custom Variables (CV)
-            # Label frame for Custom Variables: group, dose, timepoint
-            self.label_frame_CV = ttk.LabelFrame(master.my_canvas, text="Custom Variables", style = "Metadata.TLabelframe")
-            x_lbl_CV = x_lbl_ID
-            y_lbl_CV = int(my_height*47/100)
-            h_lbl_CV = int(my_height*18/100)
-            w_lbl_CV = int(my_width*47/100)
-
+            self.label_frame_CV = ttk.LabelFrame(self.frame_metadata, text="Custom Variables")
+            
             # Scroll bar in the Label frame CV
-            self.canvas_CV = tk.Canvas(self.label_frame_CV, bg=LIGHT_GREY)
-            self.frame_CV = tk.Frame(self.canvas_CV, bg=LIGHT_GREY)
+            self.canvas_CV = tk.Canvas(self.label_frame_CV)
+            self.frame_CV = tk.Frame(self.canvas_CV)
+
             self.vsb_CV = ttk.Scrollbar(self.label_frame_CV, orient="vertical", command=self.canvas_CV.yview)
-            self.canvas_CV.configure(yscrollcommand=self.vsb_CV.set, width=w_lbl_CV, height=h_lbl_CV)  
+            self.canvas_CV.configure(yscrollcommand=self.vsb_CV.set)  
             self.hsb_CV = ttk.Scrollbar(self.label_frame_CV, orient="horizontal", command=self.canvas_CV.xview)
             self.canvas_CV.configure(xscrollcommand=self.hsb_CV.set)     
 
             self.vsb_CV.pack(side="right", fill="y")     
             self.hsb_CV.pack(side="bottom", fill="x")
-            self.canvas_CV.pack(side="left", fill="both", expand=True)
+            self.canvas_CV.pack(side = LEFT, fill = BOTH, expand = 1)
             self.canvas_CV.create_window((0,0), window=self.frame_CV, anchor="nw")
 
             # Be sure that we call OnFrameConfigure on the right canvas
             self.frame_CV.bind("<Configure>", lambda event, canvas=self.canvas_CV: OnFrameConfigure(canvas))
+            self.label_frame_CV.place(relx = 0.40, rely = 0.53, relheight=0.16, relwidth=0.43, anchor = tk.NW)
             
-            master.my_canvas.create_window(x_lbl_CV, y_lbl_CV, height = h_lbl_CV, width=w_lbl_CV, window=self.label_frame_CV, anchor='nw')
             def OnFrameConfigure(canvas):
                     canvas.configure(scrollregion=canvas.bbox("all"))
 
@@ -1177,19 +1180,19 @@ class xnat_pic_gui():
             count = 0
             for key in keys_CV:
                 # Variable
-                self.entries_variable_CV.append(ttk.Entry(self.frame_CV, font=SMALL_FONT_4, takefocus = 0, width=15, style = 'Metadata.TEntry'))
+                self.entries_variable_CV.append(ttk.Entry(self.frame_CV, takefocus = 0, width=15))
                 self.entries_variable_CV[-1].insert(0, key)
                 self.entries_variable_CV[-1]['state'] = 'disabled'
                 self.entries_variable_CV[-1].grid(row=count, column=0, padx = 5, pady = 5, sticky=W)
                 # Value
-                self.entries_value_CV.append(ttk.Entry(self.frame_CV, font=SMALL_FONT_4, state='disabled', takefocus = 0, width=25, style = 'Metadata.TEntry'))
+                self.entries_value_CV.append(ttk.Entry(self.frame_CV, state='disabled', takefocus = 0, width=25))
                 self.entries_value_CV[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=W)
                 count += 1
 
             # Group Menu
             OPTIONS = ["untreated", "treated"]
             self.selected_group = tk.StringVar()
-            self.group_menu = ttk.Combobox(self.frame_CV, font = SMALL_FONT_4, takefocus = 0, textvariable=self.selected_group, width=10, style="Metadata.TCombobox")
+            self.group_menu = ttk.Combobox(self.frame_CV, takefocus = 0, textvariable=self.selected_group, width=10)
             self.group_menu['values'] = OPTIONS
             self.group_menu['state'] = 'disabled'
             self.group_menu.grid(row=0, column=2, padx = 5, pady = 5, sticky=W)
@@ -1197,7 +1200,7 @@ class xnat_pic_gui():
             # UM for dose
             self.OPTIONS_UM = ["Mg", "kg", "mg", "µg", "ng"]
             self.selected_dose = tk.StringVar()
-            self.dose_menu = ttk.Combobox(self.frame_CV, font = SMALL_FONT_4, takefocus = 0, textvariable=self.selected_dose, width=10, style="Metadata.TCombobox")
+            self.dose_menu = ttk.Combobox(self.frame_CV, takefocus = 0, textvariable=self.selected_dose, width=10)
             self.dose_menu['values'] = self.OPTIONS_UM
             self.dose_menu['state'] = 'disabled'
             self.dose_menu.grid(row=2, column=2, padx = 5, pady = 5, sticky=W)
@@ -1205,53 +1208,56 @@ class xnat_pic_gui():
             # Timepoint
             self.OPTIONS = ["pre", "post"]
             self.selected_timepoint = tk.StringVar()
-            self.timepoint_menu = ttk.Combobox(self.frame_CV, font = SMALL_FONT_4, takefocus = 0, textvariable=self.selected_timepoint, width=10, style="Metadata.TCombobox")
+            self.timepoint_menu = ttk.Combobox(self.frame_CV, takefocus = 0, textvariable=self.selected_timepoint, width=10)
             self.timepoint_menu['values'] = self.OPTIONS
             self.timepoint_menu['state'] = 'disabled'
             self.timepoint_menu.grid(row=1, column=2, padx = 5, pady = 5, sticky=W)
-
-            self.time_entry = ttk.Entry(self.frame_CV, font = SMALL_FONT_4, state='disabled', takefocus = 0, width=5, style = 'Metadata.TEntry')
+            
+            self.time_entry_value = tk.StringVar()
+            self.time_entry = ttk.Entry(self.frame_CV, state='disabled', takefocus = 0, width=5, textvariable=self.time_entry_value)
             self.time_entry.grid(row=1, column=3, padx = 5, pady = 5, sticky=W)
 
             self.OPTIONS1 = ["seconds", "minutes", "hours", "days", "weeks", "months", "years"]
             self.selected_timepoint1 = tk.StringVar()
-            self.timepoint_menu1 = ttk.Combobox(self.frame_CV, font = SMALL_FONT_4, takefocus = 0, textvariable=self.selected_timepoint1, width=7, style="Metadata.TCombobox")
+            self.timepoint_menu1 = ttk.Combobox(self.frame_CV, takefocus = 0, textvariable=self.selected_timepoint1, width=7)
             self.timepoint_menu1['values'] = self.OPTIONS1
             self.timepoint_menu1['state'] = 'disabled'
             self.timepoint_menu1.grid(row=1, column=4, padx = 5, pady = 5, sticky=W)
 
             #################### Load the info about the selected subject ####################
+            # Find the tab
+            self.index_tab = self.notebook.notebookTab.index("current")
+            self.tab_name = self.notebook.notebookTab.tab(self.index_tab, "text")
+            self.my_listbox = self.listbox_notebook[self.index_tab]
             def select_tab(event):
-               tab_id = self.notebook.select()
-               try:
-                  self.tab_name = self.notebook.tab(tab_id, "text")
-               except:
-                   pass
-               # Update the listbox
-               self.my_listbox.delete(0, END)
-               self.my_listbox.insert(tk.END, *self.todos[self.tab_name])
-               self.load_info(master)
+                try: 
+                    self.notebook.notebookContent.select(self.notebook.notebookTab.index("current"))
+                except Exception as e:
+                    pass
+                self.index_tab = self.notebook.notebookTab.index("current")
+                self.tab_name =  self.notebook.notebookTab.tab(self.index_tab, "text")
+                self.my_listbox = self.listbox_notebook[int(self.index_tab)]
+                self.load_info(master)
 
-            self.notebook.bind("<<NotebookTabChanged>>", select_tab)  
+            self.notebook.notebookTab.bind("<<NotebookTabChanged>>", select_tab)
+            
+            #################### Browse the metadata ####################
+            self.browse_btn = ttk.Button(self.frame_metadata, text="Browse", command = lambda: self.select_folder(master), cursor=CURSOR_HAND, takefocus = 0, style = "Secondary.TButton")
+            self.browse_btn.place(relx=0.20, rely=0.55, anchor=tk.CENTER, relwidth=0.15)
+
             #################### Modify the metadata ####################
-            self.modify_btn = ttk.Button(master.my_canvas, text="Modify", command = lambda: self.modify_metadata(), cursor=CURSOR_HAND, takefocus = 0)
-            x_lbl = int(my_width*30/100)
-            y_btn = int(my_height*78/100)
-            width_btn = int(my_width*16/100)
-            master.my_canvas.create_window(x_lbl, y_btn, anchor = tk.NW, width = width_btn, window = self.modify_btn)
+            self.modify_btn = ttk.Button(self.frame_metadata, text="Modify", command = lambda: self.modify_metadata(), cursor=CURSOR_HAND, takefocus = 0, style = "Secondary1.TButton")
+            self.modify_btn.place(relx=0.20, rely=0.8, anchor=tk.CENTER, relwidth=0.2)
 
             #################### Confirm the metadata ####################
-            self.confirm_btn = ttk.Button(master.my_canvas, text="Confirm", command = lambda: self.confirm_metadata(), cursor=CURSOR_HAND, takefocus = 0)
-            x_conf_btn = int(my_width*50/100)
-            master.my_canvas.create_window(x_conf_btn, y_btn, anchor = tk.NW, width = width_btn, window = self.confirm_btn)
+            self.confirm_btn = ttk.Button(self.frame_metadata, text="Confirm", command = lambda: self.confirm_metadata(), cursor=CURSOR_HAND, takefocus = 0, style = "Secondary1.TButton")
+            self.confirm_btn.place(relx=0.50, rely=0.8, anchor=tk.CENTER, relwidth=0.2)
 
             #################### Confirm multiple metadata ####################
-            self.multiple_confirm_btn = ttk.Button(master.my_canvas, text="Multiple Confirm", command = lambda: self.confirm_multiple_metadata(master), cursor=CURSOR_HAND, takefocus = 0)
-            x_multiple_conf_btn = int(my_width*70/100)
-            master.my_canvas.create_window(x_multiple_conf_btn, y_btn, anchor = tk.NW, width = width_btn, window = self.multiple_confirm_btn)
-                       
+            self.multiple_confirm_btn = ttk.Button(self.frame_metadata, text="Multiple Confirm", command = lambda: self.confirm_multiple_metadata(master), cursor=CURSOR_HAND, takefocus = 0, style = "Secondary1.TButton")
+            self.multiple_confirm_btn.place(relx=0.80, rely=0.8, anchor=tk.CENTER, relwidth=0.2)
+            
         def load_info(self, master):
-
             def items_selected(event):
                 # Clear all the combobox and the entry
                 self.selected_group.set('')
@@ -1259,8 +1265,8 @@ class xnat_pic_gui():
                 self.selected_timepoint1.set('')
                 self.dose_menu.set('')
                 self.time_entry.delete(0, tk.END)
-                self.cal.delete(0, tk.END)
-                disable_buttons([self.dose_menu, self.group_menu, self.timepoint_menu, self.time_entry, self.timepoint_menu1, self.cal])
+
+                disable_buttons([self.dose_menu, self.group_menu, self.timepoint_menu, self.time_entry, self.timepoint_menu1])
 
                 # Delete entries
                 for i in range(0, len(self.entries_value_ID)):
@@ -1273,20 +1279,20 @@ class xnat_pic_gui():
                 """ handle item selected event
                 """
                 # Get selected index
-                self.selected_index = self.my_listbox.curselection()
+                self.selected_index = self.my_listbox.curselection()[0]
                 self.selected_folder = self.tab_name + '#' + self.my_listbox.get(self.selected_index)
 
                 # Load the info (ID + CV)
                 ID = True
                 count = 1
                 self.entries_variable_ID = []
-                self.entries_variable_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT_4, takefocus = 0, width=15, style = 'Metadata.TEntry'))
+                self.entries_variable_ID.append(ttk.Entry(self.frame_ID, takefocus = 0, width=15))
                 self.entries_variable_ID[-1].insert(0, "Folder")
                 self.entries_variable_ID[-1]['state'] = 'disabled'
                 self.entries_variable_ID[-1].grid(row=0, column=0, padx = 5, pady = 5, sticky=W)
                 self.entries_variable_CV = []
                 self.entries_value_ID = []
-                self.entries_value_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT_4, takefocus = 0, width=44, style = 'Metadata.TEntry'))
+                self.entries_value_ID.append(ttk.Entry(self.frame_ID, takefocus = 0, width=44))
                 self.entries_value_ID[-1].insert(0, self.selected_folder)
                 self.entries_value_ID[-1]['state'] = 'disabled'
                 self.entries_value_ID[-1].grid(row=0, column=1, padx = 5, pady = 5, sticky=W)
@@ -1298,16 +1304,21 @@ class xnat_pic_gui():
                         ID = False
                         count = 0
                     if ID:
-                        self.entries_variable_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT_4, takefocus = 0, width=15, style = 'Metadata.TEntry'))
+                        self.entries_variable_ID.append(ttk.Entry(self.frame_ID, takefocus = 0, width=15))
                         self.entries_variable_ID[-1].insert(0, k)
                         self.entries_variable_ID[-1]['state'] = 'disabled'
                         self.entries_variable_ID[-1].grid(row=count, column=0, padx = 5, pady = 5, sticky=W)
                         # Value
                         if k == "Acquisition_date":
-                            self.entries_value_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT_4, takefocus = 0, width=20, style = 'Metadata.TEntry'))
+                            self.entries_value_ID.append(ttk.Entry(self.frame_ID, takefocus = 0, width=20))
                             self.entries_value_ID[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=NW)
+                            self.cal.entry['state'] = 'normal'
+                            self.cal.entry.delete(0, tk.END)
+                            self.cal.entry.insert(0, v)
+                            self.cal.entry['state'] = 'disabled'
+                            self.cal.button['state'] = 'disabled'
                         else:
-                            self.entries_value_ID.append(ttk.Entry(self.frame_ID, font=SMALL_FONT_4, takefocus = 0, width=44, style = 'Metadata.TEntry'))
+                            self.entries_value_ID.append(ttk.Entry(self.frame_ID, takefocus = 0, width=44))
                             self.entries_value_ID[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=W)
                         self.entries_value_ID[-1].insert(0, v)
                         self.entries_value_ID[-1]['state'] = 'disabled'
@@ -1316,17 +1327,18 @@ class xnat_pic_gui():
                         
                     else:
                         if k != "C_V":
-                            self.entries_variable_CV.append(ttk.Entry(self.frame_CV, font=SMALL_FONT_4, takefocus = 0, width=15, style = 'Metadata.TEntry'))
+                            self.entries_variable_CV.append(ttk.Entry(self.frame_CV, takefocus = 0, width=15))
                             self.entries_variable_CV[-1].insert(0, k)
                             self.entries_variable_CV[-1]['state'] = 'disabled'
                             self.entries_variable_CV[-1].grid(row=count, column=0, padx = 5, pady = 5, sticky=W)
                             # Value
-                            self.entries_value_CV.append(ttk.Entry(self.frame_CV, font=SMALL_FONT_4, takefocus = 0, width=25, style = 'Metadata.TEntry'))
+                            self.entries_value_CV.append(ttk.Entry(self.frame_CV, takefocus = 0, width=25))
                             self.entries_value_CV[-1].insert(0, v)
                             self.entries_value_CV[-1]['state'] = 'disabled'
                             self.entries_value_CV[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=W)
                             count += 1
-
+                
+ 
             self.my_listbox.bind('<Tab>', items_selected)
 
         def modify_metadata(self):
@@ -1342,21 +1354,42 @@ class xnat_pic_gui():
             for i in range(1, len(self.entries_value_ID)):
                 self.entries_value_ID[i]['state'] = 'normal'
 
+            self.entries_value_ID[4]['state'] = 'disabled'
+
             for i in range(0, len(self.entries_value_CV)):
                 self.entries_value_CV[i]['state'] = 'normal'
-            # Acquisition date has a default format in entry but you can modify date with the calendar
-            self.cal['state'] = 'normal'
             
-            def date_entry_selected(event):
-                w = event.widget
+            self.entries_value_CV[1]['state'] = 'disabled'
+
+            self.cal.entry['state'] = 'normal'
+            self.cal.button['state'] = 'normal'
+            # Acquisition date has a default format in entry but you can modify date with the calendar
+            #self.cal.configure(state="normal")
+            
+            def date_entry_selected(*args):
                 self.entries_value_ID[4]['state'] = tk.NORMAL
                 self.entries_value_ID[4].delete(0, tk.END)
-                self.entries_value_ID[4].insert(0, str(w.get_date()))
+                self.entries_value_ID[4].insert(0, str(self.cal.entry.get()))
+                if self.entries_value_ID[4].get():
+                    try:
+                        acq_date = datetime.datetime.strptime(self.entries_value_ID[4].get(), '%Y-%m-%d')
+                        self.today = date.today()
+                        self.today = self.today.strftime('%Y-%m-%d')
+                        a = acq_date.strftime('%Y-%m-%d')
+                        if acq_date.strftime('%Y-%m-%d') > self.today:
+                            messagebox.showerror("XNAT-PIC", "The date entered is greater than today's date")
+                            raise
+                    except Exception as e:
+                        if str(e) != 'No active exception to reraise':
+                            messagebox.showerror("XNAT-PIC", str(e))
+                        self.entries_value_ID[4].delete(0, tk.END)
+                        self.entries_value_ID[4]['state'] = tk.DISABLED
+                        raise
+
                 self.entries_value_ID[4]['state'] = tk.DISABLED
                 self.my_listbox.selection_set(self.selected_index)
-
-            self.cal.bind("<<DateEntrySelected>>", date_entry_selected)
-
+            
+            self.datevar.trace('w', date_entry_selected)
             # Option menu for the group
             self.group_menu['state'] = 'readonly'
 
@@ -1399,7 +1432,7 @@ class xnat_pic_gui():
             self.time_entry['state'] = 'normal'
             self.timepoint_menu['state'] = 'readonly'
 
-            def timepoint_changed(event):
+            def timepoint_changed(*args):
                 self.entries_value_CV[1].config(state=tk.NORMAL)
                 """ handle the timepoint changed event """
                 if str(self.time_entry.get()) or str(self.selected_timepoint1.get()):
@@ -1420,7 +1453,9 @@ class xnat_pic_gui():
                 self.entries_value_CV[1].config(state=tk.DISABLED)
 
             self.timepoint_menu.bind("<<ComboboxSelected>>", timepoint_changed)
-            self.time_entry.bind("<Return>", timepoint_changed)
+
+            #self.time_entry.bind("<<FocusOut>>", timepoint_changed)
+            self.time_entry_value.trace('w', timepoint_changed)
             self.timepoint_menu1.bind("<<ComboboxSelected>>", timepoint_changed)
 
         def check_entries(self):
@@ -1496,7 +1531,7 @@ class xnat_pic_gui():
             self.selected_timepoint.set('')
             self.selected_timepoint1.set('')
             self.time_entry.delete(0, tk.END)
-            self.cal.delete(0, tk.END)
+            #self.cal.entry.delete(0, tk.END)
             disable_buttons([self.dose_menu, self.group_menu, self.timepoint_menu, self.time_entry, self.timepoint_menu1, self.cal])
             # Saves the changes made by the user in the txt file
             substring = str(my_key).replace('#','/')
@@ -1522,21 +1557,24 @@ class xnat_pic_gui():
                 messagebox.showerror("XNAT-PIC", "Error in saving" + str(e))  
                 raise
 
-        #################### Confirm multiple metadata ####################
+        # #################### Confirm multiple metadata ####################
         def confirm_multiple_metadata(self, master):
 
-            disable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.my_listbox])
-            tab_names = [self.notebook.tab(i, state='disable') for i in self.notebook.tabs()]  
+            disable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.browse_btn])
+
+            #tab_names = [self.notebook.notebookTab.tab(i, state='disable') for i in self.notebook.notebookTab.tabs()]  
                      
             try:
                 self.selected_folder
                 pass
             except Exception as e:
-                enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.my_listbox])
+                enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.my_listbox, self.browse_btn])
                 messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
                 raise
-
+            
+           
             messagebox.showinfo("Project Data","Select the ID fields you want to copy.")
+            #self.my_listbox.selection_set(self.selected_index)
 
             # Select the fields that you want to copy
             self.list_ID = []
@@ -1575,7 +1613,7 @@ class xnat_pic_gui():
             
         def select_CV(self, master):
             messagebox.showinfo("Project Data","Select the Custom Variables you want to copy.")
-
+            #self.my_listbox.selection_set(self.selected_index)
             # Select the fields that you want to copy
             self.list_CV = []
             # Confirm ID
@@ -1610,9 +1648,9 @@ class xnat_pic_gui():
                 count_list = btn_multiple_confirm_CV.copy()
             
         def select_exp(self, master):
-            messagebox.showinfo("Metadata","1. Select the folders from the box on the left for which to copy the info!\n 2. Always remaining in the box on the left, press ENTER to confirm or ESC to cancel!")
-            enable_buttons([self.my_listbox])
-            tab_names = [self.notebook.tab(i, state='normal') for i in self.notebook.tabs()]
+            messagebox.showinfo("Metadata","Select the folders from the box on the left for which to copy the info and then press confirm or cancel!")
+            #enable_buttons([self.my_listbox])
+            #tab_names = [self.notebook.tab(i, state='normal') for i in self.notebook.tabs()]
             self.my_listbox.selection_set(self.selected_index)    
             self.my_listbox['selectmode'] = MULTIPLE
             
@@ -1623,17 +1661,22 @@ class xnat_pic_gui():
             self.my_listbox.bind("<<ListboxSelect>>", select_listbox)
 
             def select_tab_listbox(event):
-                tab_id = self.notebook.select()
-                self.tab_name = self.notebook.tab(tab_id, "text")
+                try: 
+                    self.notebook.notebookContent.select(self.notebook.notebookTab.index("current"))
+                except Exception as e:
+                    pass
+                tab_id = self.notebook.notebookTab.select()
+                self.tab_name = self.notebook.notebookTab.tab(tab_id, "text")
                 # Update the listbox
-                self.my_listbox.delete(0, END)
-                self.my_listbox.insert(tk.END, *self.todos[self.tab_name])
+                self.my_listbox = self.listbox_notebook[int(self.index_tab)]
                 self.list_tab_listbox.append(self.seltext)
                 
-            self.notebook.bind("<<NotebookTabChanged>>", select_tab_listbox)  
+            self.notebook.notebookTab.bind("<<NotebookTabChanged>>", select_tab_listbox)  
 
             # The user presses 'enter' to confirm 
-            def items_selected2(event):
+            def items_selected2():
+                self.no_btn.destroy()
+                self.ok_btn.destroy()
                 self.list_tab_listbox.append(self.seltext)
                 result = messagebox.askquestion("Multiple Confirm", "Are you sure you want to save data for the selected folders?\n", icon='warning')
                 
@@ -1658,26 +1701,32 @@ class xnat_pic_gui():
                 self.selected_timepoint.set('')
                 self.selected_timepoint1.set('')
                 self.time_entry.delete(0, tk.END)
-                self.cal.delete(0, tk.END)
-                disable_buttons([self.dose_menu, self.group_menu, self.timepoint_menu, self.time_entry, self.timepoint_menu1, self.cal])
+                self.cal.entry.delete(0, tk.END)
+                disable_buttons([self.dose_menu, self.group_menu, self.timepoint_menu, self.time_entry, self.timepoint_menu1, self.cal.entry, self.cal.button])
                 # Clear the focus and the select mode of the listbox is single
-                enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn])
+                enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.browse_btn])
                 self.my_listbox.selection_clear(0, 'end')
                 self.my_listbox['selectmode'] = SINGLE
                 
 
-            self.my_listbox.bind("<Return>", items_selected2)
+            #self.my_listbox.bind("<Return>", items_selected2)
+            self.ok_btn = ttk.Button(self.frame_metadata, image = master.logo_accept, command = items_selected2, cursor=CURSOR_HAND)
+            self.ok_btn.place(relx = 0.16, rely = 0.48, anchor = NW)
             
             # The user presses 'esc' to cancel
-            def items_cancel(event):
-                    # Clear the focus and the select mode of the listbox is single
+            def items_cancel():
+                self.no_btn.destroy()
+                self.ok_btn.destroy()
+                # Clear the focus and the select mode of the listbox is single
                 messagebox.showinfo("Metadata","The information was not saved for the selected folders!")
-                enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn])
+                enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.browse_btn])
                 self.my_listbox.selection_clear(0, 'end')
                 self.my_listbox['selectmode'] = SINGLE
-            self.my_listbox.bind("<Escape>", items_cancel)
+            # self.my_listbox.bind("<Escape>", items_cancel)
+            self.no_btn = ttk.Button(self.frame_metadata, image = master.logo_delete, command = items_cancel, cursor=CURSOR_HAND)
+            self.no_btn.place(relx = 0.24, rely = 0.48, anchor = NE)
                 
-        #################### Add ID #################
+        # #################### Add ID #################
         def add_ID(self, master):
              # Check before confirming the data
             try:
@@ -1687,17 +1736,17 @@ class xnat_pic_gui():
                     messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
                     raise 
             # Disable btns
-            disable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn])
+            disable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.browse_btn])
             # I use len(all_entries) to get nuber of next free row
             next_row = len(self.entries_variable_ID)
             
             # Add entry variable ID
-            ent_variable = ttk.Entry(self.frame_ID, font=SMALL_FONT_4, takefocus = 0, width=15, style = 'Metadata.TEntry')
+            ent_variable = ttk.Entry(self.frame_ID, takefocus = 0, width=15)
             ent_variable.grid(row=next_row, column=0, padx = 5, pady = 5, sticky=W)
             self.entries_variable_ID.append(ent_variable)                 
 
             # Add entry value ID in second col
-            ent_value = ttk.Entry(self.frame_ID, font=SMALL_FONT_4, takefocus = 0, width=44, style = 'Metadata.TEntry')
+            ent_value = ttk.Entry(self.frame_ID, takefocus = 0, width=44)
             ent_value.grid(row=next_row, column=1, padx = 5, pady = 5, sticky=W)
             self.entries_value_ID.append(ent_value)
 
@@ -1710,7 +1759,7 @@ class xnat_pic_gui():
                 state = self.entries_value_ID[1]['state']
                 self.entries_variable_ID[next_row]['state'] = tk.DISABLED
                 self.entries_value_ID[next_row]['state'] = state
-                enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn])
+                enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.browse_btn])
                 btn_confirm_ID.destroy()
                 btn_reject_ID.destroy()
                  
@@ -1720,7 +1769,7 @@ class xnat_pic_gui():
 
             # Delete
             def reject_ID(next_row):
-                enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn])
+                enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.browse_btn])
                 self.entries_variable_ID[next_row].destroy()
                 self.entries_value_ID[next_row].destroy()
                 btn_confirm_ID.destroy()
@@ -1730,7 +1779,7 @@ class xnat_pic_gui():
             btn_reject_ID.grid(row=next_row, column=3, padx = 5, pady = 5, sticky=NW)
 
 
-        #################### Add Custom Variable #################
+        # #################### Add Custom Variable #################
         def add_custom_variable(self, master):
              # Check before confirming the data
             try:
@@ -1740,17 +1789,17 @@ class xnat_pic_gui():
                     messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
                     raise 
             # Disable btns
-            disable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn])
+            disable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.browse_btn])
             # I get number of next free row
             next_row = len(self.entries_variable_CV)
             
             # Add entry variable CV
-            ent_variable = ttk.Entry(self.frame_CV, font=SMALL_FONT_4, takefocus = 0, width=15, style = 'Metadata.TEntry')
+            ent_variable = ttk.Entry(self.frame_CV, takefocus = 0, width=15)
             ent_variable.grid(row=next_row, column=0, padx = 5, pady = 5, sticky=W)
             self.entries_variable_CV.append(ent_variable)                 
 
             # Add entry value in second col
-            ent_value = ttk.Entry(self.frame_CV, font=SMALL_FONT_4, takefocus = 0, width=25, style = 'Metadata.TEntry')
+            ent_value = ttk.Entry(self.frame_CV, takefocus = 0, width=25)
             ent_value.grid(row=next_row, column=1, padx = 5, pady = 5, sticky=W)
             self.entries_value_CV.append(ent_value)
             
@@ -1762,7 +1811,7 @@ class xnat_pic_gui():
                     state = self.entries_value_ID[1]['state']    
                     self.entries_variable_CV[next_row]['state'] = tk.DISABLED
                     self.entries_value_CV[next_row]['state'] = state
-                    enable_buttons([self.modify_btn, self.confirm_btn])
+                    enable_buttons([self.modify_btn, self.confirm_btn, self.browse_btn])
                     btn_confirm_CV.destroy()
                     btn_reject_CV.destroy()
                 else:
@@ -1781,16 +1830,16 @@ class xnat_pic_gui():
                 btn_reject_CV.destroy()
             btn_reject_CV = ttk.Button(self.frame_CV, image = master.logo_delete, 
                                             command=lambda: reject_CV(next_row), cursor=CURSOR_HAND)
-            btn_reject_CV.grid(row=next_row, column=2, padx = 5, pady = 5, sticky=tk.N)
+            btn_reject_CV.grid(row=next_row, column=2, padx = 5, pady = 5, sticky=tk.NE)
 
-        #################### Clear the metadata ####################              
+        # #################### Clear the metadata ####################              
         def clear_metadata(self):
             # Clear all the combobox and the entry
             self.selected_dose.set('')
             self.selected_group.set('')
             self.selected_timepoint.set('')
             self.selected_timepoint1.set('')
-            self.cal.delete(0, tk.END)
+            self.cal.entry.delete(0, tk.END)
             self.time_entry.delete(0, tk.END)
 
             state = self.entries_value_ID[1]['state']
@@ -1800,7 +1849,7 @@ class xnat_pic_gui():
                     self.entries_value_CV[i].delete(0, tk.END)
                     self.entries_value_CV[i]['state'] = state
 
-        #################### Save all the metadata ####################
+        # #################### Save all the metadata ####################
         def save_metadata(self):
             tmp_global_path = str(self.information_folder) + "\\" + self.project_name + '_' + 'Custom_Variables.xlsx'
             try:
@@ -1813,13 +1862,11 @@ class xnat_pic_gui():
                     messagebox.showerror("XNAT-PIC", "Save failed: " + str(e))  
                     raise
             
-        #################### Exit the metadata ####################
+        # #################### Exit the metadata ####################
         def exit_metadata(self, master):
             result = messagebox.askquestion("Exit", "Do you want to exit?", icon='warning')
             if result == 'yes':
-                destroy_widgets([self.menu, self.notebook, self.label_frame_ID, self.label_frame_CV, self.modify_btn,
-                self.confirm_btn, self.multiple_confirm_btn, self.hscrollbar, self.my_xscrollbar, self.my_yscrollbar, self.my_listbox, self.canvas_notebook])
-                delete_widgets(master.my_canvas, [self.frame_title, self.name_selected_project])
+                destroy_widgets([self.frame_metadata, self.menu])
 
                 xnat_pic_gui.choose_your_action(master)
     
@@ -1830,456 +1877,33 @@ class xnat_pic_gui():
             # Disable main frame buttons
             disable_buttons([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn])
 
-            # Start with a popup to get credentials
-            login_popup = tk.Toplevel(background=WHITE)
-            login_popup.title("XNAT-PIC ~ Login")
-            login_popup.geometry("%dx%d+%d+%d" % (400, 250, my_width/3, my_height/4))
+            access_manager = AccessManager(master.root)
+            master.root.wait_window(access_manager.popup)
 
-            # Closing window event: if it occurs, the popup must be destroyed and the main frame buttons must be enabled
-            def closed_window():
-                login_popup.destroy()
-                #Enable all buttons
+            if access_manager.connected == False:
                 enable_buttons([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn])
-            login_popup.protocol("WM_DELETE_WINDOW", closed_window)
-
-            # Credentials Label Frame
-            login_popup.cred_frame = ttk.LabelFrame(login_popup, text="Credentials", style="Popup.TLabelframe")
-            login_popup.cred_frame.grid(row=1, column=0, padx=10, pady=5, sticky=tk.W, columnspan=2)
-
-            # XNAT ADDRESS      
-            login_popup.label_address = ttk.Label(login_popup.cred_frame, text="XNAT web address", style="Popup.TLabel")   
-            login_popup.label_address.grid(row=1, column=0, padx=2, pady=2, sticky=tk.E)
-            login_popup.entry_address = ttk.Entry(login_popup.cred_frame, width=25)
-            login_popup.entry_address.var = tk.StringVar()
-            login_popup.entry_address["textvariable"] = login_popup.entry_address.var
-            login_popup.entry_address.grid(row=1, column=1, padx=2, pady=2)
-
-            def enable_address_modification(*args):
-                if login_popup.modify_address_flag.get() == 1:
-                    login_popup.entry_address.configure(state='normal')
-                else:
-                    login_popup.entry_address.configure(state='disabled')
-            login_popup.modify_address_flag = tk.IntVar()
-            login_popup.modify_address_btn = ttk.Checkbutton(login_popup.cred_frame, text="Change address", state='disabled', 
-                                                            style="Popup.TCheckbutton",
-                                                            onvalue=1, offvalue=0, variable=login_popup.modify_address_flag)
-            login_popup.modify_address_btn.grid(row=1, column=2, padx=2, pady=2, sticky=tk.W)
-            login_popup.modify_address_flag.trace('w', enable_address_modification)
-           
-            # XNAT USER 
-            login_popup.label_user = ttk.Label(login_popup.cred_frame, text="Username", style="Popup.TLabel")
-            login_popup.label_user.grid(row=2, column=0, padx=1, ipadx=1, sticky=tk.E)
-
-            def get_list_of_users():
-                # Get the list of registered and stored users
-                try:
-                    home = os.path.expanduser("~")
-                    # Define the encrypted file path
-                    encrypted_file = os.path.join(home, "Documents", ".XNAT_login_file.txt.aes")
-                    # Define the decrypted file path
-                    decrypted_file = os.path.join(home, "Documents", ".XNAT_login_file00000.txt")
-                    # Decrypt the encrypted file
-                    pyAesCrypt.decryptFile(encrypted_file, decrypted_file, os.environ.get('secretKey'), 
-                                            int(os.environ.get('bufferSize1')) * int(os.environ.get('bufferSize2')))
-                    # Open the decrypted file
-                    with open(decrypted_file, 'r') as credentials_file:
-                        # Read the data
-                        data = json.load(credentials_file)
-                        # Get the list of users
-                        list_of_users = list(data.keys())
-                    # Clear the 'data' variable
-                    data = ''
-                    # Remove the decrypted file
-                    os.remove(decrypted_file)
-                    return list_of_users
-                except Exception as error:
-                    return []
-
-            def get_credentials(*args):
-                if login_popup.entry_user.get() != '':
-                    if login_popup.entry_user.get() in login_popup.combo_user['values']:
-                        # Load stored credentials
-                        self.load_saved_credentials(login_popup)
-                        # Disable the button to modify the web address
-                        login_popup.entry_address.configure(state='disabled')
-                        # Enable the 'Change address' button
-                        login_popup.modify_address_btn.configure(state='normal')
-                        # Enable the 'Remember me' button
-                        login_popup.btn_remember.configure(state='normal')
-                        # Enable the 'Show password' toggle button
-                        login_popup.toggle_btn.configure(state='normal')
-                    else:
-                        # Enable the 'Remember me' button
-                        login_popup.btn_remember.configure(state='normal')
-                else:
-                    # Disable the 'Remember me' button
-                    login_popup.btn_remember.configure(state='disabled')
-                    # Reset 'Remember me' button
-                    login_popup.remember.set(0)
-                    # Disable the 'Show password' toggle button
-                    login_popup.toggle_btn.configure(state='disabled')
-                    # # Reset address and password fields
-                    # login_popup.entry_psw.var.set('')
-                    # login_popup.entry_address.var.set('')
-
-            login_popup.entry_user = tk.StringVar()
-            login_popup.combo_user = ttk.Combobox(login_popup.cred_frame, font=SMALL_FONT_2, takefocus=0, textvariable=login_popup.entry_user, 
-                                                    state='normal', width=19, style="Popup.TCombobox")
-            login_popup.combo_user['values'] = get_list_of_users()
-            login_popup.entry_user.trace('w', get_credentials)
-            login_popup.combo_user.grid(row=2, column=1, padx=2, pady=2)
-
-            # XNAT PASSWORD 
-            login_popup.label_psw = ttk.Label(login_popup.cred_frame, text="Password", style="Popup.TLabel")
-            login_popup.label_psw.grid(row=3, column=0, padx=1, ipadx=1, sticky=tk.E)
-
-            # Show/Hide the password
-            def toggle_password():
-                if login_popup.entry_psw.cget('show') == '':
-                    login_popup.entry_psw.config(show='*')
-                    login_popup.toggle_btn.config(text='Show Password')
-                else:
-                    if tkinter.simpledialog.askstring("PIN", "Enter PIN: ", show='*', parent=login_popup.cred_frame) == os.environ.get('secretPIN'):
-                        login_popup.entry_psw.config(show='')
-                        login_popup.toggle_btn.config(text='Hide Password')
-                    else:
-                        messagebox.showerror("XNAT-PIC Uploader", "Error! The PIN code does not correspond")
-            
-            login_popup.entry_psw = ttk.Entry(login_popup.cred_frame, show="*", width=25)
-            login_popup.entry_psw.var = tk.StringVar()
-            login_popup.entry_psw["textvariable"] = login_popup.entry_psw.var
-            login_popup.entry_psw.grid(row=3, column=1, padx=2, pady=2)
-            login_popup.toggle_btn = ttk.Button(login_popup.cred_frame, text='Show Password', command=toggle_password, state='disabled', 
-                                                cursor=CURSOR_HAND, style="Popup.TButton")
-            login_popup.toggle_btn.grid(row=3, column=2, padx=2, pady=2, sticky=tk.W)
-
-            # Forgot password button
-            def forgot_psw(*args):
-                webbrowser.open("http://130.192.212.48:8080/app/template/ForgotLogin.vm#!", new=1)
-
-            login_popup.forgot_psw = ttk.Label(login_popup.cred_frame, text="Forgot password", style="Attach.TLabel", 
-                                            cursor=CURSOR_HAND)
-            login_popup.forgot_psw.grid(row=4, column=1, padx=1, ipadx=1)
-            login_popup.forgot_psw.bind("<Button-1>", forgot_psw)
-
-            # Register button
-            def register(*args):
-                webbrowser.open("http://130.192.212.48:8080/app/template/Register.vm#!", new=1)
-
-            login_popup.register_btn = ttk.Label(login_popup.cred_frame, text="Register", style="Attach.TLabel",
-                                            cursor=CURSOR_HAND)
-            login_popup.register_btn.grid(row=4, column=2, padx=2, pady=2, sticky=tk.W)
-            login_popup.register_btn.bind("<Button-1>", register)
-
-            # Label Frame for HTTP buttons
-            login_popup.label_frame_http = ttk.LabelFrame(login_popup, text="Options", style="Popup.TLabelframe")
-            login_popup.label_frame_http.grid(row=0, column=0, padx=10, pady=5, sticky=tk.W, columnspan=2)
-            
-            # HTTP/HTTPS 
-            login_popup.http = tk.StringVar()
-            login_popup.button_http = ttk.Radiobutton(login_popup.label_frame_http, text=" http:// ", variable=login_popup.http, 
-                                                        value="http://", style="Popup.TRadiobutton")
-            login_popup.button_http.grid(row=1, column=0, sticky=tk.E, padx=2, pady=2)
-            login_popup.button_https = ttk.Radiobutton(login_popup.label_frame_http, text=" https:// ", variable=login_popup.http, 
-                                                        value="https://", style="Popup.TRadiobutton")
-            login_popup.button_https.grid(row=1, column=1, padx=2, pady=2, sticky=tk.E)
-            login_popup.http.set("http://")
-
-            # SAVE CREDENTIALS CHECKBUTTON
-            login_popup.remember = tk.IntVar()
-            login_popup.btn_remember = ttk.Checkbutton(login_popup.cred_frame, text="Remember me", variable=login_popup.remember, state='disabled',
-                                                        onvalue=1, offvalue=0, style="Popup.TCheckbutton")
-            login_popup.btn_remember.grid(row=2, column=2, padx=2, pady=2, sticky=tk.W)
-
-            # CONNECTION
-            login_popup.button_connect = ttk.Button(login_popup, text="Login", style="MainPopup.TButton",
-                                                    command=partial(self.login, login_popup, master))
-            login_popup.button_connect.grid(row=2, column=1, padx=5, pady=5, sticky=tk.E)
-
-            # QUIT button
-            def quit_event():
-                login_popup.destroy()
-                enable_buttons([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn])
-
-            login_popup.button_quit = ttk.Button(login_popup, text='Quit', command=quit_event, style="MainPopup.TButton")
-            login_popup.button_quit.grid(row=2, column=0, padx=10, pady=5, sticky=tk.W)
-
-        def load_saved_credentials(self, popup):
-            # REMEMBER CREDENTIALS
-            try:
-                home = os.path.expanduser("~")
-                # Define the encrypted file path
-                encrypted_file = os.path.join(home, "Documents", ".XNAT_login_file.txt.aes")
-                # Define the decrypted file path
-                decrypted_file = os.path.join(home, "Documents", ".XNAT_login_file00000.txt")
-                # Decrypt the file
-                pyAesCrypt.decryptFile(encrypted_file, decrypted_file, os.environ.get('secretKey'), 
-                                        int(os.environ.get('bufferSize1')) * int(os.environ.get('bufferSize2')))
-                # Open the decrypted file in 'read' mode
-                with open(decrypted_file, 'r') as credentials_file:
-                    # Read the data
-                    data = json.load(credentials_file)
-                    # Fill the empty fields
-                    popup.entry_address.var.set(data[popup.entry_user.get()]['Address'])
-                    popup.entry_user.set(data[popup.entry_user.get()]['Username'])
-                    popup.entry_psw.var.set(data[popup.entry_user.get()]['Password'])
-                # Clear the 'data' variable
-                data = ''
-                # Remove the decrypted file
-                os.remove(decrypted_file)
-                # Check the 'Remember me' button
-                popup.btn_remember.config(state='normal')
-                popup.remember.set(1)
-            except Exception as error:
-                messagebox.showerror("XNAT-PIC Login", "Error! The user information is not available, or you don't have access to it.")
-
-        def login(self, popup, master):
-
-            # Retireve the complete address
-            popup.entry_address_complete = popup.http.get() + popup.entry_address.var.get()
-
-            home = os.path.expanduser("~")
-            try:
-                # Start a new xnat session
-                self.session = xnat.connect(
-                    popup.entry_address_complete,
-                    popup.entry_user.get(),
-                    popup.entry_psw.var.get(),
-                )
-                # Check if the 'Remember Button' is checked
-                if popup.remember.get() == True:
-                    # Save credentials
-                    self.save_credentials(popup)
-                else:
-                    # Try to remove the existent encrypted file
-                    try:
-                        os.remove(
-                            os.path.join(home, "Documents", ".XNAT_login_file.txt.aes")
-                        )
-                    except FileNotFoundError:
-                        pass
-                popup.destroy()
-                # Go to the overall uploader
+            else:
+                destroy_widgets([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn, master.xnat_pic_logo_label])
+                self.session = access_manager.session
                 self.overall_uploader(master)
-
-            except Exception as error:
-                messagebox.showerror("Error!", error)
-                popup.destroy()
-                enable_buttons([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn])
-
-        def save_credentials(self, popup):
-
-            home = os.path.expanduser("~")
-
-            if os.path.exists(os.path.join(home, "Documents")):
-                
-                # Define the path of the encrypted file
-                encrypted_file = os.path.join(home, "Documents", ".XNAT_login_file.txt.aes")
-                # Define the path of the decrypted file
-                decrypted_file = os.path.join(home, "Documents", ".XNAT_login_file00000.txt")
-
-                if os.path.isfile(encrypted_file):
-
-                    # Decrypt the encrypted file exploiting the secret key
-                    pyAesCrypt.decryptFile(encrypted_file, decrypted_file, os.environ.get('secretKey'), 
-                                            int(os.environ.get('bufferSize1')) * int(os.environ.get('bufferSize2')))
-                    # Open decrypted file and read the data stored
-                    with open(decrypted_file, 'r') as credentials_file:
-                        data = json.load(credentials_file)
-                    # Update the already stored data with the current session parameters
-                    data[str(popup.entry_user.get())] = {
-                                "Address": popup.entry_address.var.get(),
-                                "Username": popup.entry_user.get(),
-                                "Password": popup.entry_psw.var.get(),
-                                "HTTP": popup.http.get()
-                        }
-                    # Remove the decrypted file
-                    os.remove(decrypted_file)
-                
-                else:
-                    # Define empty dictionary for credentials
-                    data = {}
-                    # Add the current credentials to the dictionary
-                    data[str(popup.entry_user.get())] = {
-                                "Address": popup.entry_address.var.get(),
-                                "Username": popup.entry_user.get(),
-                                "Password": popup.entry_psw.var.get(),
-                                "HTTP": popup.http.get()
-                        }
-
-                # Define the path of the file
-                file = os.path.join(home, "Documents", ".XNAT_login_file.txt")
-                # Open the file to write in the data to be stored
-                with open(file, 'w+') as login_file:
-                    json.dump(data, login_file)
-                # Clear data variable
-                data = {}
-                # Encrypt the file
-                pyAesCrypt.encryptFile(file, encrypted_file, os.environ.get('secretKey'), 
-                                        int(os.environ.get('bufferSize1')) * int(os.environ.get('bufferSize2')))
-                # Remove the file
-                os.remove(file)
-
-        def check_project_name(self, *args):
-
-            if self.entry_prjname.get() != '':
-                # Method to check about project name
-                if self.entry_prjname.get() in self.OPTIONS:
-                    # Case 1 --> The project already exists
-                    messagebox.showerror(
-                        "XNAT-PIC Uploader",
-                        "Project ID %s already exists! Please, enter a different project ID."
-                        % self.entry_prjname.get(),
-                    )
-                else:
-                    # Case 2 --> The project does not exist yet
-                    result = messagebox.askyesno("XNAT-PIC Uploader", "A new project will be created. Are you sure?")
-                    if result is False:
-                            return
-                    self.prj.set(self.entry_prjname.get())
-                    disable_buttons([self.entry_prjname, self.confirm_new_prj, self.reject_new_prj])
-                    try:
-                        project = self.session.classes.ProjectData(
-                                       name=self.prj.get(), parent=self.session)
-                    except exception as e:
-                        messagebox.showerror("Error!", str(e))
-                        
-                    self.session.clearcache()
-                    # Refresh the list of projects
-                    self.OPTIONS = self.session.projects
-                    messagebox.showinfo('XNAT-PIC Uploader', 'A new project is created.')                 
-                    
-            else:
-                messagebox.showerror("XNAT-PIC Uploader", "Please enter a project ID.")
-
-        def check_subject_name(self, *args):
-
-            if self.entry_subname.get() != '':
-                # Check if the project already exists
-                if self.prj.get() in self.OPTIONS:
-                    # Method to check about project name
-                    if self.entry_subname.get() in self.OPTIONS2:
-                        # Case 1 --> The project already exists
-                        messagebox.showerror(
-                            "XNAT-PIC Uploader!",
-                            "Subject %s already exists! Please, enter a different subject ID"
-                            % self.entry_subname.get(),
-                        )
-                    else:
-                        # Case 2 --> The project does not exist yet
-                        try:
-                            result = messagebox.askyesno("XNAT-PIC Uploader", "A new subject will be created into %s. Are you sure?"
-                                                        % self.prj.get())
-                            if result is False:
-                                return
-                            self.sub.set(self.entry_subname.get())
-                            disable_buttons([self.entry_subname, self.confirm_new_sub, self.reject_new_sub])
-
-                            try:
-                                # Try to retrieve the project
-                                project = self.session.projects[self.prj.get()]
-                            except:
-                                # otherwise a new one will be created
-                                messagebox.showwarning('XNAT-PIC Uploader', 'The project you are trying to retrieve does not exist.'
-                                                                            'A new project will be created.')
-                                project = self.session.classes.ProjectData(
-                                                    name=self.prj.get(), parent=self.session)
-                                # Clear cache to refresh the catalog
-                                self.session.clearcache()
-                            # Create new subject   
-                            subject = self.session.classes.SubjectData(parent=project, label=self.sub.get())
-                            # Clear cache to refresh the catalog
-                            self.session.clearcache()
-                            # Refresh the list of subjects
-                            self.OPTIONS2 = self.session.projects[self.prj.get()].subjects
-                            messagebox.showinfo('XNAT-PIC Uploader', 'A new subject is created.')                 
-                        except exception as e:
-                            messagebox.showerror("Error!", str(e))
-                else:
-                    messagebox.showerror('XNAT-PIC Uploader', 'The current project does not exist in XNAT platform.'
-                                                            '\nPlease select an other project or create a new one.')
-            else:
-                messagebox.showerror("XNAT-PIC Uploader", "Please enter a subject ID.")
-
-        def check_experiment_name(self, *args):
-
-            if self.entry_expname.get() != '':
-                if self.prj.get() in self.OPTIONS:
-                    if self.sub.get() in self.OPTIONS2:
-
-                        if self.entry_expname.get() in self.OPTIONS3:
-                            # Case 1 --> The experiment already exists
-                            messagebox.showerror(
-                                "XNAT-PIC Uploader!",
-                                "Experiment %s already exists! Please, enter a different experiment ID"
-                                % self.entry_expname.get(),
-                            )
-                        else:
-                            # Case 2 --> The experiment does not exist yet
-                            try:
-                                result = messagebox.askyesno("XNAT-PIC Uploader", "A new experiment will be created into %s. Are you sure?"
-                                                            % self.sub.get())
-                                if result is False:
-                                    return
-                                self.exp.set(self.entry_expname.get())
-                                disable_buttons([self.entry_expname, self.confirm_new_exp, self.reject_new_exp])
-
-                                try:
-                                    # Try to retrieve the subject
-                                    subject = self.session.projects[self.prj.get()].subjects[self.sub.get()]
-                                except:
-                                    # otherwise a new one will be created
-                                    messagebox.showwarning('XNAT-PIC Uploader', 'The subject you are trying to retrieve does not exist.'
-                                                                                'A new project will be created.')
-                                    subject = self.session.classes.SubjectData(parent=self.prj.get(), label=self.sub.get())
-                                    # Clear cache to refresh the catalog
-                                    self.session.clearcache()
-                                # Create new experiment
-
-                                ...
-
-                                # Clear cache to refresh the catalog
-                                # os.remove(str(self.exp.get()))
-                                self.session.clearcache()
-                                # Refresh the list of projects and subjects
-                                self.OPTIONS2 = self.session.projects[self.prj.get()].subjects
-                                self.OPTIONS3 = self.session.projects[self.prj.get()].subjects[self.sub.get()]
-                                messagebox.showinfo('XNAT-PIC Uploader', 'A new experiment is created.')                 
-                            except exception as e:
-                                messagebox.showerror("Error!", str(e))
-                    else:
-                        messagebox.showerror('XNAT-PIC Uploader', 'The current subject does not exist in XNAT platform.'
-                                                                '\nPlease select an other subject or create a new one.')
-                else:
-                    messagebox.showerror('XNAT-PIC Uploader', 'The current project does not exist in XNAT platform.'
-                                                            '\nPlease select an other project or create a new one.')
-            else:
-                messagebox.showerror("XNAT-PIC Uploader", "Please enter a experiment ID.")
 
         def overall_uploader(self, master):
                            
-            #################### Update the frame ####################
-            try:
-                destroy_widgets([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn])
-                master.my_canvas.delete(master.img2)
-            except:
-                pass
             #################### Create the new frame ####################
-
+            master.frame_label.set("Uploader")
             #############################################
             ################ Main Buttons ###############
-            x_btn = int(my_width/5)
-            x_btn_init = x_btn + x_btn/3
-            y_btn = int(my_height)
-            width_btn = int(my_width/5)
+
+            self.label_frame_main = ttk.Labelframe(master.frame, style="Hidden.TLabelframe")
+            self.label_frame_main.place(relx=0.25, rely=0, anchor=tk.NW, relwidth=0.7)
 
             # Frame Title
-            self.frame_title = master.my_canvas.create_text(3*x_btn, int(y_btn*0.1), anchor=tk.CENTER, fill='black', font=("Ink Free", 36, "bold"),
-                                         text="XNAT-PIC Uploader")
+            self.frame_title = ttk.Label(self.label_frame_main, text="XNAT-PIC Uploader", style="Title.TLabel", anchor=tk.CENTER)
+            self.frame_title.pack(fill='x', padx=25, pady=10, anchor=tk.CENTER)
 
-            ### Label Frame Uploader Selection
-            self.label_frame_uploader = ttk.LabelFrame(master.my_canvas, text="Uploader Selection")
-            master.my_canvas.create_window(x_btn_init, int(y_btn*0.15), window=self.label_frame_uploader, anchor=tk.NW)
+            # Label Frame Uploader Selection
+            self.label_frame_uploader = ttk.LabelFrame(master.frame, text="Uploader Selection")
+            self.label_frame_uploader.place(relx=0.25, rely=0.15, anchor=tk.NW, relwidth=0.7)
 
             self.conv_type = tk.IntVar()
 
@@ -2319,12 +1943,10 @@ class xnat_pic_gui():
                                     command=file_handler, cursor=CURSOR_HAND, width=20)
             self.file_btn.grid(row=0, column=3, padx=5, pady=5, sticky=tk.NW)
 
-            ### Label Frame for folder selection
-            self.folder_selection_label_frame = ttk.Labelframe(master.my_canvas, text="Folder Selection")
-            master.my_canvas.create_window(x_btn_init, int(y_btn*0.25), window=self.folder_selection_label_frame, anchor=tk.NW)
-            self.folder_selection_label_frame.grid_columnconfigure(1, weight=1)
-            self.folder_selection_label_frame.grid_rowconfigure(1, weight=1)
-
+            # Label Frame for folder selection
+            self.folder_selection_label_frame = ttk.Labelframe(master.frame, text="Folder Selection")
+            self.folder_selection_label_frame.place(relx=0.25, rely=0.25, anchor=tk.NW)
+            
             # Define a string variable in order to check the current selected item of the Treeview widget
             self.selected_item_path = tk.StringVar()
             
@@ -2332,7 +1954,7 @@ class xnat_pic_gui():
                 # Define the initial directory
                 init_dir = os.path.expanduser("~").replace('\\', '/') + '/Desktop/Dataset'
                 # Ask the user to insert the desired directory
-                self.folder_to_upload.set(filedialog.askdirectory(parent=master.my_canvas, initialdir=init_dir, 
+                self.folder_to_upload.set(filedialog.askdirectory(parent=master.frame, initialdir=init_dir, 
                                                         title="XNAT-PIC Uploader: Select directory in DICOM format to upload"))
                 # Reset and clear the selected_item_path defined from Treeview widget selection
                 self.selected_item_path.set('')
@@ -2463,7 +2085,7 @@ class xnat_pic_gui():
             self.tree.column("#3", stretch=tk.YES, width=100)
 
             def load_tree(*args):
-                progressbar_tree = ProgressBar("XNAT-PIC Uploader")
+                progressbar_tree = ProgressBar(master.root, "XNAT-PIC Uploader")
                 progressbar_tree.start_indeterminate_bar()
                 t = threading.Thread(target=folder_selected_handler, args=())
                 t.start()
@@ -2479,9 +2101,9 @@ class xnat_pic_gui():
                                 text="Additional Files", state='disabled', style="WithoutBack.TCheckbutton")
             self.add_file_btn.grid(row=0, column=1, padx=5, pady=5, sticky=tk.E)
 
-            # Label Frame Uploader Options
-            self.custom_var_labelframe = ttk.LabelFrame(master.my_canvas, text="Custom Variables")
-            master.my_canvas.create_window(int(3*x_btn + 2*x_btn/3), int(y_btn*0.25), window=self.custom_var_labelframe, anchor=tk.NW)
+            # Label Frame Uploader Custom Variables
+            self.custom_var_labelframe = ttk.LabelFrame(master.frame, text="Custom Variables")
+            self.custom_var_labelframe.place(relx=0.95, rely=0.25, anchor=tk.NE, relwidth=0.2)
 
             # Custom Variables
             self.n_custom_var = tk.IntVar()
@@ -2567,27 +2189,12 @@ class xnat_pic_gui():
             #############################################
 
             # Label Frame for Uploader Data
-            self.uploader_data = ttk.LabelFrame(master.my_canvas, text="")
-            master.my_canvas.create_window(x_btn_init, int(y_btn*0.6), window=self.uploader_data, anchor=tk.NW)
+            self.uploader_data = ttk.LabelFrame(master.frame, text="")
+            self.uploader_data.place(relx=0.25, rely=0.65, anchor=tk.NW)
 
             #############################################
             ################# Project ###################
             # Menu
-            def get_subjects(*args):
-                if self.prj.get() != '--' and self.prj.get() in self.OPTIONS:
-                    self.OPTIONS2 = list(self.session.projects[self.prj.get()].subjects.key_map.keys())
-                else:
-                    self.OPTIONS2 = []
-                self.sub.set(default_value)
-                self.exp.set(default_value)
-                self.subject_list['menu'].delete(0, 'end')
-                for key in self.OPTIONS2:
-                    self.subject_list['menu'].add_command(label=key, command=lambda var=key:self.sub.set(var))
-            
-            def reject_project(*args):
-                self.entry_prjname.delete(0,tk.END)
-                disable_buttons([self.entry_prjname, self.confirm_new_prj, self.reject_new_prj])
-
             self.project_list_label = ttk.Label(self.uploader_data, text="Select Project")
             self.project_list_label.grid(row=0, column=0, padx=2, pady=10, sticky=tk.NW)
             self.OPTIONS = list(self.session.projects)
@@ -2595,52 +2202,24 @@ class xnat_pic_gui():
             default_value = "--"
             self.project_list = ttk.OptionMenu(self.uploader_data, self.prj, default_value, *self.OPTIONS)
             self.project_list.configure(state="disabled", width=30)
-            self.prj.trace('w', get_subjects)
-            self.prj.trace('w', reject_project)
+            
             self.project_list.grid(row=0, column=1, padx=2, pady=10, sticky=tk.NW)
             
             # Button to add a new project
             def add_project():
-                enable_buttons([self.entry_prjname, self.confirm_new_prj, self.reject_new_prj])
-                self.entry_prjname.delete(0,tk.END)
-            self.new_prj_btn = ttk.Button(self.uploader_data, state=tk.DISABLED, width=20, style="Popup.TButton",
+                createdProject = ProjectManager(self.session)
+                self.session.clearcache()
+                self.prj.set(createdProject.project_id.get())
+
+            self.new_prj_btn = ttk.Button(self.uploader_data, state=tk.DISABLED, width=20, style="Secondary.TButton",
                                         command=add_project, cursor=CURSOR_HAND, text="Add New Project")
             self.new_prj_btn.grid(row=0, column=2, padx=20, pady=10, sticky=tk.NW)
-            
-            # Entry to write a new project
-            self.entry_prjname = ttk.Entry(self.uploader_data)
-            self.entry_prjname.configure(state="disabled", width=30)
-            self.entry_prjname.grid(row=0, column=3, padx=2, pady=10, sticky=tk.NW)
-
-            # Button to confirm new project
-            self.confirm_new_prj = ttk.Button(self.uploader_data, image=master.logo_accept, style="WithoutBack.TButton",
-                                            command=self.check_project_name, cursor=CURSOR_HAND, state='disabled')
-            self.confirm_new_prj.grid(row=0, column=4, padx=10, pady=10, sticky=tk.NW)
-
-            # Button to reject new project
-            self.reject_new_prj = ttk.Button(self.uploader_data, image=master.logo_delete, style="WithoutBack.TButton",
-                                            command=reject_project, cursor=CURSOR_HAND, state='disabled')
-            self.reject_new_prj.grid(row=0, column=5, padx=2, pady=10, sticky=tk.NW)
             
             #############################################
 
             #############################################
             ################# Subject ###################
             # Menu
-            def get_experiments(*args):
-                if self.prj.get() != '--' and self.sub.get() != '--' and self.prj.get() in self.OPTIONS and self.sub.get() in self.OPTIONS2:
-                    self.OPTIONS3 = list(self.session.projects[self.prj.get()].subjects[self.sub.get()].experiments.key_map.keys())
-                else:
-                    self.OPTIONS3 = []
-                self.exp.set(default_value)
-                self.experiment_list['menu'].delete(0, 'end')
-                for key in self.OPTIONS3:
-                    self.experiment_list['menu'].add_command(label=key, command=lambda var=key:self.exp.set(var))
-
-            def reject_subject(*args):
-                self.entry_subname.delete(0,tk.END)
-                disable_buttons([self.entry_subname, self.confirm_new_sub, self.reject_new_sub])
-
             if self.prj.get() != '--':
                 self.OPTIONS2 = list(self.session.projects[self.prj.get()].subjects.key_map.keys())
             else:
@@ -2650,39 +2229,22 @@ class xnat_pic_gui():
             self.sub = tk.StringVar()
             self.subject_list = ttk.OptionMenu(self.uploader_data, self.sub, default_value, *self.OPTIONS2)
             self.subject_list.configure(state="disabled", width=30)
-            self.sub.trace('w', get_experiments)
-            self.sub.trace('w', reject_subject)
+            
             self.subject_list.grid(row=1, column=1, padx=2, pady=5, sticky=tk.NW)
             
             # Button to add a new subject
             def add_subject():
-                enable_buttons([self.entry_subname, self.confirm_new_sub, self.reject_new_sub])
-                self.entry_subname.delete(0,tk.END)
-            self.new_sub_btn = ttk.Button(self.uploader_data, state=tk.DISABLED, width=20, style="Popup.TButton",
+                createdSubject = SubjectManager(self.session)
+                self.session.clearcache()
+                self.prj.set(createdSubject.parent_project.get())
+                self.sub.set(createdSubject.subject_id.get())
+            self.new_sub_btn = ttk.Button(self.uploader_data, state=tk.DISABLED, width=20, style="Secondary.TButton",
                                         command=add_subject, cursor=CURSOR_HAND, text="Add New Subject")
             self.new_sub_btn.grid(row=1, column=2, padx=20, pady=10, sticky=tk.NW)
-
-            # Entry to write a new subject
-            self.entry_subname = ttk.Entry(self.uploader_data)
-            self.entry_subname.configure(state="disabled", width=30)
-            self.entry_subname.grid(row=1, column=3, padx=2, pady=10, sticky=tk.NW)
-
-            # Button to confirm new subject
-            self.confirm_new_sub = ttk.Button(self.uploader_data, image=master.logo_accept, style="WithoutBack.TButton",
-                                            command=self.check_subject_name, cursor=CURSOR_HAND, state='disabled')
-            self.confirm_new_sub.grid(row=1, column=4, padx=10, pady=10, sticky=tk.NW)
-
-            # Button to reject new subject
-            self.reject_new_sub = ttk.Button(self.uploader_data, image = master.logo_delete, style="WithoutBack.TButton",
-                                            command=reject_subject, cursor=CURSOR_HAND, state='disabled')
-            self.reject_new_sub.grid(row=1, column=5, padx=2, pady=10, sticky=tk.NW)
             #############################################
 
             #############################################
             ################# Experiment ################
-            def reject_experiment(*args):
-                self.entry_expname.delete(0,tk.END)
-                disable_buttons([self.entry_expname, self.confirm_new_exp, self.reject_new_exp])
             
             # Menu
             if self.prj.get() != '--' and self.sub.get() != '--':
@@ -2694,32 +2256,47 @@ class xnat_pic_gui():
             self.exp = tk.StringVar()
             self.experiment_list = ttk.OptionMenu(self.uploader_data, self.exp, default_value, *self.OPTIONS3)
             self.experiment_list.configure(state="disabled", width=30)
-            self.exp.trace('w', reject_experiment)
             self.experiment_list.grid(row=2, column=1, padx=2, pady=10, sticky=tk.NW)
             
             # Button to add a new experiment
             def add_experiment():
-                enable_buttons([self.entry_expname, self.confirm_new_exp, self.reject_new_exp])
-                self.entry_expname.delete(0,tk.END)
-            self.new_exp_btn = ttk.Button(self.uploader_data, state=tk.DISABLED, style="Popup.TButton", 
+                createdExperiment = ExperimentManager(self.session)
+                self.session.clearcache()
+                self.prj.set(createdExperiment.parent_project.get())
+                self.sub.set(createdExperiment.parent_subject.get())
+                self.exp.set(createdExperiment.experiment_id.get())
+
+            self.new_exp_btn = ttk.Button(self.uploader_data, state=tk.DISABLED, style="Secondary.TButton", 
                                         text="Add New Experiment", command=add_experiment, cursor=CURSOR_HAND, width=20)
             self.new_exp_btn.grid(row=2, column=2, padx=20, pady=10, sticky=tk.NW)
-
-            # Entry to write a new experiment
-            self.entry_expname = ttk.Entry(self.uploader_data)
-            self.entry_expname.config(state='disabled', width=30)
-            self.entry_expname.grid(row=2, column=3, padx=2, pady=10, sticky=tk.NW)
-
-            # Button to confirm new experiment
-            self.confirm_new_exp = ttk.Button(self.uploader_data, image = master.logo_accept, style="WithoutBack.TButton",
-                                            command=self.check_experiment_name, cursor=CURSOR_HAND, state='disabled')
-            self.confirm_new_exp.grid(row=2, column=4, padx=10, pady=10, sticky=tk.NW)
-
-            # Button to reject new experiment
-            self.reject_new_exp = ttk.Button(self.uploader_data, image = master.logo_delete, style="WithoutBack.TButton",
-                                            command=reject_experiment, cursor=CURSOR_HAND, state='disabled')
-            self.reject_new_exp.grid(row=2, column=5, padx=2, pady=10, sticky=tk.NW)
             #############################################
+
+            # Callback methods
+            def get_subjects(*args):
+                if self.prj.get() != '--' and self.prj.get() in self.OPTIONS:
+                    self.OPTIONS2 = list(self.session.projects[self.prj.get()].subjects.key_map.keys())
+                else:
+                    self.OPTIONS2 = []
+                self.sub.set(default_value)
+                self.exp.set(default_value)
+                self.subject_list['menu'].delete(0, 'end')
+                for key in self.OPTIONS2:
+                    self.subject_list['menu'].add_command(label=key, command=lambda var=key:self.sub.set(var))
+            def get_experiments(*args):
+                if self.prj.get() != '--' and self.sub.get() != '--' and self.prj.get() in self.OPTIONS and self.sub.get() in self.OPTIONS2:
+                    self.OPTIONS3 = list(self.session.projects[self.prj.get()].subjects[self.sub.get()].experiments.key_map.keys())
+                else:
+                    self.OPTIONS3 = []
+                self.exp.set(default_value)
+                self.experiment_list['menu'].delete(0, 'end')
+                for key in self.OPTIONS3:
+                    self.experiment_list['menu'].add_command(label=key, command=lambda var=key:self.exp.set(var))
+
+            self.prj.trace('w', get_subjects)
+            self.sub.trace('w', get_experiments)
+
+            self.bottom_label_frame = ttk.Labelframe(master.frame, text="", style="Hidden.TLabelframe")
+            self.bottom_label_frame.place(relx=0.25, rely=0.9, anchor=tk.NW, relwidth=0.7)
 
             #############################################
             ################ EXIT Button ################
@@ -2728,9 +2305,7 @@ class xnat_pic_gui():
                 if result == 'yes':
                     # Destroy all the existent widgets (Button, OptionMenu, ...)
                     destroy_widgets([self.uploader_data, self.custom_var_labelframe, self.label_frame_uploader, self.exit_btn,
-                                    self.next_btn, self.folder_selection_label_frame])
-                    # # Delete all widgets that cannot be destroyed
-                    delete_widgets(master.my_canvas, [self.frame_title])
+                                    self.next_btn, self.folder_selection_label_frame, self.frame_title])
                     # Perform disconnection of the session if it is alive
                     try:
                         self.session.disconnect()
@@ -2741,11 +2316,10 @@ class xnat_pic_gui():
                     xnat_pic_gui.choose_your_action(master)
 
             self.exit_text = tk.StringVar() 
-            self.exit_btn = ttk.Button(master.my_canvas, textvariable=self.exit_text)
+            self.exit_btn = ttk.Button(self.bottom_label_frame, textvariable=self.exit_text)
             self.exit_btn.configure(command=exit_uploader)
             self.exit_text.set("Exit")
-            y_exit_btn = int(my_height*80/100)
-            master.my_canvas.create_window(x_btn_init, y_exit_btn, anchor=tk.NW, width=int(width_btn/2), window=self.exit_btn)
+            self.exit_btn.pack(side='left', padx=25, anchor=tk.NW)
             #############################################
 
             #############################################
@@ -2763,18 +2337,17 @@ class xnat_pic_gui():
                     pass
 
             self.next_text = tk.StringVar() 
-            self.next_btn = ttk.Button(master.my_canvas, textvariable=self.next_text, state='disabled',
+            self.next_btn = ttk.Button(self.bottom_label_frame, textvariable=self.next_text, state='disabled',
                                         command=next)
             self.next_text.set("Next")
-            master.my_canvas.create_window(4*x_btn, y_exit_btn, anchor=tk.NW, width=int(width_btn/2), window=self.next_btn)
+            self.next_btn.pack(side='right', padx=25, anchor=tk.NE)
             #############################################
 
         def check_buttons(self, master, press_btn=0):
 
             def back():
                 destroy_widgets([self.label_frame_uploader, self.uploader_data, self.custom_var_labelframe,
-                                self.exit_btn, self.next_btn, self.folder_selection_label_frame])
-                delete_widgets(master.my_canvas, [self.frame_title])
+                                self.exit_btn, self.next_btn, self.folder_selection_label_frame, self.frame_title])
                 self.overall_uploader(master)
 
             # Initialize the press button value
@@ -2790,7 +2363,7 @@ class xnat_pic_gui():
                 enable_buttons([self.project_list, self.new_prj_btn, self.select_folder_button, self.add_file_btn])
                 # Enable NEXT button only if all the requested fields are filled
                 def enable_next(*args):
-                    if self.prj.get() != '--':
+                    if self.prj.get() != '--' and self.folder_to_upload.get() != '':
                         enable_buttons([self.next_btn])
                 self.prj.trace('w', enable_next)
                 
@@ -2800,7 +2373,7 @@ class xnat_pic_gui():
                 enable_buttons([self.project_list, self.new_prj_btn, self.select_folder_button, self.add_file_btn])
                 # Enable NEXT button only if all the requested fields are filled
                 def enable_next(*args):
-                    if self.prj.get() != '--':
+                    if self.prj.get() != '--' and self.folder_to_upload.get() != '':
                         enable_buttons([self.next_btn])
                 self.prj.trace('w', enable_next)
                 
@@ -2811,7 +2384,7 @@ class xnat_pic_gui():
                                 self.subject_list, self.new_sub_btn, self.add_file_btn])
                 # Enable NEXT button only if all the requested fields are filled
                 def enable_next(*args):
-                    if self.prj.get() != '--' and self.sub.get() != '--':
+                    if self.prj.get() != '--' and self.sub.get() != '--' and self.folder_to_upload.get() != '':
                         enable_buttons([self.next_btn])
                 self.sub.trace('w', enable_next)
 
@@ -2823,7 +2396,7 @@ class xnat_pic_gui():
                                 self.experiment_list, self.new_exp_btn, self.add_file_btn])
                 # Enable NEXT button only if all the requested fields are filled
                 def enable_next(*args):
-                    if self.prj.get() != '--' and self.sub.get() != '--' and self.exp.get() != '--':
+                    if self.prj.get() != '--' and self.sub.get() != '--' and self.exp.get() != '--' and self.folder_to_upload.get() != '':
                         enable_buttons([self.next_btn])
                 self.exp.trace('w', enable_next)
             else:
@@ -2840,7 +2413,7 @@ class xnat_pic_gui():
                 messagebox.showerror('XNAT-PIC Uploader', 'Error! The selected folder is empty!')
             else:
                 # Start progress bar
-                progressbar = ProgressBar(bar_title='XNAT-PIC Uploader')
+                progressbar = ProgressBar(master.root, bar_title='XNAT-PIC Uploader')
                 progressbar.start_indeterminate_bar()
 
                 list_dirs = os.listdir(project_to_upload)
@@ -2934,15 +2507,10 @@ class xnat_pic_gui():
                 messagebox.showinfo("XNAT-PIC Uploader","Done! Your subject is uploaded on XNAT platform.")
             # Destroy all the existent widgets (Button, OptionMenu, ...)
             destroy_widgets([self.prj_btn, self.sub_btn, self.exp_btn, self.file_btn, self.add_file_btn, self.custom_var_list,
-                                    self.exit_btn, self.project_list, self.new_prj_btn, self.entry_prjname,
-                                    self.confirm_new_prj, self.reject_new_prj, self.add_file_btn,
+                                    self.exit_btn, self.project_list, self.new_prj_btn,
+                                    self.add_file_btn,
                                     self.subject_list, self.new_sub_btn, self.experiment_list, self.new_exp_btn,
-                                    self.entry_subname, self.confirm_new_sub, self.reject_new_sub,
-                                    self.entry_expname, self.confirm_new_exp, self.reject_new_exp,
                                     self.next_btn, self.exit_btn])
-            # Delete all widgets that cannot be destroyed
-            delete_widgets(master.my_canvas, [self.select_prj, self.select_sub, self.select_exp, self.check_add_files,
-                                                    self.check_n_custom_var, self.subtitle])
             # Clear and update session cache
             self.session.clearcache()
             self.overall_uploader(master)
@@ -2961,7 +2529,7 @@ class xnat_pic_gui():
                 self.uploader = Dicom2XnatUploader(self.session)
 
                 # Start progress bar
-                progressbar = ProgressBar(bar_title='XNAT-PIC Uploader')
+                progressbar = ProgressBar(master.root, bar_title='XNAT-PIC Uploader')
                 progressbar.start_indeterminate_bar()
 
                 start_time = time.time()
@@ -3050,15 +2618,9 @@ class xnat_pic_gui():
                 messagebox.showinfo("XNAT-PIC Uploader","Done! Your subject is uploaded on XNAT platform.")
             # Destroy all the existent widgets (Button, OptionMenu, ...)
             destroy_widgets([self.prj_btn, self.sub_btn, self.exp_btn, self.file_btn, self.add_file_btn, self.custom_var_list,
-                                    self.exit_btn, self.project_list, self.new_prj_btn, self.entry_prjname,
-                                    self.confirm_new_prj, self.reject_new_prj, self.add_file_btn,
+                                    self.exit_btn, self.project_list, self.new_prj_btn, self.add_file_btn,
                                     self.subject_list, self.new_sub_btn, self.experiment_list, self.new_exp_btn,
-                                    self.entry_subname, self.confirm_new_sub, self.reject_new_sub,
-                                    self.entry_expname, self.confirm_new_exp, self.reject_new_exp,
                                     self.next_btn, self.exit_btn])
-            # Delete all widgets that cannot be destroyed
-            delete_widgets(master.my_canvas, [self.select_prj, self.select_sub, self.select_exp, self.check_add_files,
-                                                    self.check_n_custom_var, self.subtitle])
             # Clear and update session cache
             self.session.clearcache()
             self.overall_uploader(master)
@@ -3076,7 +2638,7 @@ class xnat_pic_gui():
                 try:
                     self.uploader = Dicom2XnatUploader(self.session)
                     # Start progress bar
-                    progressbar = ProgressBar(bar_title='XNAT-PIC Uploader')
+                    progressbar = ProgressBar(master.root, bar_title='XNAT-PIC Uploader')
                     progressbar.start_indeterminate_bar()
 
                     start_time = time.time()
@@ -3166,15 +2728,9 @@ class xnat_pic_gui():
                 messagebox.showinfo("XNAT-PIC Uploader","Done! Your subject is uploaded on XNAT platform.")
             # Destroy all the existent widgets (Button, OptionMenu, ...)
             destroy_widgets([self.prj_btn, self.sub_btn, self.exp_btn, self.file_btn, self.add_file_btn, self.custom_var_list,
-                                    self.exit_btn, self.project_list, self.new_prj_btn, self.entry_prjname,
-                                    self.confirm_new_prj, self.reject_new_prj, self.add_file_btn,
+                                    self.exit_btn, self.project_list, self.new_prj_btn, self.add_file_btn,
                                     self.subject_list, self.new_sub_btn, self.experiment_list, self.new_exp_btn,
-                                    self.entry_subname, self.confirm_new_sub, self.reject_new_sub,
-                                    self.entry_expname, self.confirm_new_exp, self.reject_new_exp,
                                     self.next_btn, self.exit_btn])
-            # Delete all widgets that cannot be destroyed
-            delete_widgets(master.my_canvas, [self.select_prj, self.select_sub, self.select_exp, self.check_add_files,
-                                                    self.check_n_custom_var, self.subtitle])
             # Clear and update session cache
             self.session.clearcache()
             self.overall_uploader(master)
@@ -3193,7 +2749,7 @@ class xnat_pic_gui():
                 vars['experiment_id'] = self.exp.get()
                 vars['folder_name'] = files_to_upload[0].split('/')[-2]
 
-                progressbar = ProgressBar('XNAT-PIC File Uploader')
+                progressbar = ProgressBar(master.root, 'XNAT-PIC File Uploader')
                 progressbar.start_indeterminate_bar()
 
                 file_paths = []
@@ -3213,15 +2769,9 @@ class xnat_pic_gui():
 
             # Destroy all the existent widgets (Button, OptionMenu, ...)
             destroy_widgets([self.prj_btn, self.sub_btn, self.exp_btn, self.file_btn, self.add_file_btn, self.custom_var_list,
-                                    self.exit_btn, self.project_list, self.new_prj_btn, self.entry_prjname,
-                                    self.confirm_new_prj, self.reject_new_prj, self.add_file_btn,
+                                    self.exit_btn, self.project_list, self.new_prj_btn, self.add_file_btn,
                                     self.subject_list, self.new_sub_btn, self.experiment_list, self.new_exp_btn,
-                                    self.entry_subname, self.confirm_new_sub, self.reject_new_sub,
-                                    self.entry_expname, self.confirm_new_exp, self.reject_new_exp,
                                     self.next_btn, self.exit_btn])
-            # Delete all widgets that cannot be destroyed
-            delete_widgets(master.my_canvas, [self.select_prj, self.select_sub, self.select_exp, self.check_add_files,
-                                                    self.check_n_custom_var, self.subtitle])
             # Clear and update session cache
             self.session.clearcache()
             self.overall_uploader(master)

@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 from tabulate import tabulate
+from PIL import Image, ImageTk
 
 # Accessory functions
 def disable_buttons(list_of_buttons):
@@ -89,3 +90,11 @@ def write_table(path_to_write, edit):
         with open(path_to_write.replace('\\', '/'), 'w+') as out_file:
             # out_file.write(tabulate(info.items(), headers=['Variable', 'Value']))
             out_file.write(tabulate(edit.items(), headers=['Variable', 'Value']))
+
+def open_image(path, width=0, height=0):
+
+    image = Image.open(path).convert("RGBA")
+    if width != 0 or height != 0:
+        image = image.resize((int(width), int(height)), Image.ANTIALIAS)
+    image = ImageTk.PhotoImage(image)
+    return image
