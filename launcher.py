@@ -236,8 +236,8 @@ class xnat_pic_gui():
             # Load Sun icon to swith to dark/light mode
             def switch_mode(*args):
                 if self.style_label.get() == 'cerculean':
-                    self.style_label.set('darkly')
-                    self.style = MyStyle('darkly').get_style()
+                    self.style_label.set('cyborg')
+                    self.style = MyStyle('cyborg').get_style()
                     self.dark_mode_btn.config(image=self.sun_icon_light)
                     if self.xnat_pic_logo_label.winfo_exists():
                         self.xnat_pic_logo_label.config(image=self.xnat_pic_logo_light)
@@ -711,7 +711,7 @@ class xnat_pic_gui():
 
             self.next_btn = ttk.Button(self.bottom_labelframe, text="Next", cursor=CURSOR_HAND, command=next_btn_handler,
                                     state='disabled')
-            self.next_btn.pack(side='right', padx=25, anchor=tk.NE)
+            self.next_btn.pack(side='right', padx=25, anchor=tk.NW)
 
         def check_buttons(self, master, press_btn=0):
 
@@ -2135,12 +2135,12 @@ class xnat_pic_gui():
                                 self.tree.item(selected_item, "text")]))
 
             self.tree = ttk.Treeview(self.folder_selection_label_frame, selectmode='browse')
-            self.tree.grid(row=1, column=0, padx=10, pady=10, sticky=tk.NW, columnspan=2)
+            self.tree.grid(row=2, column=0, padx=10, pady=10, sticky=tk.NW, columnspan=2)
             self.tree.bind("<ButtonRelease-1>", get_selected_item)
 
             # Scrollbar for Treeview widget
             self.tree_scrollbar = ttk.Scrollbar(self.folder_selection_label_frame, orient='vertical', command=self.tree.yview)
-            self.tree_scrollbar.grid(row=1, column=2, padx=0, pady=10, ipadx=0, sticky=tk.NS)
+            self.tree_scrollbar.grid(row=2, column=2, padx=0, pady=10, ipadx=0, sticky=tk.NS)
             self.tree.configure(yscrollcommand=self.tree_scrollbar.set)
             self.tree["columns"] = ("#1", "#2", "#3")
             self.tree.heading("#0", text="Selected folder", anchor=tk.NW)
@@ -2162,6 +2162,15 @@ class xnat_pic_gui():
                 progressbar_tree.stop_progress_bar()
 
             self.folder_to_upload.trace('w', load_tree)
+
+            # Clear Tree buttons
+            def clear_tree(*args):
+                if self.tree.exists(0):
+                    self.tree.delete(*self.tree.get_children())
+
+            self.clear_tree_btn = ttk.Button(self.folder_selection_label_frame, image=master.logo_clear,
+                                    cursor=CURSOR_HAND, command=clear_tree, style="WithoutBack.TButton")
+            self.clear_tree_btn.grid(row=1, column=1, sticky=tk.NE, padx=5, pady=5)
 
             # Upload additional files
             self.add_file_flag = tk.IntVar()
@@ -2276,7 +2285,8 @@ class xnat_pic_gui():
             # Button to add a new project
             def add_project():
                 createdProject = ProjectManager(self.session)
-                self.session.clearcache()
+                if self.session != "":
+                    self.session.clearcache()
                 self.prj.set(createdProject.project_id.get())
 
             self.new_prj_btn = ttk.Button(self.uploader_data, state=tk.DISABLED, width=20, style="Secondary.TButton",
@@ -2303,7 +2313,8 @@ class xnat_pic_gui():
             # Button to add a new subject
             def add_subject():
                 createdSubject = SubjectManager(self.session)
-                self.session.clearcache()
+                if self.session != "":
+                    self.session.clearcache()
                 self.prj.set(createdSubject.parent_project.get())
                 self.sub.set(createdSubject.subject_id.get())
             self.new_sub_btn = ttk.Button(self.uploader_data, state=tk.DISABLED, width=20, style="Secondary.TButton",
@@ -2329,7 +2340,8 @@ class xnat_pic_gui():
             # Button to add a new experiment
             def add_experiment():
                 createdExperiment = ExperimentManager(self.session)
-                self.session.clearcache()
+                if self.session != "":
+                    self.session.clearcache()
                 self.prj.set(createdExperiment.parent_project.get())
                 self.sub.set(createdExperiment.parent_subject.get())
                 self.exp.set(createdExperiment.experiment_id.get())
@@ -2347,7 +2359,8 @@ class xnat_pic_gui():
                     self.OPTIONS2 = []
                 self.sub.set(default_value)
                 self.exp.set(default_value)
-                self.subject_list['menu'].delete(0, 'end')
+                if self.OPTIONS2 != []:
+                    self.subject_list['menu'].delete(0, 'end')
                 for key in self.OPTIONS2:
                     self.subject_list['menu'].add_command(label=key, command=lambda var=key:self.sub.set(var))
             def get_experiments(*args):
@@ -2356,7 +2369,8 @@ class xnat_pic_gui():
                 else:
                     self.OPTIONS3 = []
                 self.exp.set(default_value)
-                self.experiment_list['menu'].delete(0, 'end')
+                if self.OPTIONS3 != []:
+                    self.experiment_list['menu'].delete(0, 'end')
                 for key in self.OPTIONS3:
                     self.experiment_list['menu'].add_command(label=key, command=lambda var=key:self.exp.set(var))
 
@@ -2364,7 +2378,7 @@ class xnat_pic_gui():
             self.sub.trace('w', get_experiments)
 
             self.bottom_label_frame = ttk.Labelframe(master.frame, text="", style="Hidden.TLabelframe")
-            self.bottom_label_frame.place(relx=0.25, rely=0.9, anchor=tk.NW, relwidth=0.75)
+            self.bottom_label_frame.place(relx=0.25, rely=0.9, anchor=tk.NW, relwidth=0.7)
 
             #############################################
             ################ EXIT Button ################
@@ -2408,7 +2422,7 @@ class xnat_pic_gui():
             self.next_btn = ttk.Button(self.bottom_label_frame, textvariable=self.next_text, state='disabled',
                                         command=next)
             self.next_text.set("Next")
-            self.next_btn.pack(side='right', padx=25, anchor=tk.NE)
+            self.next_btn.pack(side='right', padx=25, anchor=tk.NW)
             #############################################
 
         def check_buttons(self, master, press_btn=0):
