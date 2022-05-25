@@ -55,7 +55,7 @@ class MyStyle():
         self.style.map("Keyword.TButton", background=[("active", theme_colors[style]["colors"]["bg"])], foreground=[("active", theme_colors[style]["colors"]["primary"])])
 
         # Configure Labels
-        self.style.configure("Title.TLabel", background=theme_colors[style]["colors"]["bg"], foreground="black", font=TITLE_FONT)
+        self.style.configure("Title.TLabel", background=theme_colors[style]["colors"]["bg"], foreground=theme_colors[style]["colors"]["info"], font=TITLE_FONT)
         self.style.configure("Popup.TLabel", background=theme_colors[style]["colors"]["bg"], foreground=theme_colors[style]["colors"]["primary"], font=ATTACHED_FONT)
         self.style.configure("UnderTitle.TLabel", background=theme_colors[style]["colors"]["bg"], foreground="black", font=UNDERTITLE_FONT)
         self.style.configure("Error.TLabel", font=KEYWORD_FONT, foreground=theme_colors[style]["colors"]["danger"])
