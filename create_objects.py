@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Created on May 30, 2022
+
+@author: Riccardo Gambino
+
+"""
 from tkinter import END, messagebox
 import ttkbootstrap as ttk
 import tkinter as tk
@@ -481,6 +488,8 @@ class ExperimentManager():
             subject = project.subjects[self.parent_subject.get()]
             # experiment = self.session.classes.ExperimentData(
             #                 parent=subject, label=self.experiment_id.get())
+            experiment = subject.experiments[self.experiment_id.get()]
+            print('end')
         except exception as e:
             messagebox.showerror("Error!", str(e))
         messagebox.showinfo('XNAT-PIC Uploader', 'A new subject is created.') 
