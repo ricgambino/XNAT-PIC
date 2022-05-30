@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Created on May 30, 2022
+
+@author: Riccardo Gambino
+
+"""
 import tkinter as tk
 import tkinter.simpledialog
 from tkinter import messagebox

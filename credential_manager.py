@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Created on May 30, 2022
+
+@author: Riccardo Gambino
+
+"""
 import os
 import getpass
 import tkinter as tk

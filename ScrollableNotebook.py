@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+"""
+Created on May 30, 2022
+
+@author: Francesco Gammaraccio
+
+"""
 
 # Copyright (c) Muhammet Emin TURGUT 2020
 # For license see LICENSE

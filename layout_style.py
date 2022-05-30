@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Created on May 30, 2022
+
+@author: Riccardo Gambino, Francesco Gammaraccio
+
+"""
 from pyparsing import White
 import ttkbootstrap as ttk
 from ttkbootstrap import Style
