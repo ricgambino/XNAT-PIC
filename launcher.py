@@ -937,7 +937,7 @@ class xnat_pic_gui():
             if not self.information_folder:
                 enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
                 return
-            #master.frame_label.set("Metadata")         
+            master.frame_label.set("Metadata")         
             self.layout_metadata(master) 
 
         def select_folder(self, master): 
@@ -959,6 +959,7 @@ class xnat_pic_gui():
             # Get a list of workbook paths 
             self.path_list = []
             self.todos = {}
+            todos_tmp = {}
             exp = []
             # Scan all files contained in the folder that the user has provided
             for item in os.listdir(self.information_folder):
@@ -971,8 +972,10 @@ class xnat_pic_gui():
                         if os.path.isdir(path1):
                             self.path_list.append(path1)
                             exp.append(str(item2))
+                    todos_tmp = {item: exp}
                     exp = []
-                self.todos.update({item: exp})
+                self.todos.update(todos_tmp)
+                todos_tmp = {}
             
             # Scan all files contained in the folder that the user has provided
             for path in self.path_list:
@@ -1159,6 +1162,11 @@ class xnat_pic_gui():
                 self.entries_value_CV.append(ttk.Entry(self.frame_CV, state='disabled', takefocus = 0, width=25))
                 self.entries_value_CV[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=W)
                 count += 1
+            
+
+            # Dose: the dose entry has a StringVar because the unit of measure will be automatically added to the entered value
+            self.dosevar = tk.StringVar()
+            self.entries_value_CV[2].config(textvariable=self.dosevar)
 
             # Group Menu
             OPTIONS = ["untreated", "treated"]
@@ -1220,6 +1228,8 @@ class xnat_pic_gui():
                 self.selected_timepoint.set('')
                 self.selected_timepoint1.set('')
                 self.time_entry.delete(0, tk.END)
+                self.cal.entry['state'] = 'disabled'
+                self.cal.button['state'] = 'disabled'
 
                 disable_buttons([self.group_menu, self.timepoint_menu, self.time_entry, self.timepoint_menu1])
                 
@@ -1240,7 +1250,6 @@ class xnat_pic_gui():
                 dict_ID.update({k: v for k, v in tmp_dict.items() if k in complete_list[0]})
                 dict_CV =  {k: v for k, v in tmp_dict.items() if k in complete_list[1]}
                 
-
                 #################################################################
                 # Updates the ID frame based on the selected variables and values
                 diff_ID = len(self.entries_variable_ID) - len(dict_ID) 
@@ -1250,6 +1259,8 @@ class xnat_pic_gui():
                     for i in range(len(dict_ID), len(self.entries_variable_ID)):
                         self.entries_variable_ID[i].destroy()
                         self.entries_value_ID[i].destroy()
+                    del self.entries_variable_ID[len(dict_ID) : len(self.entries_variable_ID)]
+                    del self.entries_value_ID[len(dict_ID) : len(self.entries_value_ID)]
                 # If the number of entries is less than the number of variables, insert the entries
                 elif diff_ID < 0:
                     for j in range(len(self.entries_variable_ID), len(dict_ID)):
@@ -1269,94 +1280,56 @@ class xnat_pic_gui():
                     # Value ID
                     self.entries_value_ID[ind]['state'] = 'normal'
                     self.entries_value_ID[ind].delete(0, tk.END)
-                    self.entries_value_ID[ind].insert(0, value)
+                    self.entries_value_ID[ind].insert(0, value if value is not None else '')
                     self.entries_value_ID[ind]['state'] = 'disabled'
                     ind += 1
                 
+                current_date = self.entries_value_ID[4].get()
+                self.cal.entry['state'] = 'normal'
+                self.cal.entry.delete(0, tk.END)
+                self.cal.entry.insert(0, current_date)
+                self.cal.entry['state'] = 'disabled'
 
+                #################################################################
+                # Updates the CV frame based on the selected variables and values
+                diff_CV = len(self.entries_variable_CV) - len(dict_CV) 
+                
+                # If the number of entries is greater than the number of variables, eliminate the excess entries
+                if diff_CV > 0:
+                    for i in range(len(dict_CV), len(self.entries_variable_CV)):
+                        self.entries_variable_CV[i].destroy() 
+                        self.entries_value_CV[i].destroy()
+                    del self.entries_variable_CV[len(dict_CV) : len(self.entries_variable_CV)]
+                    del self.entries_value_CV[len(dict_CV) : len(self.entries_value_CV)]
+                # If the number of entries is less than the number of variables, insert the entries
+                elif diff_CV < 0:
+                    for j in range(len(self.entries_variable_CV), len(dict_CV)):
+                        self.entries_variable_CV.append(ttk.Entry(self.frame_CV, takefocus = 0, width=15))
+                        self.entries_variable_CV[-1].grid(row=j, column=0, padx = 5, pady = 5, sticky=W)
+                        self.entries_value_CV.append(ttk.Entry(self.frame_ID, state='disabled', takefocus = 0, width = 44))
+                        self.entries_value_CV[-1].grid(row=j, column=1, padx = 5, pady = 5, sticky=W)
+                
+                # Modify the values ​​of the entries with the values ​​of the selected experiment
+                ind = 0
+                for key, value in dict_CV.items():
+                    # Variable ID
+                    self.entries_variable_CV[ind]['state'] = 'normal'
+                    self.entries_variable_CV[ind].delete(0, tk.END)
+                    self.entries_variable_CV[ind].insert(0, key)
+                    self.entries_variable_CV[ind]['state'] = 'disabled'
+                    # Value ID
+                    self.entries_value_CV[ind]['state'] = 'normal'
+                    self.entries_value_CV[ind].delete(0, tk.END)
+                    self.entries_value_CV[ind].insert(0, value if value is not None else '')
+                    self.entries_value_CV[ind]['state'] = 'disabled'
+                    ind += 1
 
-
-                # # Delete entries
-                # for i in range(0, len(self.entries_value_ID)):
-                #     self.entries_variable_ID[i].destroy()
-                #     self.entries_value_ID[i].destroy()
-
-                # for i in range(0, len(self.entries_value_CV)):
-                #     self.entries_variable_CV[i].destroy()
-                #     self.entries_value_CV[i].destroy()
-                # """ handle item selected event
-                # """
-                # self.index_tab = self.notebook.notebookTab.index("current")
-                # self.tab_name =  self.notebook.notebookTab.tab(self.index_tab, "text")
-                # self.my_listbox = self.listbox_notebook[self.index_tab]
-
-                # # Get selected index
-                # self.selected_index = self.my_listbox.curselection()[0]
-                # self.selected_folder = self.tab_name + '#' + self.my_listbox.get(self.selected_index)
-
-                # # Load the info (ID + CV)
-                # ID = True
-                # count = 1
-                # a = len(self.entries_variable_ID)
-                # self.entries_variable_ID = []
-                # self.entries_variable_ID.append(ttk.Entry(self.frame_ID, takefocus = 0, width=15))
-                # self.entries_variable_ID[-1].insert(0, "Folder")
-                # self.entries_variable_ID[-1]['state'] = 'disabled'
-                # self.entries_variable_ID[-1].grid(row=0, column=0, padx = 5, pady = 5, sticky=W)
-                # self.entries_variable_CV = []
-                # self.entries_value_ID = []
-                # self.entries_value_ID.append(ttk.Entry(self.frame_ID, takefocus = 0, width=44))
-                # self.entries_value_ID[-1].insert(0, self.selected_folder)
-                # self.entries_value_ID[-1]['state'] = 'disabled'
-                # self.entries_value_ID[-1].grid(row=0, column=1, padx = 5, pady = 5, sticky=W)
-                # self.entries_value_CV = []
-                # for k, v in dict(self.results_dict[self.selected_folder]).items():
-                #     if v is None:
-                #         v = ''
-                #     if k == "C_V":
-                #         ID = False
-                #         count = 0
-                #     if ID:
-                #         self.entries_variable_ID.append(ttk.Entry(self.frame_ID, takefocus = 0, width=15))
-                #         self.entries_variable_ID[-1].insert(0, k)
-                #         self.entries_variable_ID[-1]['state'] = 'disabled'
-                #         self.entries_variable_ID[-1].grid(row=count, column=0, padx = 5, pady = 5, sticky=W)
-                #         # Value
-                #         if k == "Acquisition_date":
-                #             self.entries_value_ID.append(ttk.Entry(self.frame_ID, takefocus = 0, width=20))
-                #             self.entries_value_ID[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=NW)
-                #             self.cal.entry['state'] = 'normal'
-                #             self.cal.entry.delete(0, tk.END)
-                #             self.cal.entry.insert(0, v)
-                #             self.cal.entry['state'] = 'disabled'
-                #             self.cal.button['state'] = 'disabled'
-                #         else:
-                #             self.entries_value_ID.append(ttk.Entry(self.frame_ID, takefocus = 0, width=44))
-                #             self.entries_value_ID[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=W)
-                #         self.entries_value_ID[-1].insert(0, v)
-                #         self.entries_value_ID[-1]['state'] = 'disabled'
-    
-                #         count += 1
-                        
-                #     else:
-                #         if k != "C_V":
-                #             self.entries_variable_CV.append(ttk.Entry(self.frame_CV, takefocus = 0, width=15))
-                #             self.entries_variable_CV[-1].insert(0, k)
-                #             self.entries_variable_CV[-1]['state'] = 'disabled'
-                #             self.entries_variable_CV[-1].grid(row=count, column=0, padx = 5, pady = 5, sticky=W)
-                #             # Value
-                #             self.entries_value_CV.append(ttk.Entry(self.frame_CV, takefocus = 0, width=25))
-                #             self.entries_value_CV[-1].insert(0, v)
-                #             self.entries_value_CV[-1]['state'] = 'disabled'
-                #             self.entries_value_CV[-1].grid(row=count, column=1, padx = 5, pady = 5, sticky=W)
-                #             count += 1
-
-            # Add the event to the list of listbox   
+            # Add the event to the list of listbox (press Tab)   
             for i in range(len(self.listbox_notebook)):
                 self.listbox_notebook[i].bind('<Tab>', items_selected)
 
         def modify_metadata(self):
-                # Check before confirming the data
+            # Check before confirming the data
             try:
                 self.selected_folder
                 pass
@@ -1364,22 +1337,24 @@ class xnat_pic_gui():
                     messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
                     raise 
 
-            # Normal entry
+            # Normal entry ID
             for i in range(1, len(self.entries_value_ID)):
                 self.entries_value_ID[i]['state'] = 'normal'
-
+            
+            # The acquisition data field remains locked. Only one value can be entered from the entry.
             self.entries_value_ID[4]['state'] = 'disabled'
-
+            
+            # Normal entry CV
             for i in range(0, len(self.entries_value_CV)):
                 self.entries_value_CV[i]['state'] = 'normal'
             
+            # The timepoint field remains locked. Only one value can be entered from the entry.
             self.entries_value_CV[1]['state'] = 'disabled'
 
             self.cal.entry['state'] = 'normal'
             self.cal.button['state'] = 'normal'
-            # Acquisition date has a default format in entry but you can modify date with the calendar
-            #self.cal.configure(state="normal")
-            
+
+            # # Acquisition date: you can modify date with the calendar           
             def date_entry_selected(*args):
                 self.entries_value_ID[4]['state'] = tk.NORMAL
                 self.entries_value_ID[4].delete(0, tk.END)
@@ -1389,7 +1364,6 @@ class xnat_pic_gui():
                         acq_date = datetime.datetime.strptime(self.entries_value_ID[4].get(), '%Y-%m-%d')
                         self.today = date.today()
                         self.today = self.today.strftime('%Y-%m-%d')
-                        a = acq_date.strftime('%Y-%m-%d')
                         if acq_date.strftime('%Y-%m-%d') > self.today:
                             messagebox.showerror("XNAT-PIC", "The date entered is greater than today's date")
                             raise
@@ -1404,9 +1378,10 @@ class xnat_pic_gui():
                 self.my_listbox.selection_set(self.selected_index)
             
             self.datevar.trace('w', date_entry_selected)
-            # Option menu for the group
-            self.group_menu['state'] = 'readonly'
 
+
+            # Option menu for the group (treated/untreated)
+            self.group_menu['state'] = 'readonly'
             def group_changed(event):
                 """ handle the group changed event """
                 self.entries_value_CV[0].delete(0, tk.END)
@@ -1415,31 +1390,23 @@ class xnat_pic_gui():
 
             self.group_menu.bind("<<ComboboxSelected>>", group_changed)
 
-            # Option menu for the dose
-            self.dose_menu['state'] = 'readonly'
-
+            # Add the unit of measure to the number entered for the dose
             def dose_changed(event):
-                """ handle the dose changed event """
-                dose_str = ''
-                if self.entries_value_CV[2].get():
-                    for word in filter(str(self.entries_value_CV[2].get()).__contains__, self.OPTIONS_UM):
-                        # If a unit of measurement is already present, replace it
-                        dose_str = str(self.entries_value_CV[2].get()).replace(word, str(self.selected_dose.get()))
-                        self.entries_value_CV[2].delete(0, tk.END)     
-                        self.entries_value_CV[2].insert(0, dose_str)                    
-                        self.my_listbox.selection_set(self.selected_index)
-                        return
-                            # If only the number is present, add the unit of measure
-                    dose_str = str(self.entries_value_CV[2].get()) + "-" + str(self.selected_dose.get())
-                else:
-                    # If the entry is empty, enter only the unit of measure
-                    dose_str = str(self.selected_dose.get())
+                if  self.dosevar.get():
+                    try:
+                        # Check if the entry is a number
+                        dose_value = self.dosevar.get().replace('-' + 'mg/kg',"")
+                        float(dose_value)
+                    except Exception as e: 
+                        messagebox.showerror("XNAT-PIC", "Insert a number in dose")  
+                        self.entries_value_CV[2].delete(0, tk.END)
+                        raise
+                    
+                    self.entries_value_CV[2].delete(0, tk.END)
+                    self.entries_value_CV[2].insert(0, dose_value + '-' + 'mg/kg')                    
+                    self.my_listbox.selection_set(self.selected_index)
 
-                self.entries_value_CV[2].delete(0, tk.END)     
-                self.entries_value_CV[2].insert(0, dose_str)                    
-                self.my_listbox.selection_set(self.selected_index)
-
-            self.dose_menu.bind("<<ComboboxSelected>>", dose_changed)
+            self.entries_value_CV[2].bind('<Return>', dose_changed)
             
             # Option menu for the timepoint
             self.timepoint_menu1['state'] = 'readonly'
@@ -1467,7 +1434,6 @@ class xnat_pic_gui():
                 self.entries_value_CV[1].config(state=tk.DISABLED)
 
             self.timepoint_menu.bind("<<ComboboxSelected>>", timepoint_changed)
-
             #self.time_entry.bind("<<FocusOut>>", timepoint_changed)
             self.time_entry_value.trace('w', timepoint_changed)
             self.timepoint_menu1.bind("<<ComboboxSelected>>", timepoint_changed)
@@ -1510,6 +1476,16 @@ class xnat_pic_gui():
                 except Exception as e: 
                     messagebox.showerror("XNAT-PIC", "Insert a number in timepoint between pre/post and seconds, minutes, hours..")  
                     raise
+
+            if  self.entries_value_CV[2].get():
+                    try:
+                        # Check if the entry is a number
+                        dose_value = self.entries_value_CV[2].get().replace('-' + 'mg/kg',"")
+                        float(dose_value)
+                    except Exception as e: 
+                        messagebox.showerror("XNAT-PIC", "Insert a number in dose")  
+                        raise
+
         # Update the values and save the values in a txt file        
         def save_entries(self, my_key, multiple):
             
@@ -1541,12 +1517,11 @@ class xnat_pic_gui():
            
             # Clear all 
             self.selected_group.set('')
-            self.selected_dose.set('')
             self.selected_timepoint.set('')
             self.selected_timepoint1.set('')
             self.time_entry.delete(0, tk.END)
             #self.cal.entry.delete(0, tk.END)
-            disable_buttons([self.dose_menu, self.group_menu, self.timepoint_menu, self.time_entry, self.timepoint_menu1, self.cal])
+            disable_buttons([self.group_menu, self.timepoint_menu, self.time_entry, self.timepoint_menu1, self.cal])
             # Saves the changes made by the user in the txt file
             substring = str(my_key).replace('#','/')
             index = [i for i, s in enumerate(self.path_list) if substring in s]
@@ -1851,7 +1826,7 @@ class xnat_pic_gui():
                                             command=lambda: reject_CV(next_row), cursor=CURSOR_HAND)
             btn_reject_CV.grid(row=next_row, column=2, padx = 5, pady = 5, sticky=tk.NE)
 
-        # #################### Clear the metadata ####################              
+        ##################### Clear the metadata ####################              
         def clear_metadata(self):
             # Clear all the combobox and the entry
             self.selected_dose.set('')
