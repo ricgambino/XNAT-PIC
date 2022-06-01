@@ -6,7 +6,7 @@ Created on May 30, 2022
 
 """
 from tkinter import END, messagebox
-import tkinter, os, json
+import tkinter, os, json, shutil
 import ttkbootstrap as ttk
 import tkinter as tk
 from accessory_functions import disable_buttons, enable_buttons, open_image
@@ -241,7 +241,7 @@ class ProjectManager():
         
         messagebox.showinfo('XNAT-PIC Uploader', 'A new project is created.')
         self.master.destroy()
-        self.master.quit()
+        # self.master.quit()
 
 class SubjectManager():
 
@@ -252,7 +252,7 @@ class SubjectManager():
         self.logo_delete = open_image(PATH_IMAGE + "Reject.png", 8, 8)
         self.warning_icon = open_image(PATH_IMAGE + "warning_icon.png", 15, 15)
 
-        self.master = tk.Toplevel(background="white")
+        self.master = tk.Toplevel()
         self.master.title("XNAT-PIC Uploader")
         self.master.geometry("+%d+%d" % (300, 250))
         self.master.resizable(False, False)
@@ -389,28 +389,24 @@ class SubjectManager():
             self.master.deiconify()
             return
         try:
-            # project = self.session.projects[self.parent_project.get()]
-            project = self.session.projects['Project_X']
+            project = self.session.projects[self.parent_project.get()]
 
-            # subject = self.session.classes.SubjectData(
-            #                     parent=project, label=self.subject_id.get())
-            subject = project.subjects['Exp_1']
-            if self.subject_gender.get() != "":
-                subject.demographics.gender = self.subject_gender.get().lower()
-            print(datetime.strptime(self.subject_age.get(), "%m/%d/%Y"))
-            print(date.today())
-            print(datetime.strptime(self.subject_age.get(), "%m/%d/%Y") - datetime.strptime(str(date.today()), "%Y-%m-%d"))
-            # Missing weight and Notes set methods
-            subject.demographics.age = int(str(datetime.strptime(str(date.today()), "%Y-%m-%d") - datetime.strptime(self.subject_age.get(), "%m/%d/%Y")).split(' ')[0])
-            subject.demographics.dob = datetime.strptime(self.subject_age.get(), "%m/%d/%Y")
-            subject.demographics.yob = int(self.subject_age.get().split('/')[-1])
-            subject.demographics.weight.set("units", str(self.subject_weight.unit.get()))
+            subject = self.session.classes.SubjectData(
+                                parent=project, label=self.subject_id.get())
+
+            # if self.subject_gender.get() != "":
+            #     subject.demographics.gender = self.subject_gender.get().lower()
+            # # Missing weight and Notes set methods
+            # subject.demographics.age = int(str(datetime.strptime(str(date.today()), "%Y-%m-%d") - datetime.strptime(self.subject_age.get(), "%m/%d/%Y")).split(' ')[0])
+            # subject.demographics.dob = datetime.strptime(self.subject_age.get(), "%m/%d/%Y")
+            # subject.demographics.yob = int(self.subject_age.get().split('/')[-1])
+            # subject.demographics.weight.set("units", str(self.subject_weight.unit.get()))
         except exception as e:
             messagebox.showerror("Error!", str(e))
         # self.session.clearcache()
         messagebox.showinfo('XNAT-PIC Uploader', 'A new subject is created.') 
         self.master.destroy()
-        self.master.quit()
+        # self.master.quit()
 
 class ExperimentManager():
 
@@ -421,7 +417,7 @@ class ExperimentManager():
         self.logo_delete = open_image(PATH_IMAGE + "Reject.png", 8, 8)
         self.warning_icon = open_image(PATH_IMAGE + "warning_icon.png", 15, 15)
 
-        self.master = tk.Toplevel(background="white")
+        self.master = tk.Toplevel()
         self.master.title("XNAT-PIC Uploader")
         self.master.geometry("+%d+%d" % (300, 250))
         self.master.resizable(False, False)
@@ -484,12 +480,12 @@ class ExperimentManager():
 
         # Experiment Acquisition Date
         today = date.today()
-        today = today.strftime("%d/%m/%Y")
+        today = today.strftime("%m/%d/%Y")
         self.experiment_date = tk.StringVar()
         self.experiment_date.set(today)
-        self.experiment_date_label = ttk.Label(self.experiment_labelframe, text="Age")
+        self.experiment_date_label = ttk.Label(self.experiment_labelframe, text="Acquisition Date")
         self.experiment_date_label.grid(row=3, column=0, padx=5, pady=5, sticky=tk.W)
-        self.experiment_date_entry = ttk.DateEntry(self.experiment_labelframe)
+        self.experiment_date_entry = ttk.DateEntry(self.experiment_labelframe, dateformat="%m/%d/%Y")
         self.experiment_date_entry.entry.config(textvariable=self.experiment_date)
         self.experiment_date_entry.grid(row=3, column=1, padx=5, pady=5, sticky=tk.W)
 
@@ -558,14 +554,35 @@ class ExperimentManager():
             self.master.deiconify()
             return
         try:
-            project = self.session.projects[self.parent_project.get()]
-            subject = project.subjects[self.parent_subject.get()]
+            # project = self.session.projects[self.parent_project.get()]
+            # subject = project.subjects[self.parent_subject.get()]
+            # experiment = subject.experiments[self.experiment_id.get()]
+
+            # Missing a method to create a new experiment object!
             # experiment = self.session.classes.ExperimentData(
             #                 parent=subject, label=self.experiment_id.get())
-            experiment = subject.experiments[self.experiment_id.get()]
-            print('end')
+
+            #################################################
+            # Method to bypass the experiment object creation
+            current_folder = os.path.join(os.getcwd(), "temp/Exp_1").replace("\\", "/")
+            zip_dst = shutil.make_archive("temp", "zip", current_folder) # .zip file of the current subfolder
+
+            self.session.services.import_(zip_dst,
+                                        overwrite="delete", # Overwrite parameter is important!
+                                        project=self.parent_project.get(),
+                                        subject=self.parent_subject.get(),
+                                        experiment=self.experiment_id.get(),
+                                        content_type='application/zip')
+            self.session.clearcache()
+            experiment = self.session.projects[self.parent_project.get()].subjects[self.parent_subject.get()].experiments[self.experiment_id.get()]
+            for scan in experiment.scans.listing:
+                scan.delete()
+            # experiment.date = datetime.strptime(self.experiment_date.get(), "%m/%d/%Y")
+            # experiment.note = self.experiment_description_entry.get("1.0", END)
+            
+            os.remove(zip_dst)
+            #################################################
         except exception as e:
             messagebox.showerror("Error!", str(e))
-        messagebox.showinfo('XNAT-PIC Uploader', 'A new subject is created.') 
+        messagebox.showinfo('XNAT-PIC Uploader', 'A new experiment is created.') 
         self.master.destroy()
-        self.master.quit()
