@@ -2500,7 +2500,7 @@ class xnat_pic_gui():
             else:
                 # Start progress bar
                 progressbar = ProgressBar(master.root, bar_title='XNAT-PIC Uploader')
-                progressbar.start_indeterminate_bar()
+                progressbar.start_determinate_bar()
 
                 list_dirs = os.listdir(project_to_upload)
 
@@ -2508,7 +2508,9 @@ class xnat_pic_gui():
 
                 def upload_thread():
 
-                    for sub in list_dirs:
+                    for i, sub in enumerate(list_dirs):
+                        progressbar.update_progressbar(i, len(list_dirs))
+                        progressbar.show_step(i, len(list_dirs))
                         sub = os.path.join(project_to_upload, sub)
 
                         list_dirs_exp = os.listdir(sub)
@@ -2550,7 +2552,8 @@ class xnat_pic_gui():
                                 # Define the subject_id and the experiment_id if the custom variables file is not available
                                 self.sub.set(exp.split('/')[-3].replace('.','_'))
                                 params['subject_id'] = self.sub.get()
-                                self.exp.set('_'.join([exp.split('/')[-3].replace('_dcm', ''), exp.split('/')[-2].replace('.', '_')]).replace(' ', '_'))
+                                self.exp.set('_'.join([exp.split('/')[-4].replace('_dcm', ''), exp.split('/')[-3].replace('.', '_'),
+                                                             exp.split('/')[-2].replace('.', '_')]).replace(' ', '_'))
                                 params['experiment_id'] = self.exp.get()
 
                             progressbar.set_caption('Uploading ' + str(self.sub.get()) + ' ...')
@@ -2581,7 +2584,7 @@ class xnat_pic_gui():
                 t.start()
                 
                 while t.is_alive() == True:
-                    progressbar.update_bar()
+                    progressbar.update_bar(0)
                 
                 # Stop the progress bar and close the popup
                 progressbar.stop_progress_bar()
@@ -2590,7 +2593,7 @@ class xnat_pic_gui():
                 print('Elapsed time: ' + str(end_time-start_time) + ' seconds')
 
                 # Restore main frame buttons
-                messagebox.showinfo("XNAT-PIC Uploader","Done! Your subject is uploaded on XNAT platform.")
+                messagebox.showinfo("XNAT-PIC Uploader","Done! Your project is uploaded on XNAT platform.")
             # Destroy all the existent widgets (Button, OptionMenu, ...)
             destroy_widgets([self.label_frame_uploader, self.uploader_data, self.custom_var_labelframe,
                                 self.exit_btn, self.next_btn, self.folder_selection_label_frame, self.frame_title])
@@ -2804,7 +2807,7 @@ class xnat_pic_gui():
                     messagebox.showerror("XNAT-PIC Uploader", e)
 
                 # Restore main frame buttons
-                messagebox.showinfo("XNAT-PIC Uploader","Done! Your subject is uploaded on XNAT platform.")
+                messagebox.showinfo("XNAT-PIC Uploader","Done! Your experiment is uploaded on XNAT platform.")
             # Destroy all the existent widgets (Button, OptionMenu, ...)
             destroy_widgets([self.label_frame_uploader, self.uploader_data, self.custom_var_labelframe,
                                 self.exit_btn, self.next_btn, self.folder_selection_label_frame, self.frame_title])
