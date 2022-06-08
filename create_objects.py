@@ -6,11 +6,13 @@ Created on May 30, 2022
 
 """
 from tkinter import END, messagebox
+import tkinter, os, json, shutil
 import ttkbootstrap as ttk
 import tkinter as tk
 from accessory_functions import disable_buttons, enable_buttons, open_image
-from datetime import date
+from datetime import date, datetime
 from logging import exception
+import tkinter.simpledialog
 
 PATH_IMAGE = "images\\"
 CURSOR_HAND = "hand2"
@@ -23,8 +25,9 @@ class ProjectManager():
         # Load icons
         self.logo_delete = open_image(PATH_IMAGE + "Reject.png", 8, 8)
         self.warning_icon = open_image(PATH_IMAGE + "warning_icon.png", 15, 15)
+        self.add_icon = open_image(PATH_IMAGE + "add_icon.png", 15, 15)
 
-        self.master = tk.Toplevel(background="white")
+        self.master = tk.Toplevel()
         self.master.title("XNAT-PIC Uploader")
         self.master.geometry("+%d+%d" % (300, 250))
         self.master.resizable(False, False)
@@ -52,7 +55,7 @@ class ProjectManager():
         self.project_id_entry.pack(fill='x', anchor=tk.W)
         self.project_id_modify = tk.IntVar()
         self.project_id_checkbutton = ttk.Checkbutton(self.project_labelframe, text="Modify", onvalue=1, 
-                                        offvalue=0, variable=self.project_id_modify)
+                                        offvalue=0, variable=self.project_id_modify, cursor=CURSOR_HAND)
         self.project_id_checkbutton.grid(row=1, column=3, padx=5, pady=5, sticky=tk.W)
         def enable_entry(*args):
             if self.project_id_modify.get() == 1:
@@ -116,10 +119,19 @@ class ProjectManager():
         keyword_to_remove.trace('w', remove_keyword)
         # INVESTIGATORS
         self.project_investigator = tk.StringVar()
+        with open("./investigators.json", "r") as inv_file:
+            self.investigators = json.load(inv_file)
+        self.investigator_list = [','.join([x['firstname'], x['lastname']]) for x in self.investigators]
         self.project_investigators_label = ttk.Label(self.project_labelframe, text="Investigators")
         self.project_investigators_label.grid(row=5, column=0, padx=5, pady=5, sticky=tk.W)
-        self.project_investigators_entry = ttk.Entry(self.project_labelframe, width=50, textvariable=self.project_investigator)
+        self.project_investigators_entry = ttk.OptionMenu(self.project_labelframe, self.project_investigator, "--",
+                                                             *self.investigator_list)
+        self.project_investigators_entry.config(width=45, cursor=CURSOR_HAND)
         self.project_investigators_entry.grid(row=5, column=1, padx=5, pady=5, sticky=tk.W)
+
+        self.project_investigator_newicon = ttk.Button(self.project_labelframe, image=self.add_icon, style="WithoutBack.TButton", 
+                                                        cursor=CURSOR_HAND, command=self.add_new_investigator)
+        self.project_investigator_newicon.grid(row=5, column=3, pady=5, sticky=tk.W)
 
         # Callbacks
         def title_callback(*args):
@@ -151,14 +163,62 @@ class ProjectManager():
         # Bottom Button
         #################################################################################
         # Exit Button
-        self.exit_btn = ttk.Button(self.master, text="Quit", command=lambda: self.master.destroy())
+        def quit(*args):
+            self.project_id.set("--")
+            self.master.destroy()
+        self.exit_btn = ttk.Button(self.master, text="Quit", command=quit, cursor=CURSOR_HAND)
         self.exit_btn.pack(side='left', padx=25, pady=10, anchor=tk.NW)
         # Submit Button
-        self.submit_btn = ttk.Button(self.master, text="Submit", state='disabled', command=self.create_new_project)
+        self.submit_btn = ttk.Button(self.master, text="Submit", state='disabled', command=self.create_new_project,
+                                        cursor=CURSOR_HAND)
         self.submit_btn.pack(side='right', padx=25, pady=10, anchor=tk.NE)
 
-        # Mainloop
-        self.master.mainloop()
+    def add_new_investigator(self, *args):
+            def update_list(*args):
+                investigators = {}
+                investigators['firstname'] = name.get()
+                investigators['lastsurname'] = surname.get()
+                investigators['institution'] = institution.get()
+                investigators['email'] = email.get()
+                self.investigators.append(investigators)
+                self.investigator_list.append(','.join([investigators['name'], investigators['surname']]))
+                with open("./investigators.json", "w+") as inv_file:
+                    json.dump(self.investigators, inv_file, indent=4)
+                self.project_investigators_entry['menu'].delete(0, 'end')
+                for inv in self.investigator_list:
+                    self.project_investigators_entry['menu'].add_command(label=inv, command=lambda var=inv:self.project_investigator.set(var))
+                investigator_popup.destroy()
+
+            investigator_popup = tk.Toplevel()
+            investigator_popup.title("New Investigators")
+            investigator_popup.geometry("+%d+%d" % (400, 350))
+            investigator_popup.resizable(False, False)
+            name = tk.StringVar()
+            name.label = ttk.Label(investigator_popup, text="First Name")
+            name.label.grid(row=0, column=0, padx=5, pady=5, sticky=tk.W)
+            name.entry = ttk.Entry(investigator_popup, textvariable=name, width=20)
+            name.entry.grid(row=0, column=1, padx=5, pady=5, sticky=tk.W)
+            surname = tk.StringVar()
+            surname.label = ttk.Label(investigator_popup, text="Last Name")
+            surname.label.grid(row=1, column=0, padx=5, pady=5, sticky=tk.W)
+            surname.entry = ttk.Entry(investigator_popup, textvariable=surname, width=20)
+            surname.entry.grid(row=1, column=1, padx=5, pady=5, sticky=tk.W)
+            institution = tk.StringVar()
+            institution.label = ttk.Label(investigator_popup, text="Institution")
+            institution.label.grid(row=2, column=0, padx=5, pady=5, sticky=tk.W)
+            institution.entry = ttk.Entry(investigator_popup, textvariable=institution, width=20)
+            institution.entry.grid(row=2, column=1, padx=5, pady=5, sticky=tk.W)
+            email = tk.StringVar()
+            email.label = ttk.Label(investigator_popup, text="Email")
+            email.label.grid(row=3, column=0, padx=5, pady=5, sticky=tk.W)
+            email.entry = ttk.Entry(investigator_popup, textvariable=email, width=20)
+            email.entry.grid(row=3, column=1, padx=5, pady=5, sticky=tk.W)
+            cancel_btn = ttk.Button(investigator_popup, text="Cancel", style="Secondary.TButton", cursor=CURSOR_HAND,
+                                        width=10, command=lambda: investigator_popup.destroy())
+            cancel_btn.grid(row=4, column=0, padx=5, pady=10, sticky=tk.W)
+            submit_btn = ttk.Button(investigator_popup, text="Add", style="Secondary.TButton", cursor=CURSOR_HAND,
+                                        width=10, command=update_list)
+            submit_btn.grid(row=4, column=1, padx=5, pady=10, sticky=tk.E)
 
     def create_new_project(self):
 
@@ -170,16 +230,18 @@ class ProjectManager():
             project = self.session.classes.ProjectData(
                             name=self.project_id.get(), parent=self.session)
             project.description = self.project_description_entry.get("1.0", END)
-            project.keywords = "\t".join(self.project_keywords_list)
-            # Missing investigators set method
+            project.keywords = ",".join(self.project_keywords_list)
+            # Missing a method to upload multiple information about pi and investigators
+            for inv in self.investigators:
+                if inv['firstname'] == self.project_investigator.get().split(',')[0] and inv['lastname'] == self.project_investigator.get().split(',')[1]:
+                    project.pi.set("firstname", inv["firstname"])
+                    break
         except exception as e:
             messagebox.showerror("Error!", str(e))
         
-        
-        # self.session.clearcache()
         messagebox.showinfo('XNAT-PIC Uploader', 'A new project is created.')
         self.master.destroy()
-        self.master.quit()
+        # self.master.quit()
 
 class SubjectManager():
 
@@ -190,7 +252,7 @@ class SubjectManager():
         self.logo_delete = open_image(PATH_IMAGE + "Reject.png", 8, 8)
         self.warning_icon = open_image(PATH_IMAGE + "warning_icon.png", 15, 15)
 
-        self.master = tk.Toplevel(background="white")
+        self.master = tk.Toplevel()
         self.master.title("XNAT-PIC Uploader")
         self.master.geometry("+%d+%d" % (300, 250))
         self.master.resizable(False, False)
@@ -236,12 +298,12 @@ class SubjectManager():
         self.subject_gender_menu = ttk.OptionMenu(self.subject_labelframe, self.subject_gender, 0, *self.gender_values)
         self.subject_gender_menu.grid(row=2, column=1, padx=5, pady=5, sticky=tk.W)
 
-        # Subject Age
+        # Subject Date of Birth
         today = date.today()
         today = today.strftime("%m/%d/%Y")
         self.subject_age = tk.StringVar()
         self.subject_age.set(today)
-        self.subject_age_label = ttk.Label(self.subject_labelframe, text="Age")
+        self.subject_age_label = ttk.Label(self.subject_labelframe, text="Date of Birth")
         self.subject_age_label.grid(row=3, column=0, padx=5, pady=5, sticky=tk.W)
         self.subject_age_entry = ttk.DateEntry(self.subject_labelframe, dateformat="%m/%d/%Y")
         self.subject_age_entry.entry.config(textvariable=self.subject_age)
@@ -261,7 +323,7 @@ class SubjectManager():
         self.subject_weight_entry = ttk.Entry(self.subject_labelframe, width=50, textvariable=self.subject_weight)
         self.subject_weight_entry.grid(row=4, column=1, padx=5, pady=5, sticky=tk.W)
         units = ["g", "lbs"]
-        self.subject_weight_menu = ttk.OptionMenu(self.subject_labelframe, self.subject_weight.unit, units[1], *units)
+        self.subject_weight_menu = ttk.OptionMenu(self.subject_labelframe, self.subject_weight.unit, units[0], *units)
         self.subject_weight_menu.grid(row=4, column=3, padx=5, pady=5, sticky=tk.W)
 
         # Subject Notes
@@ -309,14 +371,16 @@ class SubjectManager():
         # Bottom Button
         #################################################################################
         # Exit Button
-        self.exit_btn = ttk.Button(self.master, text="Quit", command=lambda: self.master.destroy())
+        def quit(*args):
+            self.parent_project.set("--")
+            self.subject_id.set("--")
+            self.master.destroy()
+        self.exit_btn = ttk.Button(self.master, text="Quit", command=quit, cursor=CURSOR_HAND)
         self.exit_btn.pack(side='left', padx=25, pady=10, anchor=tk.NW)
         # Submit Button
-        self.submit_btn = ttk.Button(self.master, text="Submit", state='disabled', command=self.create_new_subject)
+        self.submit_btn = ttk.Button(self.master, text="Submit", state='disabled', command=self.create_new_subject,
+                                    cursor=CURSOR_HAND)
         self.submit_btn.pack(side='right', padx=25, pady=10, anchor=tk.NE)
-
-        # Mainloop
-        self.master.mainloop()
 
     def create_new_subject(self):
 
@@ -329,17 +393,20 @@ class SubjectManager():
 
             subject = self.session.classes.SubjectData(
                                 parent=project, label=self.subject_id.get())
-            subject.demographics.gender = self.subject_gender.get().lower()
-            # Missing weight, Age, DOB and Notes set methods
-            # subject.demographics.age = self.subject_age.get().split('/')[1]
-            subject.demographics.dob = self.subject_age.get()
-            subject.demographics.yob = self.subject_age.get().split('/')[-1]
+
+            # if self.subject_gender.get() != "":
+            #     subject.demographics.gender = self.subject_gender.get().lower()
+            # # Missing weight and Notes set methods
+            # subject.demographics.age = int(str(datetime.strptime(str(date.today()), "%Y-%m-%d") - datetime.strptime(self.subject_age.get(), "%m/%d/%Y")).split(' ')[0])
+            # subject.demographics.dob = datetime.strptime(self.subject_age.get(), "%m/%d/%Y")
+            # subject.demographics.yob = int(self.subject_age.get().split('/')[-1])
+            # subject.demographics.weight.set("units", str(self.subject_weight.unit.get()))
         except exception as e:
             messagebox.showerror("Error!", str(e))
         # self.session.clearcache()
         messagebox.showinfo('XNAT-PIC Uploader', 'A new subject is created.') 
         self.master.destroy()
-        self.master.quit()
+        # self.master.quit()
 
 class ExperimentManager():
 
@@ -350,7 +417,7 @@ class ExperimentManager():
         self.logo_delete = open_image(PATH_IMAGE + "Reject.png", 8, 8)
         self.warning_icon = open_image(PATH_IMAGE + "warning_icon.png", 15, 15)
 
-        self.master = tk.Toplevel(background="white")
+        self.master = tk.Toplevel()
         self.master.title("XNAT-PIC Uploader")
         self.master.geometry("+%d+%d" % (300, 250))
         self.master.resizable(False, False)
@@ -413,12 +480,12 @@ class ExperimentManager():
 
         # Experiment Acquisition Date
         today = date.today()
-        today = today.strftime("%d/%m/%Y")
+        today = today.strftime("%m/%d/%Y")
         self.experiment_date = tk.StringVar()
         self.experiment_date.set(today)
-        self.experiment_date_label = ttk.Label(self.experiment_labelframe, text="Age")
+        self.experiment_date_label = ttk.Label(self.experiment_labelframe, text="Acquisition Date")
         self.experiment_date_label.grid(row=3, column=0, padx=5, pady=5, sticky=tk.W)
-        self.experiment_date_entry = ttk.DateEntry(self.experiment_labelframe)
+        self.experiment_date_entry = ttk.DateEntry(self.experiment_labelframe, dateformat="%m/%d/%Y")
         self.experiment_date_entry.entry.config(textvariable=self.experiment_date)
         self.experiment_date_entry.grid(row=3, column=1, padx=5, pady=5, sticky=tk.W)
 
@@ -468,14 +535,17 @@ class ExperimentManager():
         # Bottom Button
         #################################################################################
         # Exit Button
-        self.exit_btn = ttk.Button(self.master, text="Quit", command=lambda: self.master.destroy())
+        def quit(*args):
+            self.parent_project.set("--")
+            self.parent_subject.set("--")
+            self.experiment_id.set("--")
+            self.master.destroy()
+        self.exit_btn = ttk.Button(self.master, text="Quit", command=quit, cursor=CURSOR_HAND)
         self.exit_btn.pack(side='left', padx=25, pady=10, anchor=tk.NW)
         # Submit Button
-        self.submit_btn = ttk.Button(self.master, text="Submit", state='disabled', command=self.create_new_experiment)
+        self.submit_btn = ttk.Button(self.master, text="Submit", state='disabled', command=self.create_new_experiment,
+                                    cursor=CURSOR_HAND)
         self.submit_btn.pack(side='right', padx=25, pady=10, anchor=tk.NE)
-
-        # Mainloop
-        self.master.mainloop()
 
     def create_new_experiment(self):
 
@@ -484,20 +554,35 @@ class ExperimentManager():
             self.master.deiconify()
             return
         try:
-            project = self.session.projects[self.parent_project.get()]
-            subject = project.subjects[self.parent_subject.get()]
+            # project = self.session.projects[self.parent_project.get()]
+            # subject = project.subjects[self.parent_subject.get()]
+            # experiment = subject.experiments[self.experiment_id.get()]
+
+            # Missing a method to create a new experiment object!
             # experiment = self.session.classes.ExperimentData(
             #                 parent=subject, label=self.experiment_id.get())
-            experiment = subject.experiments[self.experiment_id.get()]
-            print('end')
+
+            #################################################
+            # Method to bypass the experiment object creation
+            current_folder = os.path.join(os.getcwd(), "temp/Exp_1").replace("\\", "/")
+            zip_dst = shutil.make_archive("temp", "zip", current_folder) # .zip file of the current subfolder
+
+            self.session.services.import_(zip_dst,
+                                        overwrite="delete", # Overwrite parameter is important!
+                                        project=self.parent_project.get(),
+                                        subject=self.parent_subject.get(),
+                                        experiment=self.experiment_id.get(),
+                                        content_type='application/zip')
+            self.session.clearcache()
+            experiment = self.session.projects[self.parent_project.get()].subjects[self.parent_subject.get()].experiments[self.experiment_id.get()]
+            for scan in experiment.scans.listing:
+                scan.delete()
+            # experiment.date = datetime.strptime(self.experiment_date.get(), "%m/%d/%Y")
+            # experiment.note = self.experiment_description_entry.get("1.0", END)
+            
+            os.remove(zip_dst)
+            #################################################
         except exception as e:
             messagebox.showerror("Error!", str(e))
-        messagebox.showinfo('XNAT-PIC Uploader', 'A new subject is created.') 
+        messagebox.showinfo('XNAT-PIC Uploader', 'A new experiment is created.') 
         self.master.destroy()
-        self.master.quit()
-
-# if __name__ == "__main__":
-
-#     root = tk.Tk()
-#     # object_creator = ObjectCreator(root).add_project_popup()
-#     object_creator = ObjectCreator(root).add_subject_popup()

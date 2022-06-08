@@ -1,3 +1,4 @@
+from faulthandler import disable
 import shutil
 import tkinter as tk
 from tkinter import MULTIPLE, NE, NW, SINGLE, W, filedialog, messagebox
@@ -2145,6 +2146,7 @@ class xnat_pic_gui():
             def clear_tree(*args):
                 if self.tree.exists(0):
                     self.tree.delete(*self.tree.get_children())
+                    self.folder_to_upload.set("")
 
             self.clear_tree_btn = ttk.Button(self.folder_selection_label_frame, image=master.logo_clear,
                                     cursor=CURSOR_HAND, command=clear_tree, style="WithoutBack.TButton")
@@ -2153,7 +2155,7 @@ class xnat_pic_gui():
             # Upload additional files
             self.add_file_flag = tk.IntVar()
             self.add_file_btn = ttk.Checkbutton(self.folder_selection_label_frame, variable=self.add_file_flag, onvalue=1, offvalue=0, 
-                                text="Additional Files", state='disabled', style="WithoutBack.TCheckbutton")
+                                text="Additional Files", state='disabled', style="WithoutBack.TCheckbutton", cursor=CURSOR_HAND)
             self.add_file_btn.grid(row=0, column=1, padx=5, pady=5, sticky=tk.E)
 
             # Label Frame Uploader Custom Variables
@@ -2165,7 +2167,7 @@ class xnat_pic_gui():
             self.n_custom_var.set(3)
             custom_var_options = list(range(0, 4))
             self.custom_var_list = ttk.OptionMenu(self.custom_var_labelframe, self.n_custom_var, 0, *custom_var_options)
-            self.custom_var_list.config(width=2)
+            self.custom_var_list.config(width=2, cursor=CURSOR_HAND)
             self.custom_var_list.grid(row=0, column=0, padx=5, pady=5, sticky=tk.NW)
             self.custom_var_label = ttk.Label(self.custom_var_labelframe, text="Custom Variables")
             self.custom_var_label.grid(row=0, column=1, padx=2, pady=5, sticky=tk.NW)
@@ -2256,16 +2258,19 @@ class xnat_pic_gui():
             self.prj = tk.StringVar()
             default_value = "--"
             self.project_list = ttk.OptionMenu(self.uploader_data, self.prj, default_value, *self.OPTIONS)
-            self.project_list.configure(state="disabled", width=30)
+            self.project_list.configure(state="disabled", width=30, cursor=CURSOR_HAND)
             
             self.project_list.grid(row=0, column=1, padx=2, pady=10, sticky=tk.NW)
             
             # Button to add a new project
             def add_project():
+                disable_buttons([self.new_prj_btn])
                 createdProject = ProjectManager(self.session)
+                master.root.wait_window(createdProject.master)
                 if self.session != "":
                     self.session.clearcache()
                 self.prj.set(createdProject.project_id.get())
+                enable_buttons([self.new_prj_btn])
 
             self.new_prj_btn = ttk.Button(self.uploader_data, state=tk.DISABLED, width=20, style="Secondary.TButton",
                                         command=add_project, cursor=CURSOR_HAND, text="Add New Project")
@@ -2284,17 +2289,21 @@ class xnat_pic_gui():
             self.subject_list_label.grid(row=1, column=0, padx=2, pady=10, sticky=tk.NW)
             self.sub = tk.StringVar()
             self.subject_list = ttk.OptionMenu(self.uploader_data, self.sub, default_value, *self.OPTIONS2)
-            self.subject_list.configure(state="disabled", width=30)
+            self.subject_list.configure(state="disabled", width=30, cursor=CURSOR_HAND)
             
             self.subject_list.grid(row=1, column=1, padx=2, pady=5, sticky=tk.NW)
             
             # Button to add a new subject
             def add_subject():
+                disable_buttons([self.new_prj_btn, self.new_sub_btn])
                 createdSubject = SubjectManager(self.session)
+                master.root.wait_window(createdSubject.master)
                 if self.session != "":
                     self.session.clearcache()
                 self.prj.set(createdSubject.parent_project.get())
                 self.sub.set(createdSubject.subject_id.get())
+                enable_buttons([self.new_prj_btn, self.new_sub_btn])
+
             self.new_sub_btn = ttk.Button(self.uploader_data, state=tk.DISABLED, width=20, style="Secondary.TButton",
                                         command=add_subject, cursor=CURSOR_HAND, text="Add New Subject")
             self.new_sub_btn.grid(row=1, column=2, padx=20, pady=10, sticky=tk.NW)
@@ -2312,17 +2321,20 @@ class xnat_pic_gui():
             self.experiment_list_label.grid(row=2, column=0, padx=2, pady=10, sticky=tk.NW)
             self.exp = tk.StringVar()
             self.experiment_list = ttk.OptionMenu(self.uploader_data, self.exp, default_value, *self.OPTIONS3)
-            self.experiment_list.configure(state="disabled", width=30)
+            self.experiment_list.configure(state="disabled", width=30, cursor=CURSOR_HAND)
             self.experiment_list.grid(row=2, column=1, padx=2, pady=10, sticky=tk.NW)
             
             # Button to add a new experiment
             def add_experiment():
+                disable_buttons([self.new_prj_btn, self.new_sub_btn, self.new_exp_btn])
                 createdExperiment = ExperimentManager(self.session)
+                master.root.wait_window(createdExperiment.master)
                 if self.session != "":
                     self.session.clearcache()
                 self.prj.set(createdExperiment.parent_project.get())
                 self.sub.set(createdExperiment.parent_subject.get())
                 self.exp.set(createdExperiment.experiment_id.get())
+                enable_buttons([self.new_prj_btn, self.new_sub_btn, self.new_exp_btn])
 
             self.new_exp_btn = ttk.Button(self.uploader_data, state=tk.DISABLED, style="Secondary.TButton", 
                                         text="Add New Experiment", command=add_experiment, cursor=CURSOR_HAND, width=20)
@@ -2376,7 +2388,7 @@ class xnat_pic_gui():
                     xnat_pic_gui.choose_your_action(master)
 
             self.exit_text = tk.StringVar() 
-            self.exit_btn = ttk.Button(self.bottom_label_frame, textvariable=self.exit_text)
+            self.exit_btn = ttk.Button(self.bottom_label_frame, textvariable=self.exit_text, cursor=CURSOR_HAND)
             self.exit_btn.configure(command=exit_uploader)
             self.exit_text.set("Exit")
             self.exit_btn.pack(side='left', padx=25, anchor=tk.NW)
@@ -2398,7 +2410,7 @@ class xnat_pic_gui():
 
             self.next_text = tk.StringVar() 
             self.next_btn = ttk.Button(self.bottom_label_frame, textvariable=self.next_text, state='disabled',
-                                        command=next)
+                                        command=next, cursor=CURSOR_HAND)
             self.next_text.set("Next")
             self.next_btn.pack(side='right', padx=25, anchor=tk.NW)
             #############################################
@@ -2428,6 +2440,7 @@ class xnat_pic_gui():
                     else:
                         disable_buttons([self.next_btn])
                 self.prj.trace('w', enable_next)
+                self.folder_to_upload.trace('w', enable_next)
                 
             elif press_btn == 1:
                 # Disable main buttons
@@ -2440,6 +2453,7 @@ class xnat_pic_gui():
                     else:
                         disable_buttons([self.next_btn])
                 self.prj.trace('w', enable_next)
+                self.folder_to_upload.trace('w', enable_next)
                 
             elif press_btn == 2:
                 # Disable main buttons
@@ -2453,6 +2467,7 @@ class xnat_pic_gui():
                     else:
                         disable_buttons([self.next_btn])
                 self.sub.trace('w', enable_next)
+                self.folder_to_upload.trace('w', enable_next)
 
             elif press_btn == 3:
                 # Disable main buttons
@@ -2467,6 +2482,7 @@ class xnat_pic_gui():
                     else:
                         disable_buttons([self.next_btn])
                 self.exp.trace('w', enable_next)
+                self.folder_to_upload.trace('w', enable_next)
             else:
                 pass
 
@@ -2481,7 +2497,7 @@ class xnat_pic_gui():
             else:
                 # Start progress bar
                 progressbar = ProgressBar(master.root, bar_title='XNAT-PIC Uploader')
-                progressbar.start_indeterminate_bar()
+                progressbar.start_determinate_bar()
 
                 list_dirs = os.listdir(project_to_upload)
 
@@ -2489,7 +2505,9 @@ class xnat_pic_gui():
 
                 def upload_thread():
 
-                    for sub in list_dirs:
+                    for i, sub in enumerate(list_dirs):
+                        progressbar.update_progressbar(i, len(list_dirs))
+                        progressbar.show_step(i, len(list_dirs))
                         sub = os.path.join(project_to_upload, sub)
 
                         list_dirs_exp = os.listdir(sub)
@@ -2531,7 +2549,8 @@ class xnat_pic_gui():
                                 # Define the subject_id and the experiment_id if the custom variables file is not available
                                 self.sub.set(exp.split('/')[-3].replace('.','_'))
                                 params['subject_id'] = self.sub.get()
-                                self.exp.set('_'.join([exp.split('/')[-3].replace('_dcm', ''), exp.split('/')[-2].replace('.', '_')]).replace(' ', '_'))
+                                self.exp.set('_'.join([exp.split('/')[-4].replace('_dcm', ''), exp.split('/')[-3].replace('.', '_'),
+                                                             exp.split('/')[-2].replace('.', '_')]).replace(' ', '_'))
                                 params['experiment_id'] = self.exp.get()
 
                             progressbar.set_caption('Uploading ' + str(self.sub.get()) + ' ...')
@@ -2562,7 +2581,7 @@ class xnat_pic_gui():
                 t.start()
                 
                 while t.is_alive() == True:
-                    progressbar.update_bar()
+                    progressbar.update_bar(0)
                 
                 # Stop the progress bar and close the popup
                 progressbar.stop_progress_bar()
@@ -2571,7 +2590,7 @@ class xnat_pic_gui():
                 print('Elapsed time: ' + str(end_time-start_time) + ' seconds')
 
                 # Restore main frame buttons
-                messagebox.showinfo("XNAT-PIC Uploader","Done! Your subject is uploaded on XNAT platform.")
+                messagebox.showinfo("XNAT-PIC Uploader","Done! Your project is uploaded on XNAT platform.")
             # Destroy all the existent widgets (Button, OptionMenu, ...)
             destroy_widgets([self.label_frame_uploader, self.uploader_data, self.custom_var_labelframe,
                                 self.exit_btn, self.next_btn, self.folder_selection_label_frame, self.frame_title])
@@ -2785,7 +2804,7 @@ class xnat_pic_gui():
                     messagebox.showerror("XNAT-PIC Uploader", e)
 
                 # Restore main frame buttons
-                messagebox.showinfo("XNAT-PIC Uploader","Done! Your subject is uploaded on XNAT platform.")
+                messagebox.showinfo("XNAT-PIC Uploader","Done! Your experiment is uploaded on XNAT platform.")
             # Destroy all the existent widgets (Button, OptionMenu, ...)
             destroy_widgets([self.label_frame_uploader, self.uploader_data, self.custom_var_labelframe,
                                 self.exit_btn, self.next_btn, self.folder_selection_label_frame, self.frame_title])

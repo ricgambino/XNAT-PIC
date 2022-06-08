@@ -53,7 +53,7 @@ class MyStyle():
     def configure(self):
         
         # Configure Buttons
-        self.style.configure('TButton', font=SMALL_FONT)
+        self.style.configure('TButton', font=SMALL_FONT, cursor=CURSOR_HAND)
         self.style.configure("Secondary.TButton", font=SMALL_FONT_3)
         self.style.configure("Secondary1.TButton", font=SMALL_FONT_4)
         self.style.configure("WithoutBack.TButton", padding=2, background=theme_colors[self.style_name]["colors"]["bg"], foreground=theme_colors[self.style_name]["colors"]["light"], borderwidth=0)

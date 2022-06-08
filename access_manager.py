@@ -87,12 +87,16 @@ class AccessManager():
                 self.popup.entry_psw.config(show='*')
                 self.popup.toggle_btn.config(image=self.open_eye)
             else:
-                if tkinter.simpledialog.askstring("PIN", "Enter PIN: ", show='*', parent=self.popup.cred_frame) == os.environ.get('secretPIN'):
-                    self.popup.entry_psw.config(show='')
-                    self.popup.toggle_btn.config(image=self.closed_eye)
+                ans = tkinter.simpledialog.askstring("PIN", "Enter PIN: ", show='*', parent=self.popup.cred_frame)
+                if ans:
+                    if ans == os.environ.get('secretPIN'):
+                        self.popup.entry_psw.config(show='')
+                        self.popup.toggle_btn.config(image=self.closed_eye)
+                    else:
+                        messagebox.showerror("XNAT-PIC Uploader", "Error! The PIN code does not correspond")
+                        self.popup.deiconify()
                 else:
-                    messagebox.showerror("XNAT-PIC Uploader", "Error! The PIN code does not correspond")
-                    # enable_buttons([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn])
+                    pass
         
         self.popup.entry_psw = ttk.Entry(self.popup.cred_frame, show="*", width=25)
         self.popup.entry_psw.var = tk.StringVar()
@@ -102,6 +106,17 @@ class AccessManager():
                                             command=toggle_password, state='disabled', 
                                             cursor=CURSOR_HAND, style="Popup.TButton")
         self.popup.toggle_btn.grid(row=3, column=2, padx=2, pady=2, sticky=tk.W)
+        def enable_toggle(*args):
+            if self.popup.entry_psw.var.get() != "":
+                self.popup.toggle_btn.config(state='normal')
+                if self.popup.entry_user.get() != "":
+                    self.popup.btn_remember.configure(state='normal')
+                else:
+                    self.popup.btn_remember.configure(state='disabled')
+            else:
+                self.popup.toggle_btn.config(state='disabled')
+                self.popup.btn_remember.configure(state='disabled')
+        self.popup.entry_psw.var.trace('w', enable_toggle)
 
         self.popup.forgot_psw = ttk.Label(self.popup.cred_frame, text="Forgot password", style="Popup.TLabel", 
                                         cursor=CURSOR_HAND)
@@ -146,10 +161,10 @@ class AccessManager():
         self.popup.button_quit = ttk.Button(self.popup, text='Quit', command=quit_event, style="MainPopup.TButton")
         self.popup.button_quit.grid(row=2, column=0, padx=10, pady=5, sticky=tk.W)
 
-    def forgot_psw(self):
+    def forgot_psw(self, *args):
         webbrowser.open("http://130.192.212.48:8080/app/template/ForgotLogin.vm#!", new=1)
 
-    def register(self):
+    def register(self, *args):
         webbrowser.open("http://130.192.212.48:8080/app/template/Register.vm#!", new=1)
 
     def get_list_of_users(self):
@@ -192,8 +207,9 @@ class AccessManager():
                 # Enable the 'Show password' toggle button
                 self.popup.toggle_btn.configure(state='normal')
             else:
-                # Enable the 'Remember me' button
-                self.popup.btn_remember.configure(state='normal')
+                if self.popup.entry_psw.var.get() != '':
+                    # Enable the 'Remember me' button
+                    self.popup.btn_remember.configure(state='normal')
         else:
             # Disable the 'Remember me' button
             self.popup.btn_remember.configure(state='disabled')
@@ -201,12 +217,9 @@ class AccessManager():
             self.popup.remember.set(0)
             # Disable the 'Show password' toggle button
             self.popup.toggle_btn.configure(state='disabled')
-            # # Reset address and password fields
-            # self.popup.entry_psw.var.set('')
-            # self.popup.entry_address.var.set('')
 
     def load_saved_credentials(self):
-        # REMEMBER CREDENTIALS
+
         try:
             home = os.path.expanduser("~")
             # Define the encrypted file path
