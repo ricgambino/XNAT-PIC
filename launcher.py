@@ -428,7 +428,7 @@ class xnat_pic_gui():
                                                                 title="XNAT-PIC: Select directory in Bruker ParaVision format"))
                 if self.folder_to_convert.get() == '':
                     messagebox.showerror("XNAT-PIC Converter", "Please select a folder.")
-                    enable_buttons([self.prj_conv_btn, self.sbj_conv_btn, self.exp_conv_btn])
+                    #enable_buttons([self.prj_conv_btn, self.sbj_conv_btn, self.exp_conv_btn])
                     return
                 # Reset convertion_state parameter
                 self.convertion_state.set(0)
@@ -690,8 +690,10 @@ class xnat_pic_gui():
                     self.prj_convertion(master)
      
                 elif self.conv_flag.get() == 1:
-                    self.converted_folder.set(os.path.join('/'.join(self.folder_to_convert.get().split('/')[:-1])  + '_dcm', 
-                                                '/'.join(self.folder_to_convert.get().split('/')[-1])))
+                    conv_folder = str(os.path.join('/'.join(self.folder_to_convert.get().split('/')[:-1])  + '_dcm', 
+                                                self.folder_to_convert.get().split('/')[-1]))
+                    self.converted_folder.set(conv_folder.replace("\\",'/'))
+                    print(self.converted_folder.get())
                     self.sbj_convertion(master)
     
                 elif self.conv_flag.get() == 2:
@@ -1379,13 +1381,10 @@ class xnat_pic_gui():
                 self.listbox_notebook[i].bind('<Tab>', items_selected)
 
         def modify_metadata(self):
-            # Check before confirming the data
-            try:
-                self.selected_folder
-                pass
-            except Exception as e:
-                    messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
-                    raise 
+            # Check before editing the data
+            if self.selected_folder is None:
+                messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
+                return 
 
             # Normal entry ID
             for i in range(1, len(self.entries_value_ID)):
@@ -1484,18 +1483,15 @@ class xnat_pic_gui():
                 self.entries_value_CV[1].config(state=tk.DISABLED)
 
             self.timepoint_menu.bind("<<ComboboxSelected>>", timepoint_changed)
-            #self.time_entry.bind("<<FocusOut>>", timepoint_changed)
-            self.time_entry_value.trace('w', timepoint_changed)
+            self.time_entry.bind("<<Return>>", timepoint_changed)
+            #self.time_entry_value.trace('w', timepoint_changed)
             self.timepoint_menu1.bind("<<ComboboxSelected>>", timepoint_changed)
 
         def check_entries(self):
             # Check before confirming the data
-            try:
-                self.selected_folder
-                pass
-            except Exception as e:
-                    messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
-                    raise 
+            if self.selected_folder is None:
+                raise Exception("Click Tab to select a folder from the list box on the left")
+
 
             if not self.entries_value_ID[1].get():
                 messagebox.showerror("XNAT-PIC", "Insert the name of the project")
@@ -1556,7 +1552,8 @@ class xnat_pic_gui():
                 self.entries_value_ID[i]['state'] = tk.DISABLED 
             
             tmp_ID.update({"C_V" : ""}) 
-
+            
+            self.entries_value_ID[1]['state'] = tk.NORMAL
             # Update the info in the txt file CV
             for i in array_CV:
                 tmp_ID.update({self.entries_variable_CV[i].get() : self.entries_value_CV[i].get()})     
@@ -1587,13 +1584,13 @@ class xnat_pic_gui():
             try:
                 self.check_entries()
             except Exception as e: 
-                messagebox.showerror("XNAT-PIC", "Error in checking fields" + str(e))  
+                messagebox.showerror("XNAT-PIC", "Error in checking fields: " + str(e))  
                 raise
 
             try:
                 self.save_entries(self.selected_folder, multiple=0)
             except Exception as e: 
-                messagebox.showerror("XNAT-PIC", "Error in saving" + str(e))  
+                messagebox.showerror("XNAT-PIC", "Error in saving: " + str(e))  
                 raise
 
         # #################### Confirm multiple metadata ####################
