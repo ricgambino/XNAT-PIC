@@ -988,7 +988,7 @@ class xnat_pic_gui():
             
             # If there is no folder selected, re-enable the buttons and return
             if not self.information_folder:
-                enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
+                enable_buttons([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn])
                 return
             master.frame_label.set("Metadata")         
             self.layout_metadata(master) 
@@ -1415,11 +1415,10 @@ class xnat_pic_gui():
                         self.today = date.today()
                         self.today = self.today.strftime('%Y-%m-%d')
                         if acq_date.strftime('%Y-%m-%d') > self.today:
-                            messagebox.showerror("XNAT-PIC", "The date entered is greater than today's date")
-                            raise
+                            self.entries_value_ID[4].delete(0, tk.END)
+                            raise Exception("The date entered is greater than today's date")
                     except Exception as e:
-                        if str(e) != 'No active exception to reraise':
-                            messagebox.showerror("XNAT-PIC", str(e))
+                        messagebox.showerror("XNAT-PIC", str(e))
                         self.entries_value_ID[4].delete(0, tk.END)
                         self.entries_value_ID[4]['state'] = tk.DISABLED
                         raise
@@ -1489,10 +1488,6 @@ class xnat_pic_gui():
             self.timepoint_menu1.bind("<<ComboboxSelected>>", timepoint_changed)
 
         def check_entries(self):
-            # Check before confirming the data
-            if self.selected_folder is None:
-                raise Exception("Click Tab to select a folder from the list box on the left")
-
 
             if not self.entries_value_ID[1].get():
                 messagebox.showerror("XNAT-PIC", "Insert the name of the project")
@@ -1554,7 +1549,7 @@ class xnat_pic_gui():
             
             tmp_ID.update({"C_V" : ""}) 
             
-            self.entries_value_ID[1]['state'] = tk.NORMAL
+            # self.entries_value_ID[1]['state'] = tk.NORMAL
             # Update the info in the txt file CV
             for i in array_CV:
                 tmp_ID.update({self.entries_variable_CV[i].get() : self.entries_value_CV[i].get()})     
@@ -1568,7 +1563,6 @@ class xnat_pic_gui():
             self.selected_timepoint.set('')
             self.selected_timepoint1.set('')
             self.time_entry.delete(0, tk.END)
-            #self.cal.entry.delete(0, tk.END)
             disable_buttons([self.group_menu, self.timepoint_menu, self.time_entry, self.timepoint_menu1, self.cal])
             # Saves the changes made by the user in the txt file
             substring = str(my_key).replace('#','/')
@@ -1582,6 +1576,11 @@ class xnat_pic_gui():
                     messagebox.showerror("XNAT-PIC", "Confirmation failed: " + str(e))  
                     raise    
         def confirm_metadata(self):
+            # Check if a folder is selected         
+            if self.selected_folder is None:
+                messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
+                return
+
             try:
                 self.check_entries()
             except Exception as e: 
@@ -1600,15 +1599,13 @@ class xnat_pic_gui():
             disable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.browse_btn])
 
             #tab_names = [self.notebook.notebookTab.tab(i, state='disable') for i in self.notebook.notebookTab.tabs()]  
-                     
-            try:
-                self.selected_folder
-                pass
-            except Exception as e:
-                enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.my_listbox, self.browse_btn])
+
+            # Check if a folder is selected         
+            if self.selected_folder is None:
                 messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
-                raise
-            
+                enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.browse_btn])
+                return
+
             messagebox.showinfo("Project Data","Select the ID fields you want to copy.")
             #self.my_listbox.selection_set(self.selected_index)
 
