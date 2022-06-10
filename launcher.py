@@ -1,4 +1,5 @@
 from faulthandler import disable
+from logging import exception
 import shutil
 import tkinter as tk
 from tkinter import MULTIPLE, NE, NW, SINGLE, W, filedialog, messagebox
@@ -1247,6 +1248,14 @@ class xnat_pic_gui():
             self.timepoint_menu1['values'] = self.OPTIONS1
             self.timepoint_menu1['state'] = 'disabled'
             self.timepoint_menu1.grid(row=1, column=4, padx = 5, pady = 5, sticky=W)
+
+            # Dose
+            OPTIONS2 = ["mg/kg"]
+            self.selected_dose = tk.StringVar()
+            self.dose_menu = ttk.Combobox(self.frame_CV, takefocus = 0, textvariable=self.selected_dose, width=10)
+            self.dose_menu['values'] = OPTIONS2
+            self.dose_menu['state'] = 'disabled'
+            self.dose_menu.grid(row=2, column=2, padx = 5, pady = 5, sticky=W)
           
             #################### Browse the metadata ####################
             self.browse_btn = ttk.Button(self.frame_metadata, text="Browse", command = lambda: self.select_folder(master), cursor=CURSOR_HAND, takefocus = 0, style = "Secondary.TButton")
@@ -1281,10 +1290,11 @@ class xnat_pic_gui():
                 self.selected_timepoint.set('')
                 self.selected_timepoint1.set('')
                 self.time_entry.delete(0, tk.END)
+                self.selected_dose.set('')
                 self.cal.entry['state'] = 'disabled'
                 self.cal.button['state'] = 'disabled'
 
-                disable_buttons([self.group_menu, self.timepoint_menu, self.time_entry, self.timepoint_menu1])
+                disable_buttons([self.group_menu, self.timepoint_menu, self.time_entry, self.timepoint_menu1, self.dose_menu])
                 
                 # Find the tab
                 self.index_tab = self.notebook.notebookTab.index("current")
@@ -1440,22 +1450,24 @@ class xnat_pic_gui():
             self.group_menu.bind("<<ComboboxSelected>>", group_changed)
 
             # Add the unit of measure to the number entered for the dose
+            self.dose_menu['state'] = 'readonly'
             def dose_changed(event):
-                if  self.dosevar.get():
+                """ handle the dose changed event """
+                value_dose = ''
+                if self.entries_value_CV[2].get():
                     try:
-                        # Check if the entry is a number
-                        dose_value = self.dosevar.get().replace('-' + 'mg/kg',"")
-                        float(dose_value)
-                    except Exception as e: 
-                        messagebox.showerror("XNAT-PIC", "Insert a number in dose")  
-                        self.entries_value_CV[2].delete(0, tk.END)
+                        dose = str(self.entries_value_CV[2].get())
+                        value_dose = dose.replace(' mg/kg','')
+                        float(value_dose)
+                    except Exception as e:
+                        messagebox.showerror("XNAT-PIC", 'Insert a number in dose')
                         raise
-                    
-                    self.entries_value_CV[2].delete(0, tk.END)
-                    self.entries_value_CV[2].insert(0, dose_value + '-' + 'mg/kg')                    
-                    self.my_listbox.selection_set(self.selected_index)
 
-            self.entries_value_CV[2].bind('<Return>', dose_changed)
+                self.entries_value_CV[2].delete(0, tk.END)
+                self.entries_value_CV[2].insert(0, str(value_dose) + ' ' + str(self.selected_dose.get()))                    
+                self.my_listbox.selection_set(self.selected_index)
+
+            self.dose_menu.bind("<<ComboboxSelected>>", dose_changed)
             
             # Option menu for the timepoint
             self.timepoint_menu1['state'] = 'readonly'
@@ -1520,13 +1532,13 @@ class xnat_pic_gui():
                     raise
 
             if  self.entries_value_CV[2].get():
-                    try:
-                        # Check if the entry is a number
-                        dose_value = self.entries_value_CV[2].get().replace('-' + 'mg/kg',"")
-                        float(dose_value)
-                    except Exception as e: 
-                        messagebox.showerror("XNAT-PIC", "Insert a number in dose")  
-                        raise
+                try:
+                    # Check if the entry is a number
+                    dose_value = self.entries_value_CV[2].get().replace(' mg/kg',"")
+                    float(dose_value)
+                except Exception as e: 
+                    messagebox.showerror("XNAT-PIC", "Insert a number in dose")  
+                    raise
 
         # Update the values and save the values in a txt file        
         def save_entries(self, my_key, multiple):
@@ -1563,7 +1575,8 @@ class xnat_pic_gui():
             self.selected_timepoint.set('')
             self.selected_timepoint1.set('')
             self.time_entry.delete(0, tk.END)
-            disable_buttons([self.group_menu, self.timepoint_menu, self.time_entry, self.timepoint_menu1, self.cal])
+            self.selected_dose.set('')
+            disable_buttons([self.group_menu, self.timepoint_menu, self.time_entry, self.timepoint_menu1, self.dose_menu, self.cal])
             # Saves the changes made by the user in the txt file
             substring = str(my_key).replace('#','/')
             index = [i for i, s in enumerate(self.path_list) if substring in s]
@@ -1686,41 +1699,48 @@ class xnat_pic_gui():
             #tab_names = [self.notebook.tab(i, state='normal') for i in self.notebook.tabs()]
             self.my_listbox.selection_set(self.selected_index) 
             for i in range(len(self.listbox_notebook)):
-                self.listbox_notebook[i]['selectmode'] = MULTIPLE   
+                self.listbox_notebook[i]['selectmode'] = MULTIPLE
+                self.listbox_notebook[i]['exportselection']=False   
                         
-            # Obtain the subject-experiment list to be modified
-            self.list_tab_listbox = []
-            def select_listbox(event):
-                self.seltext = [self.tab_name + '#' + self.my_listbox.get(index) for index in self.my_listbox.curselection()]
-                self.list_tab_listbox.append(self.seltext)
-                print(self.seltext)
-                print(self.list_tab_listbox)
-                
-            self.my_listbox.bind("<<ListboxSelect>>", select_listbox)
+            # # Obtain the subject-experiment list to be modified
+            # self.list_tab_listbox = []
+            # def select_listbox(event):
+            #     self.seltext = {self.tab_name: self.tab_name + '#' + self.my_listbox.get(index) for index in self.my_listbox.curselection()}
+            #     #self.list_tab_listbox.append(self.seltext)
+            #     print(self.seltext)
+            #     #print(self.list_tab_listbox)
+            
 
-            def select_tab_listbox(event):
-                try: 
-                    self.notebook.notebookContent.select(self.notebook.notebookTab.index("current"))
-                except Exception as e:
-                    pass
-                index_tab = self.notebook.notebookTab.index("current")
-                self.tab_name = self.notebook.notebookTab.tab(index_tab, "text")
-                # Update the listbox
-                self.my_listbox = self.listbox_notebook[int(index_tab)]
-                a = 3
-                #self.list_tab_listbox.append(self.seltext)
+            # for i in range(len(self.listbox_notebook)):
+            #     self.listbox_notebook[i].bind("<<ListboxSelect>>", select_listbox)
 
-                
-            self.notebook.notebookTab.bind("<<NotebookTabChanged>>", select_tab_listbox)  
+            # def select_tab_listbox(event):
+            #     try: 
+            #         self.notebook.notebookContent.select(self.notebook.notebookTab.index("current"))
+            #     except Exception as e:
+            #         pass
+            #     index_tab = self.notebook.notebookTab.index("current")
+            #     self.tab_name = self.notebook.notebookTab.tab(index_tab, "text")
+            #     # Update the listbox
+            #     self.my_listbox = self.listbox_notebook[int(index_tab)]
+            #     #self.list_tab_listbox.append(self.seltext)
+
+            # self.notebook.notebookTab.bind("<<NotebookTabChanged>>", select_tab_listbox)  
 
             # The user presses confirm 
             def items_selected2():
                 self.no_btn.destroy()
                 self.ok_btn.destroy()
-                self.list_tab_listbox.append(self.seltext)
+                #self.list_tab_listbox.append(self.seltext)
                 result = messagebox.askquestion("Multiple Confirm", "Are you sure you want to save data for the selected folders?\n", icon='warning')
                 
                 if result == 'yes':
+                    # Read all the selected item
+                    for i in self.notebook.notebookTab.tabs():
+                        print(i)
+                        print(self.notebook.notebookTab.index(i))
+                        print(self.notebook.notebookTab.tab(i, "text"))
+
                     try:
                         self.check_entries()
                     except Exception as e: 
