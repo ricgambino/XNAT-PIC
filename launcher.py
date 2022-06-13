@@ -1610,8 +1610,25 @@ class xnat_pic_gui():
         def confirm_multiple_metadata(self, master):
 
             disable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.browse_btn])
+            
+            # Disable entry
+            for i in range(len(self.entries_variable_ID)): 
+                self.entries_variable_ID[i]['state'] = tk.DISABLED
+                self.entries_value_ID[i]['state'] = tk.DISABLED 
 
-            #tab_names = [self.notebook.notebookTab.tab(i, state='disable') for i in self.notebook.notebookTab.tabs()]  
+            for i in range(len(self.entries_variable_CV)):  
+                self.entries_variable_CV[i]['state'] = tk.DISABLED
+                self.entries_value_CV[i]['state'] = tk.DISABLED    
+
+            # Clear all 
+            self.selected_group.set('')
+            self.selected_timepoint.set('')
+            self.selected_timepoint1.set('')
+            self.time_entry.delete(0, tk.END)
+            self.selected_dose.set('')
+            self.cal.entry['state'] = tk.DISABLED
+            self.cal.button['state'] = tk.DISABLED
+
 
             # Check if a folder is selected         
             if self.selected_folder is None:
@@ -1701,31 +1718,6 @@ class xnat_pic_gui():
             for i in range(len(self.listbox_notebook)):
                 self.listbox_notebook[i]['selectmode'] = MULTIPLE
                 self.listbox_notebook[i]['exportselection']=False   
-                        
-            # # Obtain the subject-experiment list to be modified
-            # self.list_tab_listbox = []
-            # def select_listbox(event):
-            #     self.seltext = {self.tab_name: self.tab_name + '#' + self.my_listbox.get(index) for index in self.my_listbox.curselection()}
-            #     #self.list_tab_listbox.append(self.seltext)
-            #     print(self.seltext)
-            #     #print(self.list_tab_listbox)
-            
-
-            # for i in range(len(self.listbox_notebook)):
-            #     self.listbox_notebook[i].bind("<<ListboxSelect>>", select_listbox)
-
-            # def select_tab_listbox(event):
-            #     try: 
-            #         self.notebook.notebookContent.select(self.notebook.notebookTab.index("current"))
-            #     except Exception as e:
-            #         pass
-            #     index_tab = self.notebook.notebookTab.index("current")
-            #     self.tab_name = self.notebook.notebookTab.tab(index_tab, "text")
-            #     # Update the listbox
-            #     self.my_listbox = self.listbox_notebook[int(index_tab)]
-            #     #self.list_tab_listbox.append(self.seltext)
-
-            # self.notebook.notebookTab.bind("<<NotebookTabChanged>>", select_tab_listbox)  
 
             # The user presses confirm 
             def items_selected2():
@@ -1733,13 +1725,18 @@ class xnat_pic_gui():
                 self.ok_btn.destroy()
                 #self.list_tab_listbox.append(self.seltext)
                 result = messagebox.askquestion("Multiple Confirm", "Are you sure you want to save data for the selected folders?\n", icon='warning')
-                
+                seltext = []
+                self.list_tab_listbox = []
+
                 if result == 'yes':
                     # Read all the selected item
                     for i in self.notebook.notebookTab.tabs():
-                        print(i)
-                        print(self.notebook.notebookTab.index(i))
-                        print(self.notebook.notebookTab.tab(i, "text"))
+                        index_tab = self.notebook.notebookTab.index(i)
+                        tab_name = self.notebook.notebookTab.tab(i, "text")
+                        seltext = [tab_name + '#' + self.listbox_notebook[int(index_tab)].get(index) 
+                                        for index in self.listbox_notebook[int(index_tab)].curselection()]
+                        if seltext:
+                            self.list_tab_listbox.append(seltext)
 
                     try:
                         self.check_entries()
@@ -1767,7 +1764,8 @@ class xnat_pic_gui():
                 enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.browse_btn])
                 self.my_listbox.selection_clear(0, 'end')
                 for i in range(len(self.listbox_notebook)):
-                    self.listbox_notebook[i]['selectmode'] = SINGLE   
+                    self.listbox_notebook[i]['selectmode'] = SINGLE 
+                    self.listbox_notebook[i]['exportselection']= TRUE  
                 self.load_info(master)
 
             self.ok_btn = ttk.Button(self.frame_metadata, image = master.logo_accept, command = items_selected2, cursor=CURSOR_HAND)
@@ -1780,8 +1778,9 @@ class xnat_pic_gui():
                 # Clear the focus and the select mode of the listbox is single
                 messagebox.showinfo("Metadata","The information was not saved for the selected folders!")
                 enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.browse_btn])
-                self.my_listbox.selection_clear(0, 'end')
-                self.my_listbox['selectmode'] = SINGLE
+                for i in range(len(self.listbox_notebook)):
+                    self.listbox_notebook[i]['selectmode'] = SINGLE 
+                    self.listbox_notebook[i]['exportselection']= TRUE 
             self.no_btn = ttk.Button(self.frame_metadata, image = master.logo_delete, command = items_cancel, cursor=CURSOR_HAND)
             self.no_btn.place(relx = 0.24, rely = 0.48, anchor = NE)
                 
