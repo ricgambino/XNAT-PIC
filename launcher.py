@@ -1361,7 +1361,7 @@ class xnat_pic_gui():
                 if diff_CV > 0:
                     for i in range(len(dict_CV), len(self.entries_variable_CV)):
                         self.entries_variable_CV[i].destroy() 
-                        self.entries_value_CV[i].destroy()
+                        self.entries_value_CV[i].destroy() 
                     del self.entries_variable_CV[len(dict_CV) : len(self.entries_variable_CV)]
                     del self.entries_value_CV[len(dict_CV) : len(self.entries_value_CV)]
                 # If the number of entries is less than the number of variables, insert the entries
@@ -1369,7 +1369,7 @@ class xnat_pic_gui():
                     for j in range(len(self.entries_variable_CV), len(dict_CV)):
                         self.entries_variable_CV.append(ttk.Entry(self.frame_CV, takefocus = 0, width=15))
                         self.entries_variable_CV[-1].grid(row=j, column=0, padx = 5, pady = 5, sticky=W)
-                        self.entries_value_CV.append(ttk.Entry(self.frame_ID, state='disabled', takefocus = 0, width = 44))
+                        self.entries_value_CV.append(ttk.Entry(self.frame_CV, state='disabled', takefocus = 0, width = 25))
                         self.entries_value_CV[-1].grid(row=j, column=1, padx = 5, pady = 5, sticky=W)
                 
                 # Modify the values ​​of the entries with the values ​​of the selected experiment
@@ -1864,7 +1864,11 @@ class xnat_pic_gui():
             # Confirm
             def confirm_CV(next_row):
                 if self.entries_variable_CV[next_row].get():
-                    tmp_CV = {self.entries_variable_CV[next_row].get() : self.entries_value_CV[next_row].get()}
+                    if self.entries_value_CV[next_row].get():
+                        value_CV = self.entries_value_CV[next_row].get()
+                    else:
+                        value_CV = ''
+                    tmp_CV = {self.entries_variable_CV[next_row].get() : value_CV}
                     self.results_dict[self.selected_folder].update(tmp_CV) 
                     state = self.entries_value_ID[1]['state']    
                     self.entries_variable_CV[next_row]['state'] = tk.DISABLED
@@ -1925,8 +1929,9 @@ class xnat_pic_gui():
             result = messagebox.askquestion("Exit", "Do you want to exit?", icon='warning')
             if result == 'yes':
                 destroy_widgets([self.frame_metadata, self.menu])
-
                 xnat_pic_gui.choose_your_action(master)
+
+                
     
     class XNATUploader():
 
