@@ -31,9 +31,9 @@ class AccessManager():
         self.connected = None
 
         # Start with a popup to get credentials
-        self.popup = tk.Toplevel(root)
+        self.popup = ttk.Toplevel()
         self.popup.title("XNAT-PIC ~ Login")
-        self.popup.geometry("%dx%d+%d+%d" % (410, 240, 600, 400))
+        self.popup.geometry("+%d+%d" % (600, 400))
         self.popup.resizable(False, False)
 
         # Closing window event: if it occurs, the popup must be destroyed and the main frame buttons must be enabled
