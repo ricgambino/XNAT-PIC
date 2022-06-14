@@ -1,4 +1,5 @@
 from faulthandler import disable
+from logging import exception
 import shutil
 import tkinter as tk
 from tkinter import MULTIPLE, NE, NW, SINGLE, W, filedialog, messagebox
@@ -430,7 +431,7 @@ class xnat_pic_gui():
                                                                 title="XNAT-PIC: Select directory in Bruker ParaVision format"))
                 if self.folder_to_convert.get() == '':
                     messagebox.showerror("XNAT-PIC Converter", "Please select a folder.")
-                    enable_buttons([self.prj_conv_btn, self.sbj_conv_btn, self.exp_conv_btn])
+                    #enable_buttons([self.prj_conv_btn, self.sbj_conv_btn, self.exp_conv_btn])
                     return
                 # Reset convertion_state parameter
                 self.convertion_state.set(0)
@@ -692,8 +693,10 @@ class xnat_pic_gui():
                     self.prj_convertion(master)
      
                 elif self.conv_flag.get() == 1:
-                    self.converted_folder.set(os.path.join('/'.join(self.folder_to_convert.get().split('/')[:-1])  + '_dcm', 
-                                                '/'.join(self.folder_to_convert.get().split('/')[-1])))
+                    conv_folder = str(os.path.join('/'.join(self.folder_to_convert.get().split('/')[:-1])  + '_dcm', 
+                                                self.folder_to_convert.get().split('/')[-1]))
+                    self.converted_folder.set(conv_folder.replace("\\",'/'))
+                    print(self.converted_folder.get())
                     self.sbj_convertion(master)
     
                 elif self.conv_flag.get() == 2:
@@ -987,7 +990,7 @@ class xnat_pic_gui():
             
             # If there is no folder selected, re-enable the buttons and return
             if not self.information_folder:
-                enable_buttons([master.convert_btn, master.info_btn, master.upload_btn])
+                enable_buttons([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn])
                 return
             master.frame_label.set("Metadata")         
             self.layout_metadata(master) 
@@ -1246,6 +1249,14 @@ class xnat_pic_gui():
             self.timepoint_menu1['values'] = self.OPTIONS1
             self.timepoint_menu1['state'] = 'disabled'
             self.timepoint_menu1.grid(row=1, column=4, padx = 5, pady = 5, sticky=W)
+
+            # Dose
+            OPTIONS2 = ["mg/kg"]
+            self.selected_dose = tk.StringVar()
+            self.dose_menu = ttk.Combobox(self.frame_CV, takefocus = 0, textvariable=self.selected_dose, width=10)
+            self.dose_menu['values'] = OPTIONS2
+            self.dose_menu['state'] = 'disabled'
+            self.dose_menu.grid(row=2, column=2, padx = 5, pady = 5, sticky=W)
           
             #################### Browse the metadata ####################
             self.browse_btn = ttk.Button(self.frame_metadata, text="Browse", command = lambda: self.select_folder(master), cursor=CURSOR_HAND, takefocus = 0, style = "Secondary.TButton")
@@ -1280,10 +1291,11 @@ class xnat_pic_gui():
                 self.selected_timepoint.set('')
                 self.selected_timepoint1.set('')
                 self.time_entry.delete(0, tk.END)
+                self.selected_dose.set('')
                 self.cal.entry['state'] = 'disabled'
                 self.cal.button['state'] = 'disabled'
 
-                disable_buttons([self.group_menu, self.timepoint_menu, self.time_entry, self.timepoint_menu1])
+                disable_buttons([self.group_menu, self.timepoint_menu, self.time_entry, self.timepoint_menu1, self.dose_menu])
                 
                 # Find the tab
                 self.index_tab = self.notebook.notebookTab.index("current")
@@ -1350,7 +1362,7 @@ class xnat_pic_gui():
                 if diff_CV > 0:
                     for i in range(len(dict_CV), len(self.entries_variable_CV)):
                         self.entries_variable_CV[i].destroy() 
-                        self.entries_value_CV[i].destroy()
+                        self.entries_value_CV[i].destroy() 
                     del self.entries_variable_CV[len(dict_CV) : len(self.entries_variable_CV)]
                     del self.entries_value_CV[len(dict_CV) : len(self.entries_value_CV)]
                 # If the number of entries is less than the number of variables, insert the entries
@@ -1358,7 +1370,7 @@ class xnat_pic_gui():
                     for j in range(len(self.entries_variable_CV), len(dict_CV)):
                         self.entries_variable_CV.append(ttk.Entry(self.frame_CV, takefocus = 0, width=15))
                         self.entries_variable_CV[-1].grid(row=j, column=0, padx = 5, pady = 5, sticky=W)
-                        self.entries_value_CV.append(ttk.Entry(self.frame_ID, state='disabled', takefocus = 0, width = 44))
+                        self.entries_value_CV.append(ttk.Entry(self.frame_CV, state='disabled', takefocus = 0, width = 25))
                         self.entries_value_CV[-1].grid(row=j, column=1, padx = 5, pady = 5, sticky=W)
                 
                 # Modify the values ​​of the entries with the values ​​of the selected experiment
@@ -1381,13 +1393,10 @@ class xnat_pic_gui():
                 self.listbox_notebook[i].bind('<Tab>', items_selected)
 
         def modify_metadata(self):
-            # Check before confirming the data
-            try:
-                self.selected_folder
-                pass
-            except Exception as e:
-                    messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
-                    raise 
+            # Check before editing the data
+            if self.selected_folder is None:
+                messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
+                return 
 
             # Normal entry ID
             for i in range(1, len(self.entries_value_ID)):
@@ -1417,11 +1426,10 @@ class xnat_pic_gui():
                         self.today = date.today()
                         self.today = self.today.strftime('%Y-%m-%d')
                         if acq_date.strftime('%Y-%m-%d') > self.today:
-                            messagebox.showerror("XNAT-PIC", "The date entered is greater than today's date")
-                            raise
+                            self.entries_value_ID[4].delete(0, tk.END)
+                            raise Exception("The date entered is greater than today's date")
                     except Exception as e:
-                        if str(e) != 'No active exception to reraise':
-                            messagebox.showerror("XNAT-PIC", str(e))
+                        messagebox.showerror("XNAT-PIC", str(e))
                         self.entries_value_ID[4].delete(0, tk.END)
                         self.entries_value_ID[4]['state'] = tk.DISABLED
                         raise
@@ -1443,22 +1451,24 @@ class xnat_pic_gui():
             self.group_menu.bind("<<ComboboxSelected>>", group_changed)
 
             # Add the unit of measure to the number entered for the dose
+            self.dose_menu['state'] = 'readonly'
             def dose_changed(event):
-                if  self.dosevar.get():
+                """ handle the dose changed event """
+                value_dose = ''
+                if self.entries_value_CV[2].get():
                     try:
-                        # Check if the entry is a number
-                        dose_value = self.dosevar.get().replace('-' + 'mg/kg',"")
-                        float(dose_value)
-                    except Exception as e: 
-                        messagebox.showerror("XNAT-PIC", "Insert a number in dose")  
-                        self.entries_value_CV[2].delete(0, tk.END)
+                        dose = str(self.entries_value_CV[2].get())
+                        value_dose = dose.replace(' mg/kg','')
+                        float(value_dose)
+                    except Exception as e:
+                        messagebox.showerror("XNAT-PIC", 'Insert a number in dose')
                         raise
-                    
-                    self.entries_value_CV[2].delete(0, tk.END)
-                    self.entries_value_CV[2].insert(0, dose_value + '-' + 'mg/kg')                    
-                    self.my_listbox.selection_set(self.selected_index)
 
-            self.entries_value_CV[2].bind('<Return>', dose_changed)
+                self.entries_value_CV[2].delete(0, tk.END)
+                self.entries_value_CV[2].insert(0, str(value_dose) + ' ' + str(self.selected_dose.get()))                    
+                self.my_listbox.selection_set(self.selected_index)
+
+            self.dose_menu.bind("<<ComboboxSelected>>", dose_changed)
             
             # Option menu for the timepoint
             self.timepoint_menu1['state'] = 'readonly'
@@ -1486,18 +1496,11 @@ class xnat_pic_gui():
                 self.entries_value_CV[1].config(state=tk.DISABLED)
 
             self.timepoint_menu.bind("<<ComboboxSelected>>", timepoint_changed)
-            #self.time_entry.bind("<<FocusOut>>", timepoint_changed)
-            self.time_entry_value.trace('w', timepoint_changed)
+            self.time_entry.bind("<<Return>>", timepoint_changed)
+            #self.time_entry_value.trace('w', timepoint_changed)
             self.timepoint_menu1.bind("<<ComboboxSelected>>", timepoint_changed)
 
         def check_entries(self):
-            # Check before confirming the data
-            try:
-                self.selected_folder
-                pass
-            except Exception as e:
-                    messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
-                    raise 
 
             if not self.entries_value_ID[1].get():
                 messagebox.showerror("XNAT-PIC", "Insert the name of the project")
@@ -1530,13 +1533,13 @@ class xnat_pic_gui():
                     raise
 
             if  self.entries_value_CV[2].get():
-                    try:
-                        # Check if the entry is a number
-                        dose_value = self.entries_value_CV[2].get().replace('-' + 'mg/kg',"")
-                        float(dose_value)
-                    except Exception as e: 
-                        messagebox.showerror("XNAT-PIC", "Insert a number in dose")  
-                        raise
+                try:
+                    # Check if the entry is a number
+                    dose_value = self.entries_value_CV[2].get().replace(' mg/kg',"")
+                    float(dose_value)
+                except Exception as e: 
+                    messagebox.showerror("XNAT-PIC", "Insert a number in dose")  
+                    raise
 
         # Update the values and save the values in a txt file        
         def save_entries(self, my_key, multiple):
@@ -1558,7 +1561,8 @@ class xnat_pic_gui():
                 self.entries_value_ID[i]['state'] = tk.DISABLED 
             
             tmp_ID.update({"C_V" : ""}) 
-
+            
+            # self.entries_value_ID[1]['state'] = tk.NORMAL
             # Update the info in the txt file CV
             for i in array_CV:
                 tmp_ID.update({self.entries_variable_CV[i].get() : self.entries_value_CV[i].get()})     
@@ -1572,8 +1576,8 @@ class xnat_pic_gui():
             self.selected_timepoint.set('')
             self.selected_timepoint1.set('')
             self.time_entry.delete(0, tk.END)
-            #self.cal.entry.delete(0, tk.END)
-            disable_buttons([self.group_menu, self.timepoint_menu, self.time_entry, self.timepoint_menu1, self.cal])
+            self.selected_dose.set('')
+            disable_buttons([self.group_menu, self.timepoint_menu, self.time_entry, self.timepoint_menu1, self.dose_menu, self.cal])
             # Saves the changes made by the user in the txt file
             substring = str(my_key).replace('#','/')
             index = [i for i, s in enumerate(self.path_list) if substring in s]
@@ -1586,33 +1590,53 @@ class xnat_pic_gui():
                     messagebox.showerror("XNAT-PIC", "Confirmation failed: " + str(e))  
                     raise    
         def confirm_metadata(self):
+            # Check if a folder is selected         
+            if self.selected_folder is None:
+                messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
+                return
+
             try:
                 self.check_entries()
             except Exception as e: 
-                messagebox.showerror("XNAT-PIC", "Error in checking fields" + str(e))  
+                messagebox.showerror("XNAT-PIC", "Error in checking fields: " + str(e))  
                 raise
 
             try:
                 self.save_entries(self.selected_folder, multiple=0)
             except Exception as e: 
-                messagebox.showerror("XNAT-PIC", "Error in saving" + str(e))  
+                messagebox.showerror("XNAT-PIC", "Error in saving: " + str(e))  
                 raise
 
         # #################### Confirm multiple metadata ####################
         def confirm_multiple_metadata(self, master):
 
             disable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.browse_btn])
-
-            #tab_names = [self.notebook.notebookTab.tab(i, state='disable') for i in self.notebook.notebookTab.tabs()]  
-                     
-            try:
-                self.selected_folder
-                pass
-            except Exception as e:
-                enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.my_listbox, self.browse_btn])
-                messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
-                raise
             
+            # Disable entry
+            for i in range(len(self.entries_variable_ID)): 
+                self.entries_variable_ID[i]['state'] = tk.DISABLED
+                self.entries_value_ID[i]['state'] = tk.DISABLED 
+
+            for i in range(len(self.entries_variable_CV)):  
+                self.entries_variable_CV[i]['state'] = tk.DISABLED
+                self.entries_value_CV[i]['state'] = tk.DISABLED    
+
+            # Clear all 
+            self.selected_group.set('')
+            self.selected_timepoint.set('')
+            self.selected_timepoint1.set('')
+            self.time_entry.delete(0, tk.END)
+            self.selected_dose.set('')
+            self.cal.entry['state'] = tk.DISABLED
+            self.cal.button['state'] = tk.DISABLED
+
+
+            # Check if a folder is selected         
+            if self.selected_folder is None:
+                messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
+                enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.browse_btn])
+                return
+
             messagebox.showinfo("Project Data","Select the ID fields you want to copy.")
             #self.my_listbox.selection_set(self.selected_index)
 
@@ -1693,41 +1717,28 @@ class xnat_pic_gui():
             #tab_names = [self.notebook.tab(i, state='normal') for i in self.notebook.tabs()]
             self.my_listbox.selection_set(self.selected_index) 
             for i in range(len(self.listbox_notebook)):
-                self.listbox_notebook[i]['selectmode'] = MULTIPLE   
-                        
-            # Obtain the subject-experiment list to be modified
-            self.list_tab_listbox = []
-            def select_listbox(event):
-                self.seltext = [self.tab_name + '#' + self.my_listbox.get(index) for index in self.my_listbox.curselection()]
-                self.list_tab_listbox.append(self.seltext)
-                print(self.seltext)
-                print(self.list_tab_listbox)
-                
-            self.my_listbox.bind("<<ListboxSelect>>", select_listbox)
-
-            def select_tab_listbox(event):
-                try: 
-                    self.notebook.notebookContent.select(self.notebook.notebookTab.index("current"))
-                except Exception as e:
-                    pass
-                index_tab = self.notebook.notebookTab.index("current")
-                self.tab_name = self.notebook.notebookTab.tab(index_tab, "text")
-                # Update the listbox
-                self.my_listbox = self.listbox_notebook[int(index_tab)]
-                a = 3
-                #self.list_tab_listbox.append(self.seltext)
-
-                
-            self.notebook.notebookTab.bind("<<NotebookTabChanged>>", select_tab_listbox)  
+                self.listbox_notebook[i]['selectmode'] = MULTIPLE
+                self.listbox_notebook[i]['exportselection']=False   
 
             # The user presses confirm 
             def items_selected2():
                 self.no_btn.destroy()
                 self.ok_btn.destroy()
-                self.list_tab_listbox.append(self.seltext)
+                #self.list_tab_listbox.append(self.seltext)
                 result = messagebox.askquestion("Multiple Confirm", "Are you sure you want to save data for the selected folders?\n", icon='warning')
-                
+                seltext = []
+                self.list_tab_listbox = []
+
                 if result == 'yes':
+                    # Read all the selected item
+                    for i in self.notebook.notebookTab.tabs():
+                        index_tab = self.notebook.notebookTab.index(i)
+                        tab_name = self.notebook.notebookTab.tab(i, "text")
+                        seltext = [tab_name + '#' + self.listbox_notebook[int(index_tab)].get(index) 
+                                        for index in self.listbox_notebook[int(index_tab)].curselection()]
+                        if seltext:
+                            self.list_tab_listbox.append(seltext)
+
                     try:
                         self.check_entries()
                     except Exception as e: 
@@ -1754,7 +1765,8 @@ class xnat_pic_gui():
                 enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.browse_btn])
                 self.my_listbox.selection_clear(0, 'end')
                 for i in range(len(self.listbox_notebook)):
-                    self.listbox_notebook[i]['selectmode'] = SINGLE   
+                    self.listbox_notebook[i]['selectmode'] = SINGLE 
+                    self.listbox_notebook[i]['exportselection']= TRUE  
                 self.load_info(master)
 
             self.ok_btn = ttk.Button(self.frame_metadata, image = master.logo_accept, command = items_selected2, cursor=CURSOR_HAND)
@@ -1767,8 +1779,9 @@ class xnat_pic_gui():
                 # Clear the focus and the select mode of the listbox is single
                 messagebox.showinfo("Metadata","The information was not saved for the selected folders!")
                 enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.browse_btn])
-                self.my_listbox.selection_clear(0, 'end')
-                self.my_listbox['selectmode'] = SINGLE
+                for i in range(len(self.listbox_notebook)):
+                    self.listbox_notebook[i]['selectmode'] = SINGLE 
+                    self.listbox_notebook[i]['exportselection']= TRUE 
             self.no_btn = ttk.Button(self.frame_metadata, image = master.logo_delete, command = items_cancel, cursor=CURSOR_HAND)
             self.no_btn.place(relx = 0.24, rely = 0.48, anchor = NE)
                 
@@ -1800,14 +1813,21 @@ class xnat_pic_gui():
             def confirm_ID(next_row):
                 pos = list(self.results_dict[self.selected_folder].keys()).index('C_V')
                 items = list(self.results_dict[self.selected_folder].items())
-                items.insert(pos, (self.entries_variable_ID[next_row].get(), self.entries_value_ID[next_row].get()))
-                self.results_dict[self.selected_folder] = dict(items)
-                state = self.entries_value_ID[1]['state']
-                self.entries_variable_ID[next_row]['state'] = tk.DISABLED
-                self.entries_value_ID[next_row]['state'] = state
-                enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.browse_btn])
-                btn_confirm_ID.destroy()
-                btn_reject_ID.destroy()
+                if self.entries_variable_ID[next_row].get():
+                    if self.entries_value_ID[next_row].get():
+                        value_ID = self.entries_value_ID[next_row].get()
+                    else:
+                        value_ID = ''
+                    items.insert(pos, (self.entries_variable_ID[next_row].get(), value_ID))
+                    self.results_dict[self.selected_folder] = dict(items)
+                    state = self.entries_value_ID[1]['state']
+                    self.entries_variable_ID[next_row]['state'] = tk.DISABLED
+                    self.entries_value_ID[next_row]['state'] = state
+                    enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.browse_btn])
+                    btn_confirm_ID.destroy()
+                    btn_reject_ID.destroy()
+                else:
+                    messagebox.showerror("XNAT-PIC", "Insert ID")
                  
             btn_confirm_ID = ttk.Button(self.frame_ID, image = master.logo_accept, 
                                             command=lambda: confirm_ID(next_row), cursor=CURSOR_HAND)
@@ -1852,7 +1872,11 @@ class xnat_pic_gui():
             # Confirm
             def confirm_CV(next_row):
                 if self.entries_variable_CV[next_row].get():
-                    tmp_CV = {self.entries_variable_CV[next_row].get() : self.entries_value_CV[next_row].get()}
+                    if self.entries_value_CV[next_row].get():
+                        value_CV = self.entries_value_CV[next_row].get()
+                    else:
+                        value_CV = ''
+                    tmp_CV = {self.entries_variable_CV[next_row].get() : value_CV}
                     self.results_dict[self.selected_folder].update(tmp_CV) 
                     state = self.entries_value_ID[1]['state']    
                     self.entries_variable_CV[next_row]['state'] = tk.DISABLED
@@ -1913,8 +1937,9 @@ class xnat_pic_gui():
             result = messagebox.askquestion("Exit", "Do you want to exit?", icon='warning')
             if result == 'yes':
                 destroy_widgets([self.frame_metadata, self.menu])
-
                 xnat_pic_gui.choose_your_action(master)
+
+                
     
     class XNATUploader():
 
