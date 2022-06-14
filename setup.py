@@ -38,15 +38,17 @@ shortcut_table = [
 msi_data = {"Shortcut": shortcut_table}
 
 bdist_msi_options = {
-'upgrade_code': '{48B079F4-B598-438D-A62A-8A233A3F8901}',
-'add_to_path': False,
-'initial_target_dir': r'[ProgramFilesFolder]\%s\%s' % (company_name, product_name),
-'data': msi_data
+    'upgrade_code': '{48B079F4-B598-438D-A62A-8A233A3F8901}',
+    'add_to_path': True,
+    'initial_target_dir': r'[ProgramFilesFolder]\%s\%s' % (company_name, product_name),
+    'data': msi_data
 }
 
 build_exe_options = {
-'includes': [r'images']
+    "packages": ['ttkbootstrap'],
+    'include_files': [("layout_colors.json", ""), ("investigators.json", ""), ("images", ""), ("tcl", "./lib/tkinter")]
 }
+
 
 # GUI applications require a different base on Windows
 base = None
