@@ -38,7 +38,7 @@ from access_manager import AccessManager
 import itertools
 
 PATH_IMAGE = "images\\"
-#PATH_IMAGE = "lib\\images\\"
+# PATH_IMAGE = "lib\\images\\"
 PERCENTAGE_SCREEN = 1  # Defines the size of the canvas. If equal to 1 (100%) ,it takes the whole screen
 WHITE = "#ffffff"
 LIGHT_GREY = "#F1FFFE"
@@ -62,11 +62,12 @@ QUESTION_HAND = "question_arrow"
 BORDERWIDTH = 3
 
 load_dotenv()
-def check_credentials():
+def check_credentials(root):
     dir = os.getcwd().replace('\\', '/')
     head, tail = os.path.split(dir)
     if os.path.isfile(head + '/.env') == False or os.environ.get('secretKey') == '':
-        CredentialManager()
+        credential_manager = CredentialManager(root)
+        root.wait_window(credential_manager.popup)
 
 class SplashScreen(tk.Toplevel):
     def __init__(self, master, timeout=1000):
@@ -2858,9 +2859,12 @@ class xnat_pic_gui():
 if __name__ == "__main__":
     
     freeze_support()
-    check_credentials()
+    
 
     root = tk.Tk()
+    # root.iconify()
+    check_credentials(root)
+    
     app = xnat_pic_gui(root)
     # s = SplashScreen(root, timeout=5000)
     root.mainloop()
