@@ -1812,14 +1812,21 @@ class xnat_pic_gui():
             def confirm_ID(next_row):
                 pos = list(self.results_dict[self.selected_folder].keys()).index('C_V')
                 items = list(self.results_dict[self.selected_folder].items())
-                items.insert(pos, (self.entries_variable_ID[next_row].get(), self.entries_value_ID[next_row].get()))
-                self.results_dict[self.selected_folder] = dict(items)
-                state = self.entries_value_ID[1]['state']
-                self.entries_variable_ID[next_row]['state'] = tk.DISABLED
-                self.entries_value_ID[next_row]['state'] = state
-                enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.browse_btn])
-                btn_confirm_ID.destroy()
-                btn_reject_ID.destroy()
+                if self.entries_variable_ID[next_row].get():
+                    if self.entries_value_ID[next_row].get():
+                        value_ID = self.entries_value_ID[next_row].get()
+                    else:
+                        value_ID = ''
+                    items.insert(pos, (self.entries_variable_ID[next_row].get(), value_ID))
+                    self.results_dict[self.selected_folder] = dict(items)
+                    state = self.entries_value_ID[1]['state']
+                    self.entries_variable_ID[next_row]['state'] = tk.DISABLED
+                    self.entries_value_ID[next_row]['state'] = state
+                    enable_buttons([self.modify_btn, self.confirm_btn, self.multiple_confirm_btn, self.browse_btn])
+                    btn_confirm_ID.destroy()
+                    btn_reject_ID.destroy()
+                else:
+                    messagebox.showerror("XNAT-PIC", "Insert ID")
                  
             btn_confirm_ID = ttk.Button(self.frame_ID, image = master.logo_accept, 
                                             command=lambda: confirm_ID(next_row), cursor=CURSOR_HAND)
