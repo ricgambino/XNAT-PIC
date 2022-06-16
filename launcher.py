@@ -1030,9 +1030,9 @@ class xnat_pic_gui():
         
             # Start with a popup to get credentials
             self.popup_metadata = ttk.Toplevel()
-            self.popup_metadata.title("XNAT-PIC")
-            #self.popup_metadata.geometry("+%d+%d" % (master.root.winfo_screenwidth()/2, master.root.winfo_screenheight()/2))
-            master.root.eval(f'tk::PlaceWindow {str(self.popup_metadata)} center')
+            self.popup_metadata.title("XNAT-PIC ~ Project Data")
+            self.popup_metadata.geometry("+%d+%d" % (master.root.winfo_screenwidth()/2, master.root.winfo_screenheight()/2))
+            #master.root.eval(f'tk::PlaceWindow {str(self.popup_metadata)} center')
             self.popup_metadata.resizable(False, False)
             self.popup_metadata.grab_set()
 
@@ -1069,6 +1069,10 @@ class xnat_pic_gui():
             # If the popup is closed, it re-enables the buttons
             def enable():
                 self.popup_metadata.destroy()
+                try:
+                    enable_buttons([self.browse_btn, self.modify_btn, self.confirm_btn, self.multiple_confirm_btn]) 
+                except:
+                    pass
                 enable_buttons([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn])
                 
             self.popup_metadata.button_cancel = ttk.Button(self.popup_metadata, image = master.logo_delete,  state = tk.DISABLED,
@@ -1133,9 +1137,13 @@ class xnat_pic_gui():
             self.frame_title = ttk.Label(self.frame_metadata, text="XNAT-PIC Project Data", style='Title.TLabel')
             self.frame_title.place(relx = 0.5, rely = 0.05, anchor = CENTER)
             #################### Menu ###########################
+            def browse_fun():
+                disable_buttons([self.browse_btn, self.modify_btn, self.confirm_btn, self.multiple_confirm_btn]) 
+                self.__init__(master)
+
             self.menu = ttk.Menu(master.root)
             file_menu = ttk.Menu(self.menu, tearoff=0)
-            file_menu.add_command(label="Select Folder", command = lambda: self.select_folder(master))
+            file_menu.add_command(label="Select Folder", command = browse_fun)
             file_menu.add_separator()
             file_menu.add_command(label="Add ID", command = lambda: self.add_ID(master))
             file_menu.add_command(label="Add Custom Variables", command = lambda: self.add_custom_variable(master))
@@ -1315,10 +1323,6 @@ class xnat_pic_gui():
             self.dose_menu.grid(row=2, column=2, padx = 5, pady = 5, sticky=W)
           
             #################### Browse the metadata ####################
-            def browse_fun():
-                disable_buttons([self.browse_btn, self.modify_btn, self.confirm_btn, self.multiple_confirm_btn]) 
-                self.__init__(master)
-
             self.browse_btn = ttk.Button(self.frame_metadata, text="Browse", command = browse_fun, cursor=CURSOR_HAND, takefocus = 0, style = "Secondary.TButton")
             self.browse_btn.place(relx=0.20, rely=0.55, anchor=tk.CENTER, relwidth=0.15)
 
