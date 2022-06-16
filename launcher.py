@@ -1031,7 +1031,7 @@ class xnat_pic_gui():
             # Start with a popup to get credentials
             self.popup_metadata = ttk.Toplevel()
             self.popup_metadata.title("XNAT-PIC ~ Project Data")
-            self.popup_metadata.geometry("+%d+%d" % (master.root.winfo_screenwidth()/2, master.root.winfo_screenheight()/2))
+            self.popup_metadata.geometry("+%d+%d" % (master.root.winfo_screenwidth()/2, master.root.winfo_screenheight()/4))
             #master.root.eval(f'tk::PlaceWindow {str(self.popup_metadata)} center')
             self.popup_metadata.resizable(False, False)
             self.popup_metadata.grab_set()
