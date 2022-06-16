@@ -1,6 +1,8 @@
 import sys
 from cx_Freeze import setup, Executable
 
+# python setup.py bdist_msi
+
 company_name = 'Unito'
 product_name = 'XNAT-PIC'
 TARGETDIR=r'[ProgramFilesFolder]\%s\%s' % (company_name, product_name)

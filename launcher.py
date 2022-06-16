@@ -67,7 +67,7 @@ def check_credentials(root):
     
     dir = os.getcwd().replace('\\', '/')
     head, tail = os.path.split(dir)
-    load_dotenv(head + '/.env')
+    load_dotenv()
     if os.path.isfile(head + '/.env') == False or os.environ.get('secretKey') == '':
         credential_manager = CredentialManager(root)
         root.wait_window(credential_manager.popup)
