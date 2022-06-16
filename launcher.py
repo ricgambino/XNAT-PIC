@@ -62,10 +62,12 @@ CURSOR_HAND = "hand2"
 QUESTION_HAND = "question_arrow"
 BORDERWIDTH = 3
 
-load_dotenv()
+
 def check_credentials(root):
+    
     dir = os.getcwd().replace('\\', '/')
     head, tail = os.path.split(dir)
+    load_dotenv(head + '/.env')
     if os.path.isfile(head + '/.env') == False or os.environ.get('secretKey') == '':
         credential_manager = CredentialManager(root)
         root.wait_window(credential_manager.popup)
