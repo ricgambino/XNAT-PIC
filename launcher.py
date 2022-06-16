@@ -37,6 +37,7 @@ from ScrollableNotebook import *
 from create_objects import ProjectManager, SubjectManager, ExperimentManager
 from access_manager import AccessManager
 import itertools
+from Treeview import Treeview
 
 PATH_IMAGE = "images\\"
 # PATH_IMAGE = "lib\\images\\"
@@ -439,11 +440,16 @@ class xnat_pic_gui():
             def display_folder_tree(*args):
 
                 if self.folder_to_convert.get() != '' and self.convertion_state.get() == 0:
+
+                    dict_items = {}
                     
-                    if self.tree_to_convert.exists(0):
-                        self.tree_to_convert.delete(*self.tree_to_convert.get_children())
-                    main_folder = self.tree_to_convert.insert("", "end", iid=0, text=self.folder_to_convert.get().split('/')[-1], 
-                                                            values=("", "", "Folder"), open=True)
+                    if self.tree_to_convert.tree.exists(0):
+                        self.tree_to_convert.tree.delete(*self.tree_to_convert.tree.get_children())
+                    j = 0
+                    dict_items[str(j)] = {}
+                    dict_items[str(j)]['parent'] = ""
+                    dict_items[str(j)]['text'] = self.folder_to_convert.get().split('/')[-1]
+
                     subdir = os.listdir(self.folder_to_convert.get())
                     subdirectories = [x for x in subdir if x.endswith('.ini') == False]
                     total_weight = 0
@@ -461,7 +467,10 @@ class xnat_pic_gui():
                             file_weight = round(os.path.getsize(os.path.join(self.folder_to_convert.get(), sub))/1024, 2)
                             total_weight += round(file_weight/1024, 2)
                             # Add the item like a file
-                            self.tree_to_convert.insert(main_folder, "end", iid=j, text=sub, values=(edit_time, str(file_weight) + "KB", "File"))
+                            dict_items[str(j)] = {}
+                            dict_items[str(j)]['parent'] = '0'
+                            dict_items[str(j)]['text'] = sub
+                            dict_items[str(j)]['values'] = (edit_time, str(file_weight) + "KB", "File")
                             # Update the j counter
                             j += 1
 
@@ -469,9 +478,11 @@ class xnat_pic_gui():
                             current_weight = 0
                             last_edit_time_lev2 = ''
                             branch_idx = j
-                            level2_folder = self.tree_to_convert.insert(main_folder, "end", iid=branch_idx, text=sub, values=("", "", "Folder"), open=False)
+                            dict_items[str(j)] = {}
+                            dict_items[str(j)]['parent'] = '0'
+                            dict_items[str(j)]['text'] = sub
                             j += 1
-                            # Scansiona le directory interne per ottenere il tree CHIUSO
+                            # Scan directories to get subfolders
                             sub_level2 = os.listdir(os.path.join(self.folder_to_convert.get(), sub))
                             subdirectories2 = [x for x in sub_level2 if x.endswith('.ini') == False]
                             for sub2 in subdirectories2:
@@ -487,7 +498,10 @@ class xnat_pic_gui():
                                     file_weight = round(os.path.getsize(os.path.join(self.folder_to_convert.get(), sub, sub2))/1024, 2)
                                     current_weight += round(file_weight/1024, 2)
                                     # Add the item like a file
-                                    self.tree_to_convert.insert(level2_folder, "end", iid=j, text=sub2, values=(edit_time, str(file_weight) + "KB", "File"))
+                                    dict_items[str(j)] = {}
+                                    dict_items[str(j)]['parent'] = '1'
+                                    dict_items[str(j)]['text'] = sub2
+                                    dict_items[str(j)]['values'] = (edit_time, str(file_weight) + "KB", "File")
                                     # Update the j counter
                                     j += 1
 
@@ -502,16 +516,19 @@ class xnat_pic_gui():
 
                                     folder_size = round(get_dir_size(os.path.join(self.folder_to_convert.get(), sub, sub2))/1024/1024, 2)
                                     current_weight += folder_size
-                                    self.tree_to_convert.insert(level2_folder, "end", iid=j, text=sub2, values=(edit_time, str(folder_size) + 'MB', "Folder"))
+                                    dict_items[str(j)] = {}
+                                    dict_items[str(j)]['parent'] = '1'
+                                    dict_items[str(j)]['text'] = sub2
+                                    dict_items[str(j)]['values'] = (edit_time, str(folder_size) + 'MB', "Folder")
                                     j += 1
                                 
                             total_weight += current_weight
-                            self.tree_to_convert.set(branch_idx, column="#1", value=last_edit_time_lev2)
-                            self.tree_to_convert.set(branch_idx, column="#2", value=str(round(current_weight, 2)) + "MB")
+                            dict_items[str(branch_idx)]['values'] = (last_edit_time_lev2, str(round(current_weight, 2)) + "MB", "Folder")
 
                     # Update the fields of the parent object
-                    self.tree_to_convert.set(0, column="#1", value=last_edit_time)
-                    self.tree_to_convert.set(0, column="#2", value=str(round(total_weight/1024, 2)) + "GB")
+                    dict_items['0']['values'] = (last_edit_time, str(round(total_weight/1024, 2)) + "GB", "Folder")
+
+                    self.tree_to_convert.set(dict_items)
             
             # Initialize the folder_to_upload path
             self.select_folder_button = ttk.Button(self.tree_labelframe, text="Select folder", style="TButton",
@@ -520,30 +537,32 @@ class xnat_pic_gui():
 
             # Clear Tree buttons
             def clear_tree(*args):
-                if self.tree_to_convert.exists(0):
-                    self.tree_to_convert.delete(*self.tree_to_convert.get_children())
-                if self.tree_converted.exists(0):
-                    self.tree_converted.delete(*self.tree_converted.get_children())
+                if self.tree_to_convert.tree.exists(0):
+                    self.tree_to_convert.tree.delete(*self.tree_to_convert.tree.get_children())
+                if self.tree_converted.tree.exists(0):
+                    self.tree_converted.tree.delete(*self.tree_converted.tree.get_children())
 
             self.clear_tree_btn = ttk.Button(self.tree_labelframe, image=master.logo_clear,
                                     cursor=CURSOR_HAND, command=clear_tree, style="WithoutBack.TButton")
-            self.clear_tree_btn.grid(row=1, column=1, sticky=tk.NW, padx=5, pady=5)
+            self.clear_tree_btn.grid(row=1, column=1, sticky=tk.W, padx=5, pady=5)
+
+            # Search entry to find objects
+            def scankey(*args):
+                if self.search_var.get() != '':
+                    self.tree_to_convert.find_items(self.search_var.get())
+                else:
+                    self.tree_to_convert.remove_selection()
+
+            self.search_var = tk.StringVar()
+            self.search_entry = ttk.Entry(self.tree_labelframe, cursor=CURSOR_HAND, textvariable=self.search_var)
+            self.search_entry.grid(row=1, column=0, sticky=tk.NE, padx=5, pady=5)
+            self.search_var.trace('w', scankey)
 
             # Treeview widget pre_convertion
-            self.tree_to_convert = ttk.Treeview(self.tree_labelframe, selectmode='none')
-            self.tree_to_convert.grid(row=2, column=0, padx=5, pady=10, sticky=tk.NW)
-            self.tree_scrollbar = ttk.Scrollbar(self.tree_labelframe, orient='vertical', command=self.tree_to_convert.yview)
-            self.tree_scrollbar.grid(row=2, column=1, padx=0, pady=10, sticky=tk.NS)
-            self.tree_to_convert.configure(yscrollcommand=self.tree_scrollbar.set)
-            self.tree_to_convert["columns"] = ("#1", "#2", "#3")
-            self.tree_to_convert.heading("#0", text="Selected folder", anchor=tk.NW)
-            self.tree_to_convert.heading("#1", text="Last Update", anchor=tk.NW)
-            self.tree_to_convert.heading("#2", text="Size", anchor=tk.NW)
-            self.tree_to_convert.heading("#3", text="Type", anchor=tk.NW)
-            self.tree_to_convert.column("#0", stretch=tk.YES, width=150)
-            self.tree_to_convert.column("#1", stretch=tk.YES, width=150)
-            self.tree_to_convert.column("#2", stretch=tk.YES, width=100)
-            self.tree_to_convert.column("#3", stretch=tk.YES, width=100)
+            columns = [("#0", "Selected folder"), ("#1", "Last Update"), ("#2", "Size"), ("#3", "Type")]
+            self.tree_to_convert = Treeview(self.tree_labelframe, columns)
+            self.tree_to_convert.tree.grid(row=2, column=0, padx=5, pady=5, sticky=tk.NW)
+            self.tree_to_convert.scrollbar.grid(row=2, column=1, padx=5, pady=5, sticky=tk.NS)
 
             def tree_thread(*args):
                 progressbar_tree = ProgressBar(master.root, "XNAT-PIC Converter")
@@ -560,13 +579,17 @@ class xnat_pic_gui():
             def display_converted_folder_tree(*args):
 
                 if self.converted_folder.get() != '' and self.convertion_state.get() == 1:
+                    dict_items = {}
                     progressbar_tree = ProgressBar(master.root, "XNAT-PIC Converter")
                     progressbar_tree.start_indeterminate_bar()
-                    if self.tree_converted.exists(0):
-                        self.tree_converted.delete(*self.tree_converted.get_children())
+                    if self.tree_converted.tree.exists(0):
+                        self.tree_converted.tree.delete(*self.tree_converted.tree.get_children())
                     head, tail = os.path.split(self.converted_folder.get())
-                    main_folder = self.tree_converted.insert("", "end", iid=0, text=tail, 
-                                                            values=("", "", "Folder"), open=True)
+                    j = 0
+                    dict_items[str(j)] = {}
+                    dict_items[str(j)]['parent'] = ""
+                    dict_items[str(j)]['text'] = self.converted_folder.get().split('/')[-1]
+
                     subdir = os.listdir(self.converted_folder.get())
                     subdirectories = [x for x in subdir if x.endswith('.ini') == False]
                     total_weight = 0
@@ -584,7 +607,10 @@ class xnat_pic_gui():
                             file_weight = round(os.path.getsize(os.path.join(self.converted_folder.get(), sub))/1024, 2)
                             total_weight += round(file_weight/1024, 2)
                             # Add the item like a file
-                            self.tree_converted.insert(main_folder, "end", iid=j, text=sub, values=(edit_time, str(file_weight) + "KB", "File"))
+                            dict_items[str(j)] = {}
+                            dict_items[str(j)]['parent'] = '0'
+                            dict_items[str(j)]['text'] = sub
+                            dict_items[str(j)]['values'] = (edit_time, str(file_weight) + "KB", "File")
                             # Update the j counter
                             j += 1
 
@@ -592,7 +618,9 @@ class xnat_pic_gui():
                             current_weight = 0
                             last_edit_time_lev2 = ''
                             branch_idx = j
-                            level2_folder = self.tree_converted.insert(main_folder, "end", iid=branch_idx, text=sub, values=("", "", "Folder"), open=False)
+                            dict_items[str(j)] = {}
+                            dict_items[str(j)]['parent'] = '0'
+                            dict_items[str(j)]['text'] = sub
                             j += 1
                             # Scansiona le directory interne per ottenere il tree CHIUSO
                             sub_level2 = os.listdir(os.path.join(self.converted_folder.get(), sub))
@@ -610,7 +638,10 @@ class xnat_pic_gui():
                                     file_weight = round(os.path.getsize(os.path.join(self.converted_folder.get(), sub, sub2))/1024, 2)
                                     current_weight += round(file_weight/1024, 2)
                                     # Add the item like a file
-                                    self.tree_converted.insert(level2_folder, "end", iid=j, text=sub2, values=(edit_time, str(file_weight) + "KB", "File"))
+                                    dict_items[str(j)] = {}
+                                    dict_items[str(j)]['parent'] = '1'
+                                    dict_items[str(j)]['text'] = sub2
+                                    dict_items[str(j)]['values'] = (edit_time, str(file_weight) + "KB", "File")
                                     # Update the j counter
                                     j += 1
 
@@ -625,16 +656,19 @@ class xnat_pic_gui():
 
                                     folder_size = round(get_dir_size(os.path.join(self.converted_folder.get(), sub, sub2))/1024/1024, 2)
                                     current_weight += folder_size
-                                    self.tree_converted.insert(level2_folder, "end", iid=j, text=sub2, values=(edit_time, str(folder_size) + 'MB', "Folder"))
+                                    dict_items[str(j)] = {}
+                                    dict_items[str(j)]['parent'] = '1'
+                                    dict_items[str(j)]['text'] = sub2
+                                    dict_items[str(j)]['values'] = (edit_time, str(folder_size) + 'MB', "Folder")
                                     j += 1
                                 
                             total_weight += current_weight
-                            self.tree_converted.set(branch_idx, column="#1", value=last_edit_time_lev2)
-                            self.tree_converted.set(branch_idx, column="#2", value=str(round(current_weight, 2)) + "MB")
+                            dict_items[str(branch_idx)]['values'] = (last_edit_time_lev2, str(round(current_weight, 2)) + "MB", "Folder")
 
                     # Update the fields of the parent object
-                    self.tree_converted.set(0, column="#1", value=last_edit_time)
-                    self.tree_converted.set(0, column="#2", value=str(round(total_weight/1024, 2)) + "GB")
+                    dict_items['0']['values'] = (last_edit_time, str(round(total_weight/1024, 2)) + "GB", "Folder")
+
+                    self.tree_converted.set(dict_items)
 
                     progressbar_tree.stop_progress_bar()
                     enable_buttons([self.prj_conv_btn, self.sbj_conv_btn, self.exp_conv_btn])
@@ -643,25 +677,29 @@ class xnat_pic_gui():
             self.tree_labelframe_post = ttk.LabelFrame(master.frame, text="Converted Folder")
             self.tree_labelframe_post.place(relx=0.95, rely=0.25, anchor=tk.NE)
 
+            self.fake_btn = ttk.Button(self.tree_labelframe_post, text="", style="TButton",
+                                                    state='disabled', width=20)
+            self.fake_btn.grid(row=0, column=0, padx=10, pady=10, sticky=tk.W)
+            # Search entry to find objects
+            def scankey(*args):
+                if self.search_var.get() != '':
+                    self.tree_converted.find_items(self.search_var.get())
+                else:
+                    self.tree_converted.remove_selection()
+
+            self.search_var = tk.StringVar()
+            self.search_entry = ttk.Entry(self.tree_labelframe_post, cursor=CURSOR_HAND, textvariable=self.search_var)
+            self.search_entry.grid(row=1, column=0, sticky=tk.NE, padx=5, pady=5)
+            self.search_var.trace('w', scankey)
+
             self.clear_tree_btn_post = ttk.Button(self.tree_labelframe_post, image=master.logo_clear,
                                     cursor=CURSOR_HAND, command=clear_tree, style="WithoutBack.TButton")
-            self.clear_tree_btn_post.grid(row=0, column=1, sticky=tk.NW, padx=5, pady=5)
+            self.clear_tree_btn_post.grid(row=1, column=1, sticky=tk.W, padx=5, pady=5)
 
             # Treeview widget post_convertion
-            self.tree_converted = ttk.Treeview(self.tree_labelframe_post, selectmode='none')
-            self.tree_converted.grid(row=1, column=0, padx=5, pady=5, sticky=tk.NW)
-            self.tree_scrollbarconverted = ttk.Scrollbar(self.tree_labelframe_post, orient='vertical', command=self.tree_converted.yview)
-            self.tree_scrollbarconverted.grid(row=1, column=1, padx=5, pady=5, sticky=tk.NS)
-            self.tree_converted.configure(yscrollcommand=self.tree_scrollbarconverted.set)
-            self.tree_converted["columns"] = ("#1", "#2", "#3")
-            self.tree_converted.heading("#0", text="Selected folder", anchor=tk.NW)
-            self.tree_converted.heading("#1", text="Last Update", anchor=tk.NW)
-            self.tree_converted.heading("#2", text="Size", anchor=tk.NW)
-            self.tree_converted.heading("#3", text="Type", anchor=tk.NW)
-            self.tree_converted.column("#0", stretch=tk.YES, width=150)
-            self.tree_converted.column("#1", stretch=tk.YES, width=150)
-            self.tree_converted.column("#2", stretch=tk.YES, width=100)
-            self.tree_converted.column("#3", stretch=tk.YES, width=100)
+            self.tree_converted = Treeview(self.tree_labelframe_post, columns)
+            self.tree_converted.tree.grid(row=2, column=0, padx=5, pady=5, sticky=tk.NW)
+            self.tree_converted.scrollbar.grid(row=2, column=1, padx=5, pady=5, sticky=tk.NS)
 
             self.convertion_state.trace('w', tree_thread)
 
@@ -690,18 +728,20 @@ class xnat_pic_gui():
             def next_btn_handler(*args):
                 if self.conv_flag.get() == 0:
                     self.converted_folder.set(self.folder_to_convert.get() + '_dcm')
+                    disable_buttons([self.exit_btn, self.next_btn])
                     self.prj_convertion(master)
      
                 elif self.conv_flag.get() == 1:
                     conv_folder = str(os.path.join('/'.join(self.folder_to_convert.get().split('/')[:-1])  + '_dcm', 
                                                 self.folder_to_convert.get().split('/')[-1]))
                     self.converted_folder.set(conv_folder.replace("\\",'/'))
-                    print(self.converted_folder.get())
+                    disable_buttons([self.exit_btn, self.next_btn])
                     self.sbj_convertion(master)
     
                 elif self.conv_flag.get() == 2:
                     self.converted_folder.set(os.path.join('/'.join(self.folder_to_convert.get().split('/')[:-2])  + '_dcm', 
                                                 '/'.join(self.folder_to_convert.get().split('/')[-2:])))
+                    disable_buttons([self.exit_btn, self.next_btn])
                     self.exp_convertion(master)
                        
                 else:
@@ -769,6 +809,7 @@ class xnat_pic_gui():
                 for j, dir in enumerate(list_sub, 0):
                     # Show the current step on the progress bar
                     progressbar.show_step(j + 1, len(list_sub))
+                    
                     # Define the current subject path 
                     current_folder = os.path.join(self.folder_to_convert.get(), dir).replace('\\', '/')
 
@@ -814,7 +855,7 @@ class xnat_pic_gui():
                                 pool.map(self.converter.convert, list_scans)
 
                     # Update the current step of the progress bar
-                    progressbar.update_progressbar(j, len(list_sub))
+                    progressbar.update_progressbar(j + 1, len(list_sub))
                     # Set progress bar caption 'done' to the current folder
                     progressbar.set_caption('Converting ' + str(current_folder.split('/')[-1]) + ' ...done!')
             
@@ -828,7 +869,7 @@ class xnat_pic_gui():
             tp = threading.Thread(target=prj_converter, args=())
             tp.start()
             while tp.is_alive() == True:
-                progressbar.update_bar(0.00001)
+                progressbar.update_bar(0)
             else:
                 progressbar.stop_progress_bar()
             
@@ -839,7 +880,8 @@ class xnat_pic_gui():
                                 "Exceptions:\n\n" +
                                 str([str(x) for x in self.conversion_err])[1:-1])
 
-            self.convertion_state.set(1)      
+            self.convertion_state.set(1)
+            enable_buttons([self.exit_btn])   
                 
         def sbj_convertion(self, master):
 
@@ -923,7 +965,8 @@ class xnat_pic_gui():
             print('Total elapsed time: ' + str(end_time - start_time) + ' s')
 
             messagebox.showinfo("XNAT-PIC Converter","Done! Your subject is successfully converted.")
-            self.convertion_state.set(1)  
+            self.convertion_state.set(1)
+            enable_buttons([self.exit_btn]) 
 
         def exp_convertion(self, master):
 
@@ -975,6 +1018,7 @@ class xnat_pic_gui():
 
             messagebox.showinfo("XNAT-PIC Converter","Done! Your experiment is successfully converted.")
             self.convertion_state.set(1)
+            enable_buttons([self.exit_btn])
                  
     # Fill in information
     class metadata():

@@ -82,10 +82,17 @@
 <!-- ABOUT THE PROJECT -->
 # About
 
-[![XNAT-PIC][xnat-pic-screenshot]](http://cim-xnat.unito.it/app/template/Login.vm)
+<!-- ![XNAT-PIC](images/XNAT-PIC.png) -->
+<p align="center">
+  <img src="images/XNAT-PIC.png" width="800" height="350" title="XNAT-PIC"
+       >
+</p>
+
 **XNAT for Preclinical Imaging Centers (XNAT-PIC)** has been developed to expand XNAT's basic functionalities to preclinical imaging and consists of:
-1. **MRI2DICOM**, a Magnetic Resonance Imaging (MRI) converter from ParaVision® (Bruker, Inc. Billerica, MA) file format to DICOM standard 
-2. **XNAT-PIC Uploader** to import multimodal DICOM image datasets to XNAT
+
+1. **Custom Variables**, an interface to manage project components according to their features such as group, timepoint, dose, ...
+1. **MRI2DICOM**, a Magnetic Resonance Imaging (MRI) converter from ParaVision® (Bruker, Inc. Billerica, MA) file format to DICOM standard.
+2. **XNAT-PIC Uploader** to import multimodal DICOM image datasets to XNAT.
 3. **XNAT-PIC Pipelines** for analysing single or multiple subjects within the same project in XNAT.
 
 
@@ -122,7 +129,7 @@ If you need help with the XNAT installation, please get in touch with us! <br>
 
 ## Installation
 
-### MRI2DICOM and XNAT-PIC Uploader
+### From the source code
 
 1. Clone the repo
    ```sh
@@ -211,8 +218,8 @@ In particular, for the *Mask_Average* XNAT-PIC Pipeline you need to install Pyth
    ```sh
    pip install dcmrtstruct2nii==1.0.19
    ```
-
-
+   
+## Stand-alone Software
 
 <!-- USAGE EXAMPLES -->
 ## Usage
@@ -272,7 +279,7 @@ This table shows a **list of the XNAT-PIC Pipelines** currently available:
 <!-- ROADMAP -->
 ## Roadmap
 
-Please visit [open issues](https://github.com/szullino/XNAT-PIC/issues) for a list of proposed features (and known issues).
+Please visit [open issues](https://github.com/ricgambino/XNAT-PIC/issues) for a list of proposed features (and known issues).
 
 
 <!-- CONTRIBUTING -->
@@ -288,7 +295,6 @@ If you wish to help us in improving the XNAT-PIC project, please follow these in
 5. Open a Pull Request
 
 Thank you!
-
 
 <!-- LICENSE -->
 ## License
