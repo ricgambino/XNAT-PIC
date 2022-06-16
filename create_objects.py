@@ -63,16 +63,33 @@ class ProjectManager():
             else:
                 self.project_id_entry.configure(state='disabled')
         self.project_id_modify.trace('w', enable_entry)
-        
+
+        # ACCESSIBILITY
+        self.access_labelframe = ttk.Labelframe(self.project_labelframe, text="", style="Hidden.TLabelframe")
+        self.access_labelframe.grid(row=2, column=1, padx=5, pady=5, sticky=tk.EW)
+        self.access_label = ttk.Label(self.project_labelframe, text="Accessibility")
+        self.access_label.grid(row=2, column=0, padx=5, pady=5, sticky=tk.W)
+        self.access_status = tk.StringVar()
+        self.private_access_btn = ttk.Radiobutton(self.access_labelframe, text="Private", variable=self.access_status,
+                                                    value='private')
+        self.private_access_btn.pack(side='left', expand=True, padx=0, pady=5)
+        self.protected_access_btn = ttk.Radiobutton(self.access_labelframe, text="Protected", variable=self.access_status,
+                                                    value='protected')
+        self.protected_access_btn.pack(side='left', expand=True, padx=0, pady=5)
+        self.public_access_btn = ttk.Radiobutton(self.access_labelframe, text="Public", variable=self.access_status,
+                                                    value='public')
+        self.public_access_btn.pack(side='left', expand=True, padx=0, pady=5)
+        self.access_status.set('private')
+
         # DESCRIPTION
         self.project_description_label = ttk.Label(self.project_labelframe, text="Project Description")
-        self.project_description_label.grid(row=2, column=0, padx=5, pady=5, sticky=tk.NW)
+        self.project_description_label.grid(row=3, column=0, padx=5, pady=5, sticky=tk.NW)
         self.project_description = tk.StringVar()
         self.project_description_entry = ttk.Text(self.project_labelframe, width=50, height=8)
-        self.project_description_entry.grid(row=2, column=1, padx=5, pady=5, sticky=tk.W)
+        self.project_description_entry.grid(row=3, column=1, padx=5, pady=5, sticky=tk.W)
         self.project_description_scrollbar = ttk.Scrollbar(self.project_labelframe, orient='vertical', 
                                                         command=self.project_description_entry.yview)
-        self.project_description_scrollbar.grid(row=2, column=2, padx=0, pady=5, sticky=tk.NS)
+        self.project_description_scrollbar.grid(row=3, column=2, padx=0, pady=5, sticky=tk.NS)
         self.project_description_entry.configure(yscrollcommand=self.project_description_scrollbar.set)
         
         # KEYWORDS
@@ -80,9 +97,9 @@ class ProjectManager():
         current_keyword = tk.StringVar()
         keyword_to_remove = tk.StringVar()
         self.project_keywords_label = ttk.Label(self.project_labelframe, text="Keywords")
-        self.project_keywords_label.grid(row=3, column=0, padx=5, pady=5, sticky=tk.W)
+        self.project_keywords_label.grid(row=4, column=0, padx=5, pady=5, sticky=tk.W)
         self.project_keyword_labelframe = ttk.Labelframe(self.project_labelframe, style="Hidden.TLabelframe")
-        self.project_keyword_labelframe.grid(row=3, column=1, padx=5, pady=0, sticky=tk.NW, columnspan=3)
+        self.project_keyword_labelframe.grid(row=4, column=1, padx=5, pady=0, sticky=tk.NW, columnspan=3)
         self.project_keywords_entry = ttk.Entry(self.project_keyword_labelframe, width=50, textvariable=current_keyword)
         self.project_keywords_entry.pack(side='top', fill='x', anchor=tk.NW)
 
@@ -123,15 +140,15 @@ class ProjectManager():
             self.investigators = json.load(inv_file)
         self.investigator_list = [','.join([x['firstname'], x['lastname']]) for x in self.investigators]
         self.project_investigators_label = ttk.Label(self.project_labelframe, text="Investigators")
-        self.project_investigators_label.grid(row=5, column=0, padx=5, pady=5, sticky=tk.W)
+        self.project_investigators_label.grid(row=6, column=0, padx=5, pady=5, sticky=tk.W)
         self.project_investigators_entry = ttk.OptionMenu(self.project_labelframe, self.project_investigator, "--",
                                                              *self.investigator_list)
         self.project_investigators_entry.config(width=45, cursor=CURSOR_HAND)
-        self.project_investigators_entry.grid(row=5, column=1, padx=5, pady=5, sticky=tk.W)
+        self.project_investigators_entry.grid(row=6, column=1, padx=5, pady=5, sticky=tk.W)
 
         self.project_investigator_newicon = ttk.Button(self.project_labelframe, image=self.add_icon, style="WithoutBack.TButton", 
                                                         cursor=CURSOR_HAND, command=self.add_new_investigator)
-        self.project_investigator_newicon.grid(row=5, column=3, pady=5, sticky=tk.W)
+        self.project_investigator_newicon.grid(row=6, column=3, pady=5, sticky=tk.W)
 
         # Callbacks
         def title_callback(*args):
@@ -231,6 +248,7 @@ class ProjectManager():
                             name=self.project_id.get(), parent=self.session)
             project.description = self.project_description_entry.get("1.0", END)
             project.keywords = ",".join(self.project_keywords_list)
+            self.session.put(os.path.join(project.uri, 'accessibility', self.access_status.get()).replace('\\', '/'))
             # Missing a method to upload multiple information about pi and investigators
             for inv in self.investigators:
                 if inv['firstname'] == self.project_investigator.get().split(',')[0] and inv['lastname'] == self.project_investigator.get().split(',')[1]:
