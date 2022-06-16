@@ -983,91 +983,103 @@ class xnat_pic_gui():
 
             # Disable all buttons
             disable_buttons([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn])
+        
+            # Start with a popup to get credentials
+            self.popup_metadata = ttk.Toplevel()
+            self.popup_metadata.title("XNAT-PIC")
+            #self.popup_metadata.geometry("+%d+%d" % (master.root.winfo_screenwidth()/2, master.root.winfo_screenheight()/2))
+            master.root.eval(f'tk::PlaceWindow {str(self.popup_metadata)} center')
+            self.popup_metadata.resizable(False, False)
+            self.popup_metadata.grab_set()
+
+            # Browse: select if it is a project, subject or experiment
+            self.popup_metadata_frame = ttk.LabelFrame(self.popup_metadata, text="Select directory", style="Popup.TLabelframe")
+            self.popup_metadata_frame.grid(row=1, column=0, padx=10, pady=5, sticky=tk.E+tk.W+tk.N+tk.S, columnspan=2)
+
+            # Project     
+            self.popup_metadata.dir = tk.StringVar()
+            self.popup_metadata.project = ttk.Radiobutton(self.popup_metadata_frame, text="Project", variable = self.popup_metadata.dir, 
+                                                           value = "Project", style="Popup.TRadiobutton")   
+            self.popup_metadata.project.grid(row=1, column=0, padx=10, pady=10, sticky=tk.W)
+            # Subject      
+            self.popup_metadata.subject = ttk.Radiobutton(self.popup_metadata_frame, text="Subject", variable = self.popup_metadata.dir, 
+                                                           value = "Subject", style="Popup.TRadiobutton")   
+            self.popup_metadata.subject.grid(row=1, column=0, padx=10, pady=10, sticky=tk.N)
+            # Experiment      
+            self.popup_metadata.experiment = ttk.Radiobutton(self.popup_metadata_frame, text="Experiment", variable = self.popup_metadata.dir, 
+                                                           value = "Experiment", style="Popup.TRadiobutton")   
+            self.popup_metadata.experiment.grid(row=1, column=0, padx=10, pady=10, sticky=tk.E)
             
-            # Choose your directory
-            messagebox.showinfo("Metadata", "Select project directory!")
-            self.information_folder = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC: Select project directory!")
+            self.popup_metadata.dir.set("Project") 
             
+            self.popup_metadata.entry_browse = ttk.Entry(self.popup_metadata_frame, state='disabled', takefocus = 0, width= 80)
+            self.popup_metadata.entry_browse.grid(row=2, column=0, padx=10, pady=5, sticky=tk.N)
+
+            self.popup_metadata.button_browse = ttk.Button(self.popup_metadata_frame, text='Browse', command = lambda: self.select_folder(master), style="MainPopup.TButton")
+            self.popup_metadata.button_browse.grid(row=3, column=0, padx=10, pady=5, sticky=tk.N)
+
+            self.popup_metadata.button_ok = ttk.Button(self.popup_metadata, image = master.logo_accept, state = tk.DISABLED,
+                                                command = lambda: self.layout_metadata(master) , cursor=CURSOR_HAND)
+            self.popup_metadata.button_ok.grid(row=2, column=1, padx=10, pady=5, sticky=NW)
+
+            # If the popup is closed, it re-enables the buttons
+            def enable():
+                self.popup_metadata.destroy()
+                enable_buttons([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn])
+                
+            self.popup_metadata.button_cancel = ttk.Button(self.popup_metadata, image = master.logo_delete,  state = tk.DISABLED,
+                                                command = enable, cursor=CURSOR_HAND)
+            self.popup_metadata.button_cancel.grid(row=2, column=0, padx=10, pady=5, sticky=NE)
+
+            self.popup_metadata.protocol('WM_DELETE_WINDOW', enable)       
+        
+        def select_folder(self, master): 
+            
+            disable_buttons([self.popup_metadata.button_browse, self.popup_metadata.button_cancel, self.popup_metadata.button_ok])
+
+            # Choose your directory (button and menu)
+            self.information_folder = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC: Select " + str(self.popup_metadata.dir.get()) + " directory!")
+            
+            # Write the path in the entry
+            self.popup_metadata.entry_browse['state'] = tk.NORMAL
+            self.popup_metadata.entry_browse.delete(0, tk.END)
+            self.popup_metadata.entry_browse.insert(0, str(self.information_folder))
+            self.popup_metadata.entry_browse['state'] = tk.DISABLED
+            
+            enable_buttons([self.popup_metadata.button_browse, self.popup_metadata.button_cancel, self.popup_metadata.button_ok])
             # If there is no folder selected, re-enable the buttons and return
             if not self.information_folder:
+                self.popup_metadata.destroy()
                 enable_buttons([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn])
                 return
-            master.frame_label.set("Metadata")         
-            self.layout_metadata(master) 
-
-        def select_folder(self, master): 
-            # Choose your directory (button and menu)
-            self.information_folder = filedialog.askdirectory(parent=master.root, initialdir=os.path.expanduser("~"), title="XNAT-PIC: Select project directory!")
             
-            # If there is no folder selected, re-enable the buttons and return
-            if not self.information_folder:
-                return
-
-            destroy_widgets([self.frame_metadata])  
-            self.layout_metadata(master)  
+            master.frame_label.set("Project Data")         
 
         def layout_metadata(self, master): 
-            self.project_name = (self.information_folder.rsplit("/",1)[1])
-            self.tmp_dict = {}
-            self.results_dict = {}
-             
-            # Get a list of workbook paths 
-            self.path_list = []
-            self.todos = {}
-            todos_tmp = {}
-            exp = []
-            # Scan all files contained in the folder that the user has provided
-            for item in os.listdir(self.information_folder):
-                path = str(self.information_folder + "\\" + item).replace('\\', '/')
-                # Check if the content of the project is a folder and therefore a patient or a file not to be considered
-                if os.path.isdir(path):
-                    # Architecture of the project: project-subject-experiment
-                    for item2 in os.listdir(path):
-                        path1 = str(path + "\\" + item2).replace('\\', '/')
-                        if os.path.isdir(path1):
-                            self.path_list.append(path1)
-                            exp.append(str(item2))
-                    todos_tmp = {item: exp}
-                    exp = []
-                self.todos.update(todos_tmp)
-                todos_tmp = {}
-            
-            # Scan all files contained in the folder that the user has provided
-            for path in self.path_list:
-                exp = str(path).rsplit("/",3)[3]
-                sub = str(path).rsplit("/",3)[2]
-                prj = str(path).rsplit("/",3)[1]
-                name = exp + "_" + "Custom_Variables.txt"
-                keys = sub + "#" + exp
-                # Check if the txt file is in folder of the patient
-                # If the file exists, read le info
-                if os.path.exists((path + "\\" + name).replace('\\', '/')):
-                    subject_data = read_table((path + "\\" + name).replace('\\', '/'))
-                    tmp_dict = {keys: subject_data}
-                else:
-                # If the txt file do not exist, load default value
-                # Project: name of main folder
-                # Subject: name of internal folders
-                # Acq date: from visu_pars file for BRUKER, from DICOM from DICOM file
-                #
-                # Load the acq. date for BRUKER file
-                    try:
-                        tmp_acq_date = read_acq_date(path)
-                    except Exception as e:
-                        tmp_acq_date = ''
-                    
-                    subject_data = {"Project": prj,
-                                "Subject": sub,
-                                "Experiment": exp,
-                                "Acquisition_date": tmp_acq_date,
-                                "C_V": "",
-                                "Group": "",
-                                "Timepoint":"",
-                                "Dose":""
-                                }
-                    tmp_dict = {keys: subject_data}
 
-                self.results_dict.update(tmp_dict)
+            self.popup_metadata.destroy()
+
+            try:
+                self.frame_metadata.destroy()
+            except:
+                pass
+            
+            # Read the data
+            if str(self.popup_metadata.dir.get()) == "Project":
+                self.project_name = (self.information_folder.rsplit("/",1)[1])
+                params = metadata_params(self.information_folder, value = 0)
+                self.selection = 'Selected Project: ' + self.project_name
+            elif str(self.popup_metadata.dir.get()) == "Subject":
+                self.subject_name = (self.information_folder.rsplit("/",1)[1])
+                params = metadata_params(self.information_folder, value = 1)
+                self.selection = 'Selected Subject: ' + self.subject_name
+            elif str(self.popup_metadata.dir.get()) == "Experiment":
+                self.experiment_name = (self.information_folder.rsplit("/",1)[1])
+                params = metadata_params(self.information_folder, value = 2)
+                self.selection = 'Selected Experiment: ' + self.experiment_name
+            self.results_dict = params[0]
+            self.todos = params[1]
+            self.path_list = params[2]
 
             #################### Update the frame ####################
             destroy_widgets([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn, master.xnat_pic_logo_label])
@@ -1094,8 +1106,8 @@ class xnat_pic_gui():
 
             #################### Folder list #################### 
             ### Selected folder label
-            self.name_selected_project = ttk.Label(self.frame_metadata, text='Selected Project: ' + self.project_name, style = "UnderTitle.TLabel")
-            self.name_selected_project.place(relx = 0.5, rely = 0.13, anchor = CENTER)
+            self.name_selected = ttk.Label(self.frame_metadata, text=self.selection, style = "UnderTitle.TLabel")
+            self.name_selected.place(relx = 0.5, rely = 0.13, anchor = CENTER)
             # ### Tab Notebook
             self.notebook = ScrollableNotebook(self.frame_metadata, wheelscroll=True, tabmenu=True)
             self.notebook.place(relx = 0.2, rely = 0.35, relheight=0.25, relwidth=0.25, anchor = tk.CENTER)
@@ -1259,7 +1271,11 @@ class xnat_pic_gui():
             self.dose_menu.grid(row=2, column=2, padx = 5, pady = 5, sticky=W)
           
             #################### Browse the metadata ####################
-            self.browse_btn = ttk.Button(self.frame_metadata, text="Browse", command = lambda: self.select_folder(master), cursor=CURSOR_HAND, takefocus = 0, style = "Secondary.TButton")
+            def browse_fun():
+                disable_buttons([self.browse_btn, self.modify_btn, self.confirm_btn, self.multiple_confirm_btn]) 
+                self.__init__(master)
+
+            self.browse_btn = ttk.Button(self.frame_metadata, text="Browse", command = browse_fun, cursor=CURSOR_HAND, takefocus = 0, style = "Secondary.TButton")
             self.browse_btn.place(relx=0.20, rely=0.55, anchor=tk.CENTER, relwidth=0.15)
 
             #################### Modify the metadata ####################
@@ -1503,34 +1519,28 @@ class xnat_pic_gui():
         def check_entries(self):
 
             if not self.entries_value_ID[1].get():
-                messagebox.showerror("XNAT-PIC", "Insert the name of the project")
-                raise 
+                raise Exception ("Insert the name of the project!")
 
             if not self.entries_value_ID[2].get():
-                messagebox.showerror("XNAT-PIC", "Insert the name of the subject")
-                raise
+                raise Exception ("Insert the name of the subject!")
 
             if self.entries_value_ID[4].get():
                 try:
                     datetime.datetime.strptime(self.entries_value_ID[4].get(), '%Y-%m-%d')
                 except Exception as e:
-                    messagebox.showerror("XNAT-PIC", "Incorrect data format in acquisition date, should be YYYY-MM-DD")
-                    raise
+                    raise Exception ("Incorrect data format in acquisition date, should be YYYY-MM-DD")
 
             if self.entries_value_CV[1].get() and '-' in  self.entries_value_CV[1].get(): 
                 if not str(self.entries_value_CV[1].get()).split('-')[0] in self.OPTIONS:
-                    messagebox.showerror("XNAT-PIC", "Select pre/post in timepoint")
-                    raise
+                    raise Exception ("Select pre/post in timepoint!")
                 if not str(self.entries_value_CV[1].get()).split('-')[2] in self.OPTIONS1:
-                    messagebox.showerror("XNAT-PIC", "Select seconds, minutes, hours, days, weeks, months, years in timepoint")
-                    raise
+                    raise Exception ("Select seconds, minutes, hours, days, weeks, months, years in timepoint")
 
                 input_num = str(self.entries_value_CV[1].get()).split('-')[1]
                 try:
                     float(input_num)
                 except Exception as e: 
-                    messagebox.showerror("XNAT-PIC", "Insert a number in timepoint between pre/post and seconds, minutes, hours..")  
-                    raise
+                    raise Exception ("Insert a number in timepoint between pre/post and seconds, minutes, hours..")  
 
             if  self.entries_value_CV[2].get():
                 try:
@@ -1538,8 +1548,7 @@ class xnat_pic_gui():
                     dose_value = self.entries_value_CV[2].get().replace(' mg/kg',"")
                     float(dose_value)
                 except Exception as e: 
-                    messagebox.showerror("XNAT-PIC", "Insert a number in dose")  
-                    raise
+                    raise Exception ("Insert a number in dose")
 
         # Update the values and save the values in a txt file        
         def save_entries(self, my_key, multiple):
