@@ -36,8 +36,10 @@ from multiprocessing import freeze_support
 from ScrollableNotebook import *
 from create_objects import ProjectManager, SubjectManager, ExperimentManager
 from access_manager import AccessManager
+from project_manager import ProjectManager
 import itertools
 from Treeview import Treeview
+import tkfilebrowser
 
 PATH_IMAGE = "images\\"
 # PATH_IMAGE = "lib\\images\\"
@@ -153,10 +155,14 @@ class xnat_pic_gui():
             self.root.screenheight=self.root.winfo_screenheight()
 
         # Toolbar Menu
+        def new_prj():
+            project_manager = ProjectManager(self.root)
+            self.root.wait_window(project_manager.popup_prj)
+
         self.toolbar_menu = ttk.Menu(self.root)
         fileMenu = ttk.Menu(self.toolbar_menu, tearoff=0)
         new_menu = ttk.Menu(fileMenu, tearoff=0)
-        new_menu.add_command(label="Project")
+        new_menu.add_command(label="Project", command=new_prj)
         new_menu.add_command(label="Subject")
         new_menu.add_command(label="Experiment")
 
@@ -1028,10 +1034,10 @@ class xnat_pic_gui():
             # Disable all buttons
             disable_buttons([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn])
         
-            # Start with a popup to get credentials
+            # Popup
             self.popup_metadata = ttk.Toplevel()
             self.popup_metadata.title("XNAT-PIC ~ Project Data")
-            self.popup_metadata.geometry("+%d+%d" % (master.root.winfo_screenwidth()/2, master.root.winfo_screenheight()/4))
+            self.popup_metadata.geometry("+%d+%d" % (0.5, 0.5))
             #master.root.eval(f'tk::PlaceWindow {str(self.popup_metadata)} center')
             self.popup_metadata.resizable(False, False)
             self.popup_metadata.grab_set()
@@ -1174,7 +1180,8 @@ class xnat_pic_gui():
                 self.listbox_notebook.append(tk.Listbox(frame_notebook[-1], selectbackground = AZURE, relief=tk.FLAT, font=SMALL_FONT_3, selectmode=SINGLE, takefocus = 0))
                 self.listbox_notebook[-1].insert(tk.END, *self.todos[key])
                 self.listbox_notebook[-1].pack(side=LEFT, fill = BOTH, expand = 1, padx = 5, pady=5)
-
+                
+                # Yscrollbar for listbox
                 self.my_yscrollbar = ttk.Scrollbar(self.listbox_notebook[-1], orient="vertical")
                 self.listbox_notebook[-1].config(yscrollcommand = self.my_yscrollbar.set)
                 self.my_yscrollbar.config(command = self.listbox_notebook[-1].yview)
