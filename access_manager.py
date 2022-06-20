@@ -12,6 +12,7 @@ import ttkbootstrap as ttk
 import json, os, xnat
 import pyAesCrypt, webbrowser
 from accessory_functions import *
+from dotenv import load_dotenv
 
 PATH_IMAGE = "images\\"
 CURSOR_HAND = "hand2"
@@ -24,14 +25,17 @@ class AccessManager():
 
     def __init__(self, root):
 
+        load_dotenv()
+
         # Load icons
         self.open_eye = open_image(PATH_IMAGE + "open_eye.png", 15, 15)
         self.closed_eye = open_image(PATH_IMAGE + "closed_eye.png", 15, 15)
 
         self.connected = None
+        self.root = root
 
         # Start with a popup to get credentials
-        self.popup = ttk.Toplevel()
+        self.popup = ttk.Toplevel(self.root)
         self.popup.title("XNAT-PIC ~ Login")
         self.popup.geometry("+%d+%d" % (600, 400))
         self.popup.resizable(False, False)
@@ -87,16 +91,18 @@ class AccessManager():
                 self.popup.entry_psw.config(show='*')
                 self.popup.toggle_btn.config(image=self.open_eye)
             else:
-                ans = tkinter.simpledialog.askstring("PIN", "Enter PIN: ", show='*', parent=self.popup.cred_frame)
-                if ans:
-                    if ans == os.environ.get('secretPIN'):
-                        self.popup.entry_psw.config(show='')
-                        self.popup.toggle_btn.config(image=self.closed_eye)
-                    else:
-                        messagebox.showerror("XNAT-PIC Uploader", "Error! The PIN code does not correspond")
-                        self.popup.deiconify()
-                else:
-                    pass
+                self.popup.entry_psw.config(show='')
+                self.popup.toggle_btn.config(image=self.closed_eye)
+                # ans = tkinter.simpledialog.askstring("PIN", "Enter PIN: ", show='*', parent=self.popup.cred_frame)
+                # if ans:
+                    # if ans == os.environ.get('secretPIN'):
+                    #     self.popup.entry_psw.config(show='')
+                    #     self.popup.toggle_btn.config(image=self.closed_eye)
+                    # else:
+                    #     messagebox.showerror("XNAT-PIC Uploader", "Error! The PIN code does not correspond")
+                    #     self.popup.deiconify()
+                # else:
+                #     pass
         
         self.popup.entry_psw = ttk.Entry(self.popup.cred_frame, show="*", width=25)
         self.popup.entry_psw.var = tk.StringVar()
@@ -170,11 +176,12 @@ class AccessManager():
     def get_list_of_users(self):
             # Get the list of registered and stored users
             try:
-                home = os.path.expanduser("~")
+                dir = os.getcwd().replace('\\', '/')
+                head, tail = os.path.split(dir)
                 # Define the encrypted file path
-                encrypted_file = os.path.join(home, "Documents", ".XNAT_login_file.txt.aes")
+                encrypted_file = os.path.join(head, ".XNAT_login_file.aes")
                 # Define the decrypted file path
-                decrypted_file = os.path.join(home, "Documents", ".XNAT_login_file00000.txt")
+                decrypted_file = os.path.join(head, ".XNAT_login_file00000.txt")
                 # Decrypt the encrypted file
                 pyAesCrypt.decryptFile(encrypted_file, decrypted_file, os.environ.get('secretKey'), 
                                         int(os.environ.get('bufferSize1')) * int(os.environ.get('bufferSize2')))
@@ -221,11 +228,12 @@ class AccessManager():
     def load_saved_credentials(self):
 
         try:
-            home = os.path.expanduser("~")
+            dir = os.getcwd().replace('\\', '/')
+            head, tail = os.path.split(dir)
             # Define the encrypted file path
-            encrypted_file = os.path.join(home, "Documents", ".XNAT_login_file.txt.aes")
+            encrypted_file = os.path.join(head, ".XNAT_login_file.aes")
             # Define the decrypted file path
-            decrypted_file = os.path.join(home, "Documents", ".XNAT_login_file00000.txt")
+            decrypted_file = os.path.join(head, ".XNAT_login_file00000.txt")
             # Decrypt the file
             pyAesCrypt.decryptFile(encrypted_file, decrypted_file, os.environ.get('secretKey'), 
                                     int(os.environ.get('bufferSize1')) * int(os.environ.get('bufferSize2')))
@@ -250,9 +258,9 @@ class AccessManager():
     def login(self):
 
         # Retireve the complete address
-        self.popup.entry_address_complete = self.popup.http.get() + self.popup.entry_address.var.get()
+        self.popup.entry_address_complete = str(self.popup.http.get() + self.popup.entry_address.var.get())
 
-        home = os.path.expanduser("~")
+        # home = os.path.expanduser("~")
         try:
             # Start a new xnat session
             self.session = xnat.connect(
@@ -268,8 +276,10 @@ class AccessManager():
             else:
                 # Try to remove the existent encrypted file
                 try:
+                    dir = os.getcwd().replace('\\', '/')
+                    head, tail = os.path.split(dir)
                     os.remove(
-                        os.path.join(home, "Documents", ".XNAT_login_file.txt.aes")
+                        os.path.join(head, ".XNAT_login_file.aes")
                     )
                 except FileNotFoundError:
                     pass
@@ -282,14 +292,15 @@ class AccessManager():
 
     def save_credentials(self):
 
-        home = os.path.expanduser("~")
+        dir = os.getcwd().replace('\\', '/')
+        head, tail = os.path.split(dir)
 
-        if os.path.exists(os.path.join(home, "Documents")):
+        if os.path.exists(head):
             
             # Define the path of the encrypted file
-            encrypted_file = os.path.join(home, "Documents", ".XNAT_login_file.txt.aes")
+            encrypted_file = os.path.join(head, ".XNAT_login_file.aes")
             # Define the path of the decrypted file
-            decrypted_file = os.path.join(home, "Documents", ".XNAT_login_file00000.txt")
+            decrypted_file = os.path.join(head, ".XNAT_login_file00000.txt")
 
             if os.path.isfile(encrypted_file):
 
@@ -320,15 +331,15 @@ class AccessManager():
                             "HTTP": self.popup.http.get()
                     }
 
-            # Define the path of the file
-            file = os.path.join(home, "Documents", ".XNAT_login_file.txt")
+            # # Define the path of the file
+            # file = os.path.join(home, "Documents", ".XNAT_login_file.txt")
             # Open the file to write in the data to be stored
-            with open(file, 'w+') as login_file:
+            with open(decrypted_file, 'w+') as login_file:
                 json.dump(data, login_file)
             # Clear data variable
             data = {}
             # Encrypt the file
-            pyAesCrypt.encryptFile(file, encrypted_file, os.environ.get('secretKey'), 
+            pyAesCrypt.encryptFile(decrypted_file, encrypted_file, os.environ.get('secretKey'), 
                                     int(os.environ.get('bufferSize1')) * int(os.environ.get('bufferSize2')))
             # Remove the file
-            os.remove(file)
+            os.remove(decrypted_file)

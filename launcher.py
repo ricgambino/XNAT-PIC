@@ -65,10 +65,12 @@ CURSOR_HAND = "hand2"
 QUESTION_HAND = "question_arrow"
 BORDERWIDTH = 3
 
-load_dotenv()
+
 def check_credentials(root):
+    
     dir = os.getcwd().replace('\\', '/')
     head, tail = os.path.split(dir)
+    load_dotenv()
     if os.path.isfile(head + '/.env') == False or os.environ.get('secretKey') == '':
         credential_manager = CredentialManager(root)
         root.wait_window(credential_manager.popup)
@@ -2106,15 +2108,20 @@ class xnat_pic_gui():
             def folder_selected_handler(*args):
                 if self.folder_to_upload.get() != '':
 
+                    dict_items = {}
+
                     # Check for pre-existent tree
-                    if self.tree.exists(0):
+                    if self.tree.tree.exists(0):
                         # # Check for the name of the previous tree
                         # if self.tree.item(0)['text'] != self.folder_to_upload.get().split('/')[-1]:
                         # If the folder name is changed, then delete the previous tree
-                        self.tree.delete(*self.tree.get_children())
+                        self.tree.tree.delete(*self.tree.tree.get_children())
 
                     # Define the main folder into the Treeview object
-                    main_folder = self.tree.insert("", "end", iid=0, text=self.folder_to_upload.get().split('/')[-1], values=("", "", "Folder"), open=True)
+                    j = 0
+                    dict_items[str(j)] = {}
+                    dict_items[str(j)]['parent'] = ""
+                    dict_items[str(j)]['text'] = self.folder_to_upload.get().split('/')[-1]
                     # Scan the folder to get its tree
                     subdir = os.listdir(self.folder_to_upload.get())
                     # Check for OS configuration files and remove them
@@ -2134,7 +2141,11 @@ class xnat_pic_gui():
                             file_weight = round(os.path.getsize(os.path.join(self.folder_to_upload.get(), sub))/1024, 2)
                             total_weight += round(file_weight/1024, 2)
                             # Add the item like a file
-                            self.tree.insert(main_folder, "end", iid=j, text=sub, values=(edit_time, str(file_weight) + "KB", "File"))
+                            # Add the item like a file
+                            dict_items[str(j)] = {}
+                            dict_items[str(j)]['parent'] = '0'
+                            dict_items[str(j)]['text'] = sub
+                            dict_items[str(j)]['values'] = (edit_time, str(file_weight) + "KB", "File")
                             # Update the j counter
                             j += 1
 
@@ -2142,7 +2153,9 @@ class xnat_pic_gui():
                             current_weight = 0
                             last_edit_time_lev2 = ''
                             branch_idx = j
-                            level2_folder = self.tree.insert(main_folder, "end", iid=branch_idx, text=sub, values=("", "", "Folder"), open=False)
+                            dict_items[str(j)] = {}
+                            dict_items[str(j)]['parent'] = '0'
+                            dict_items[str(j)]['text'] = sub
                             j += 1
                             # Scansiona le directory interne per ottenere il tree CHIUSO
                             sub_level2 = os.listdir(os.path.join(self.folder_to_upload.get(), sub))
@@ -2160,7 +2173,10 @@ class xnat_pic_gui():
                                     file_weight = round(os.path.getsize(os.path.join(self.folder_to_upload.get(), sub, sub2))/1024, 2)
                                     current_weight += round(file_weight/1024, 2)
                                     # Add the item like a file
-                                    self.tree.insert(level2_folder, "end", iid=j, text=sub2, values=(edit_time, str(file_weight) + "KB", "File"))
+                                    dict_items[str(j)] = {}
+                                    dict_items[str(j)]['parent'] = '1'
+                                    dict_items[str(j)]['text'] = sub2
+                                    dict_items[str(j)]['values'] = (edit_time, str(file_weight) + "KB", "File")
                                     # Update the j counter
                                     j += 1
 
@@ -2175,17 +2191,20 @@ class xnat_pic_gui():
 
                                     folder_size = round(get_dir_size(os.path.join(self.folder_to_upload.get(), sub, sub2))/1024/1024, 2)
                                     current_weight += folder_size
-                                    self.tree.insert(level2_folder, "end", iid=j, text=sub2, values=(edit_time, str(folder_size) + 'MB', "Folder"))
+                                    dict_items[str(j)] = {}
+                                    dict_items[str(j)]['parent'] = '1'
+                                    dict_items[str(j)]['text'] = sub2
+                                    dict_items[str(j)]['values'] = (edit_time, str(folder_size) + 'MB', "Folder")
                                     j += 1
                                 
                             total_weight += current_weight
-                            self.tree.set(branch_idx, column="#1", value=last_edit_time_lev2)
-                            self.tree.set(branch_idx, column="#2", value=str(round(current_weight, 2)) + "MB")
+                            dict_items[str(branch_idx)]['values'] = (last_edit_time_lev2, str(round(current_weight, 2)) + "MB", "Folder")
 
                     # Update the fields of the parent object
-                    self.tree.set(0, column="#1", value=last_edit_time)
-                    self.tree.set(0, column="#2", value=str(round(total_weight/1024, 2)) + "GB")
+                    dict_items['0']['values'] = (last_edit_time, str(round(total_weight/1024, 2)) + "GB", "Folder")
 
+                    self.tree.set(dict_items)
+            
             # Initialize the folder_to_upload path
             self.folder_to_upload = tk.StringVar()
             self.select_folder_button = ttk.Button(self.folder_selection_label_frame, text="Select folder", style="TButton",
@@ -2194,38 +2213,37 @@ class xnat_pic_gui():
 
             # Treeview for folder visualization
             def get_selected_item(*args):
-                selected_item = self.tree.selection()[0]
+                selected_item = self.tree.tree.selection()[0]
                 
-                if self.folder_to_upload.get().split('/')[-1] == self.tree.item(selected_item, "text"):
+                if self.folder_to_upload.get().split('/')[-1] == self.tree.tree.item(selected_item, "text"):
                     self.selected_item_path.set(self.folder_to_upload.get())
                 else:
-                    parent_item = self.tree.parent(selected_item)
-                    if self.folder_to_upload.get().split('/')[-1] == self.tree.item(parent_item, "text"):
+                    parent_item = self.tree.tree.parent(selected_item)
+                    if self.folder_to_upload.get().split('/')[-1] == self.tree.tree.item(parent_item, "text"):
                         self.selected_item_path.set('/'.join([self.folder_to_upload.get(), 
-                                self.tree.item(selected_item, "text")]))
+                                self.tree.tree.item(selected_item, "text")]))
                     else:
-                        higher_parent_item = self.tree.parent(parent_item)
-                        if self.folder_to_upload.get().split('/')[-1] == self.tree.item(higher_parent_item, "text"):
-                            self.selected_item_path.set('/'.join([self.folder_to_upload.get(), self.tree.item(parent_item, "text"),
-                                self.tree.item(selected_item, "text")]))
+                        higher_parent_item = self.tree.tree.parent(parent_item)
+                        if self.folder_to_upload.get().split('/')[-1] == self.tree.tree.item(higher_parent_item, "text"):
+                            self.selected_item_path.set('/'.join([self.folder_to_upload.get(), self.tree.tree.item(parent_item, "text"),
+                                self.tree.tree.item(selected_item, "text")]))
 
-            self.tree = ttk.Treeview(self.folder_selection_label_frame, selectmode='browse')
-            self.tree.grid(row=2, column=0, padx=10, pady=10, sticky=tk.NW, columnspan=2)
-            self.tree.bind("<ButtonRelease-1>", get_selected_item)
-
-            # Scrollbar for Treeview widget
-            self.tree_scrollbar = ttk.Scrollbar(self.folder_selection_label_frame, orient='vertical', command=self.tree.yview)
-            self.tree_scrollbar.grid(row=2, column=2, padx=0, pady=10, ipadx=0, sticky=tk.NS)
-            self.tree.configure(yscrollcommand=self.tree_scrollbar.set)
-            self.tree["columns"] = ("#1", "#2", "#3")
-            self.tree.heading("#0", text="Selected folder", anchor=tk.NW)
-            self.tree.heading("#1", text="Last Update", anchor=tk.NW)
-            self.tree.heading("#2", text="Size", anchor=tk.NW)
-            self.tree.heading("#3", text="Type", anchor=tk.NW)
-            self.tree.column("#0", stretch=tk.YES, width=150)
-            self.tree.column("#1", stretch=tk.YES, width=150)
-            self.tree.column("#2", stretch=tk.YES, width=100)
-            self.tree.column("#3", stretch=tk.YES, width=100)
+            # Search Bar
+            def scankey(*args):
+                if self.search_var.get() != "":
+                    self.tree.find_items(self.search_var.get())
+                else:
+                    self.tree.remove_selection()
+            self.search_var = tk.StringVar()
+            self.search_entry = ttk.Entry(self.folder_selection_label_frame, cursor=CURSOR_HAND, textvariable=self.search_var)
+            self.search_entry.grid(row=1, column=1, sticky=tk.NE, padx=5, pady=5)
+            self.search_var.trace('w', scankey)
+            
+            columns = [("#0", "Selected folder"), ("#1", "Last Update"), ("#2", "Size"), ("#3", "Type")]
+            self.tree = Treeview(self.folder_selection_label_frame, columns)
+            self.tree.tree.grid(row=2, column=0, padx=5, pady=5, sticky=tk.NW, columnspan=2)
+            self.tree.scrollbar.grid(row=2, column=2, padx=5, pady=5, sticky=tk.NS)
+            self.tree.tree.bind("<ButtonRelease-1>", get_selected_item)
 
             def load_tree(*args):
                 progressbar_tree = ProgressBar(master.root, "XNAT-PIC Uploader")
@@ -2240,13 +2258,13 @@ class xnat_pic_gui():
 
             # Clear Tree buttons
             def clear_tree(*args):
-                if self.tree.exists(0):
-                    self.tree.delete(*self.tree.get_children())
+                if self.tree.tree.exists(0):
+                    self.tree.tree.delete(*self.tree.tree.get_children())
                     self.folder_to_upload.set("")
 
             self.clear_tree_btn = ttk.Button(self.folder_selection_label_frame, image=master.logo_clear,
                                     cursor=CURSOR_HAND, command=clear_tree, style="WithoutBack.TButton")
-            self.clear_tree_btn.grid(row=1, column=1, sticky=tk.NE, padx=5, pady=5)
+            self.clear_tree_btn.grid(row=1, column=2, sticky=tk.E, padx=5, pady=5)
 
             # Upload additional files
             self.add_file_flag = tk.IntVar()

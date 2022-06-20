@@ -98,7 +98,7 @@ class CredentialManager():
         self.popup.entry_secretPIN = ttk.Entry(self.popup, show="*", width=50, state='disabled')
         self.popup.entry_secretPIN.var = tk.StringVar()
         self.popup.entry_secretPIN["textvariable"] = self.popup.entry_secretPIN.var
-        self.popup.entry_secretPIN.grid(row=4, column=1, padx=5)
+        self.popup.entry_secretPIN.grid(row=4, column=1, padx=5, pady=5)
 
         # Re-insert secretPIN
         def check_PIN(*args):
