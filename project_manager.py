@@ -1,18 +1,16 @@
 import tkinter as tk
 from tkinter import filedialog
-import tkinter.simpledialog
 from tkinter import messagebox
 import ttkbootstrap as ttk
 from accessory_functions import *
-from ttkbootstrap.tableview import Tableview, TableRow
+from ttkbootstrap.tableview import Tableview
 from ttkbootstrap.constants import *
 from ttkbootstrap.tooltip import ToolTip
+import shutil
 
 PATH_IMAGE = "images\\"
 CURSOR_HAND = "hand2"
 SMALL_FONT_2 = ("Calibri", 10)
-SMALL_FONT_3 = ("Calibri", 12)
-AZURE = "#008ad7"
 
 class ProjectManager():
 
@@ -110,12 +108,22 @@ class ProjectManager():
         if len(save_list) == 0 :
             messagebox.showerror('XNAT-PIC','No records present in the list!')
             return
+        self.exp_path = filedialog.askdirectory(parent=self.popup_prj, initialdir=os.path.expanduser("~"), title="XNAT-PIC: Select the folder where to save the new project!")
         for row in save_list:
-            print(row.values)
-            print(row.values[0])
-            print(row.values[1])
-            print(row.values[2])
+            self.exp_path_new = (str(self.exp_path) + '//' + str(self.popup_prj.entry_prj.get()) + '//' + str(row.values[0]) + '//' + str(row.values[1])).replace('//', os.sep)
+            if not os.path.exists(self.exp_path_new):
+                try:
+                  shutil.copytree(row.values[2], self.exp_path_new)
+                except Exception as e:
+                    messagebox.showerror("XNAT-PIC", str(e))
+                    raise
+            else:
+                messagebox.showerror("XNAT-PIC", 'The path: ' + self.exp_path_new + ' already exists!')
+                return
+                
+        messagebox.showinfo("XNAT-PIC", 'The project was created!')
+        self.popup_prj.destroy()
 
-        self.exp_path_new = filedialog.askdirectory(parent=self.popup_prj, initialdir=os.path.expanduser("~"), title="XNAT-PIC: Select the folder where to save the new project!")
+
 
         
