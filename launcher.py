@@ -36,10 +36,10 @@ from multiprocessing import freeze_support
 from ScrollableNotebook import *
 from create_objects import ProjectManager, SubjectManager, ExperimentManager
 from access_manager import AccessManager
-from project_manager import ProjectManager
+from new_project_manager import NewProjectManager, NewSubjectManager
 import itertools
 from Treeview import Treeview
-import tkfilebrowser
+
 
 PATH_IMAGE = "images\\"
 # PATH_IMAGE = "lib\\images\\"
@@ -153,28 +153,6 @@ class xnat_pic_gui():
         else :
             self.root.screenwidth=self.root.winfo_screenwidth()
             self.root.screenheight=self.root.winfo_screenheight()
-
-        # Toolbar Menu
-        def new_prj():
-            project_manager = ProjectManager(self.root)
-            self.root.wait_window(project_manager.popup_prj)
-
-        self.toolbar_menu = ttk.Menu(self.root)
-        fileMenu = ttk.Menu(self.toolbar_menu, tearoff=0)
-        new_menu = ttk.Menu(fileMenu, tearoff=0)
-        new_menu.add_command(label="Project", command=new_prj)
-        new_menu.add_command(label="Subject")
-        new_menu.add_command(label="Experiment")
-
-        fileMenu.add_cascade(label="New...", menu=new_menu)
-        fileMenu.add_command(label="Login")
-        fileMenu.add_separator()
-        fileMenu.add_command(label="Exit", command=lambda: self.root.destroy())
-        
-        self.toolbar_menu.add_cascade(label="File", menu=fileMenu)
-        self.toolbar_menu.add_cascade(label="Edit")
-        self.toolbar_menu.add_cascade(label="Options")
-        self.root.config(menu=self.toolbar_menu)
 
         # Adjust size based on screen resolution
         self.width = self.root.screenwidth
@@ -300,7 +278,32 @@ class xnat_pic_gui():
             
     # Choose to upload files, fill in the info, convert files, process images
     def choose_your_action(self):
+        # Toolbar Menu
+        def new_prj():
+            project_manager = NewProjectManager(self.root)
+            self.root.wait_window(project_manager.popup_prj)
+        def new_sub():
+            subject_manager = NewSubjectManager(self.root)
+            self.root.wait_window(subject_manager.popup_sub)
+
+        self.toolbar_menu = ttk.Menu(self.root)
+        fileMenu = ttk.Menu(self.toolbar_menu, tearoff=0)
+        new_menu = ttk.Menu(fileMenu, tearoff=0)
+        new_menu.add_command(label="Project", command=new_prj)
+        new_menu.add_command(label="Subject", command=new_sub)
+        new_menu.add_command(label="Experiment")
+
+        fileMenu.add_cascade(label="New...", menu=new_menu)
+        fileMenu.add_command(label="Login")
+        fileMenu.add_separator()
+        fileMenu.add_command(label="Exit", command=lambda: self.root.destroy())
         
+        self.toolbar_menu.add_cascade(label="File", menu=fileMenu)
+        self.toolbar_menu.add_cascade(label="Edit")
+        self.toolbar_menu.add_cascade(label="Options")
+        self.root.config(menu=self.toolbar_menu)
+
+
         if self.xnat_pic_logo_label.winfo_exists() == 0:
             if self.style_label.get() == 'cerculean':
                 self.xnat_pic_logo_label = ttk.Label(self.frame, image=self.xnat_pic_logo_dark)
