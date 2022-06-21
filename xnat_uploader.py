@@ -12,7 +12,7 @@ import os
 from tkinter import messagebox
 import xnat, shutil, time
 from multiprocessing import Pool, cpu_count
-# from concurrent.futures import ThreadPoolExecutor, process
+from concurrent.futures import ThreadPoolExecutor, process
 
 class Dicom2XnatUploader():
 
@@ -99,15 +99,16 @@ class FileUploader():
     def __init__(self, session):
 
         self.session = session
-        # self.n_processes = int(cpu_count() - 1)
+        self.n_processes = int(cpu_count() -1)
 
     def upload(self, list_of_files, params):
 
         def upload_file(url, data):
             try:
                 self.session.put(path=url, files=data)
-                time.sleep(0.5)
+                print("Uploaded " + url.split('/')[-1])
             except Exception as e:
+                print("NOT Uploaded " + url.split('/')[-1])
                 messagebox.showerror("XNAT-PIC - Uploader", e)
 
         print('Loading additional files for experiment: ' + str(params['experiment_id']))
@@ -133,11 +134,10 @@ class FileUploader():
                 file_data.append({"1": img})
 
         try:
-            for j, url in enumerate(file_urls):
-                upload_file(url, file_data[j])
-            # with ThreadPoolExecutor(max_workers=1) as executor:
-            #     for j, url in enumerate(file_urls):
-            #         processes.append(executor.submit(upload_file, url, file_data[j]))
+            # for j, url in enumerate(file_urls):
+            #     upload_file(url, file_data[j])
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                executor.map(upload_file, file_urls, file_data)
         except Exception as e:
             print(str(e))
 
