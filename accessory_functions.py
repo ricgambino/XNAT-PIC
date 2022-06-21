@@ -128,3 +128,100 @@ def read_acq_date(path):
             match_date = datetime.datetime.strptime(dataset.AcquisitionDate, '%Y%m%d').strftime('%Y-%m-%d')
             return match_date
     return match_date
+
+def metadata_params(information_folder, value):
+    # If value = 0 --> project
+    # If value = 1 --> subject
+    # If value = 2 --> experiment
+    
+    if value == 0:
+        tmp_dict = {}
+        results_dict = {}
+            
+        # Get a list of workbook paths 
+        path_list = []
+        todos = {}
+        todos_tmp = {}
+        exp = []
+        # Scan all files contained in the folder that the user has provided
+        for item in os.listdir(information_folder):
+            path = str(information_folder + "\\" + item).replace('\\', '/')
+            # Check if the content of the project is a folder and therefore a patient or a file not to be considered
+            if os.path.isdir(path):
+                # Architecture of the project: project-subject-experiment
+                for item2 in os.listdir(path):
+                    path1 = str(path + "\\" + item2).replace('\\', '/')
+                    if os.path.isdir(path1):
+                        path_list.append(path1)
+                        exp.append(str(item2))
+                todos_tmp = {item: exp}
+                exp = []
+            todos.update(todos_tmp)
+            todos_tmp = {}
+    elif value == 1:
+        tmp_dict = {}
+        results_dict = {}
+        sub = str(information_folder).rsplit("/",1)[1]
+
+        # Get a list of workbook paths 
+        path_list = []
+        todos = {}
+        exp = []
+        # Scan all files contained in the folder that the user has provided
+        for item in os.listdir(information_folder):
+            path = str(information_folder + "\\" + item).replace('\\', '/')
+            # Check if the content of the subject is a folder and therefore a patient or a file not to be considered
+            if os.path.isdir(path):
+                # Architecture of the project: project-subject-experiment
+                if os.path.isdir(path):
+                    path_list.append(path)
+                    exp.append(str(item))
+        todos = {sub : exp}
+        
+    elif value == 2:
+        tmp_dict = {}
+        results_dict = {}
+
+        # Get a list of workbook paths 
+        path_list = [information_folder]
+        todos = {str(information_folder).rsplit("/",3)[2] : [str(information_folder).rsplit("/",3)[3]]}
+    
+    # Scan all files contained in the folder that the user has provided
+    for path in path_list:
+        exp = str(path).rsplit("/",3)[3]
+        sub = str(path).rsplit("/",3)[2]
+        prj = str(path).rsplit("/",3)[1]
+        name = exp + "_" + "Custom_Variables.txt"
+        keys = sub + "#" + exp
+        # Check if the txt file is in folder of the patient
+        # If the file exists, read le info
+        if os.path.exists((path + "\\" + name).replace('\\', '/')):
+            subject_data = read_table((path + "\\" + name).replace('\\', '/'))
+            tmp_dict = {keys: subject_data}
+        else:
+        # If the txt file do not exist, load default value
+        # Project: name of main folder
+        # Subject: name of internal folders
+        # Acq date: from visu_pars file for BRUKER, from DICOM from DICOM file
+        #
+        # Load the acq. date for BRUKER file
+            try:
+                tmp_acq_date = read_acq_date(path)
+            except Exception as e:
+                tmp_acq_date = ''
+            
+            subject_data = {"Project": prj,
+                        "Subject": sub,
+                        "Experiment": exp,
+                        "Acquisition_date": tmp_acq_date,
+                        "C_V": "",
+                        "Group": "",
+                        "Timepoint":"",
+                        "Dose":""
+                        }
+            tmp_dict = {keys: subject_data}
+
+        results_dict.update(tmp_dict)
+
+    return [results_dict, todos, path_list]
+
