@@ -194,6 +194,8 @@ class xnat_pic_gui():
         self.logo_login = open_image(PATH_IMAGE + "login.png", 15, 15)
         # Load subdirectory icon
         self.logo_subdirectory = open_image(PATH_IMAGE + "subdirectory.png", 15, 15)
+        # Load user icon
+        self.user_icon = open_image(PATH_IMAGE + "user.png", 15, 15)
 
         # Toolbar Menu
         def new_prj():
