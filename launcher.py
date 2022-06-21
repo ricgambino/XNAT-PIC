@@ -36,7 +36,7 @@ from multiprocessing import freeze_support
 from ScrollableNotebook import *
 from create_objects import ProjectManager, SubjectManager, ExperimentManager
 from access_manager import AccessManager
-from new_project_manager import NewProjectManager, NewSubjectManager
+from new_project_manager import NewProjectManager, NewSubjectManager, NewExperimentManager
 import itertools
 from Treeview import Treeview
 
@@ -287,13 +287,16 @@ class xnat_pic_gui():
         def new_sub():
             subject_manager = NewSubjectManager(self.root)
             self.root.wait_window(subject_manager.popup_sub)
+        def new_exp():
+            experiment_manager = NewExperimentManager(self.root)
+            self.root.wait_window(experiment_manager.popup_exp)
 
         self.toolbar_menu = ttk.Menu(self.root)
         fileMenu = ttk.Menu(self.toolbar_menu, tearoff=0)
         new_menu = ttk.Menu(fileMenu, tearoff=0)
         new_menu.add_command(label="Project", command=new_prj)
         new_menu.add_command(label="Subject", command=new_sub)
-        new_menu.add_command(label="Experiment")
+        new_menu.add_command(label="Experiment", command=new_exp)
 
         fileMenu.add_cascade(label="New...", menu=new_menu)
         fileMenu.add_command(label="Login")
