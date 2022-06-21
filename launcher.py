@@ -205,6 +205,8 @@ class xnat_pic_gui():
         self.sun_icon_dark = open_image(PATH_IMAGE + "sun_icon_dark.png", 20, 20)
         # Load sun icon LIGHT
         self.sun_icon_light = open_image(PATH_IMAGE + "sun_icon_light.png", 20, 20)
+        # Load User icon
+        self.user_icon = open_image(PATH_IMAGE + "user.png", 30, 30)
 
         def resize_window(*args):
             # Get the current window size
@@ -2012,11 +2014,19 @@ class xnat_pic_gui():
             ################ Main Buttons ###############
 
             self.label_frame_main = ttk.Labelframe(master.frame, style="Hidden.TLabelframe")
-            self.label_frame_main.place(relx=0.25, rely=0, anchor=tk.NW, relwidth=0.7)
+            self.label_frame_main.place(relx=0.25, rely=0.05, anchor=tk.NW, relwidth=0.7)
 
             # Frame Title
             self.frame_title = ttk.Label(self.label_frame_main, text="XNAT-PIC Uploader", style="Title.TLabel", anchor=tk.CENTER)
-            self.frame_title.pack(fill='x', padx=25, pady=10, anchor=tk.CENTER)
+            self.frame_title.pack(side='left', expand=True, padx=25, pady=10, anchor=tk.CENTER)
+
+            # User Icon
+            self.user_btn = ttk.Menubutton(self.label_frame_main, text=self.session.logged_in_user, image=master.user_icon, compound='right',
+                                                cursor=CURSOR_HAND)
+            self.user_btn.menu = Menu(self.user_btn, tearoff=0)
+            self.user_btn["menu"] = self.user_btn.menu
+            self.user_btn.menu.add_command(label="Exit", command=lambda: exit_uploader())
+            self.user_btn.pack(side='right', anchor=tk.SE)
 
             # Label Frame Uploader Selection
             self.label_frame_uploader = ttk.LabelFrame(master.frame, text="Uploader Selection")
@@ -2463,12 +2473,12 @@ class xnat_pic_gui():
 
             #############################################
             ################ EXIT Button ################
-            def exit_uploader():
+            def exit_uploader(*args):
                 result = messagebox.askquestion("XNAT-PIC Uploader", "Do you want to exit?", icon='warning')
                 if result == 'yes':
                     # Destroy all the existent widgets (Button, OptionMenu, ...)
                     destroy_widgets([self.uploader_data, self.custom_var_labelframe, self.label_frame_uploader, self.exit_btn,
-                                    self.next_btn, self.folder_selection_label_frame, self.frame_title])
+                                    self.next_btn, self.folder_selection_label_frame, self.frame_title, self.label_frame_main])
                     # Perform disconnection of the session if it is alive
                     try:
                         self.session.disconnect()
