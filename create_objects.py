@@ -134,11 +134,15 @@ class ProjectManager():
                 current_keyword.set("")
         self.project_keywords_entry.bind("<Key>", set_keyword)
         keyword_to_remove.trace('w', remove_keyword)
+
         # INVESTIGATORS
         self.project_investigator = tk.StringVar()
-        with open("./investigators.json", "r") as inv_file:
-            self.investigators = json.load(inv_file)
-        self.investigator_list = [','.join([x['firstname'], x['lastname']]) for x in self.investigators]
+        try:
+            self.investigators = json.loads(self.session.get(os.path.join(self.session.uri, '/xapi/investigators')).content)
+            self.investigator_list = [','.join([x['firstname'], x['lastname']]) for x in self.investigators if 'firstname' in x.keys() and 'lastname' in x.keys()]
+        except:
+            self.investigator_list = []
+        
         self.project_investigators_label = ttk.Label(self.project_labelframe, text="Investigators")
         self.project_investigators_label.grid(row=6, column=0, padx=5, pady=5, sticky=tk.W)
         self.project_investigators_entry = ttk.OptionMenu(self.project_labelframe, self.project_investigator, "--",
@@ -192,15 +196,19 @@ class ProjectManager():
 
     def add_new_investigator(self, *args):
             def update_list(*args):
-                investigators = {}
-                investigators['firstname'] = name.get()
-                investigators['lastsurname'] = surname.get()
-                investigators['institution'] = institution.get()
-                investigators['email'] = email.get()
-                self.investigators.append(investigators)
-                self.investigator_list.append(','.join([investigators['name'], investigators['surname']]))
-                with open("./investigators.json", "w+") as inv_file:
-                    json.dump(self.investigators, inv_file, indent=4)
+                investigator = {}
+                investigator['firstname'] = name.get()
+                investigator['lastname'] = surname.get()
+                investigator['institution'] = institution.get()
+                investigator['email'] = email.get()
+                try:
+                    self.session.post(os.path.join(self.session.uri, '/xapi/investigators'), json=investigator)
+                    self.session.clearcache()
+                    self.investigators = json.loads(self.session.get(os.path.join(self.session.uri, '/xapi/investigators')).content)
+                    self.investigator_list = [','.join([x['firstname'], x['lastname']]) for x in self.investigators]
+                except:
+                    self.investigator_list = []
+                
                 self.project_investigators_entry['menu'].delete(0, 'end')
                 for inv in self.investigator_list:
                     self.project_investigators_entry['menu'].add_command(label=inv, command=lambda var=inv:self.project_investigator.set(var))
@@ -244,16 +252,22 @@ class ProjectManager():
             self.master.deiconify()
             return
         try:
-            project = self.session.classes.ProjectData(
-                            name=self.project_id.get(), parent=self.session)
+            project = self.session.projects['Prj_2_dcm']
+            # project = self.session.classes.ProjectData(
+            #                 name=self.project_id.get(), parent=self.session)
             project.description = self.project_description_entry.get("1.0", END)
             project.keywords = ",".join(self.project_keywords_list)
             self.session.put(os.path.join(project.uri, 'accessibility', self.access_status.get()).replace('\\', '/'))
             # Missing a method to upload multiple information about pi and investigators
-            for inv in self.investigators:
-                if inv['firstname'] == self.project_investigator.get().split(',')[0] and inv['lastname'] == self.project_investigator.get().split(',')[1]:
-                    project.pi.set("firstname", inv["firstname"])
-                    break
+            # for inv in self.investigators:
+            #     if inv['firstname'] == self.project_investigator.get().split(',')[0] and inv['lastname'] == self.project_investigator.get().split(',')[1]:
+                    # print(self.session.get(project.fulluri, format='json').content)
+                    # self.session.put(os.path.join(project.uri, '/PI/firstname'), query={'firstname': inv['firstname']})
+                    # self.session.clearcache()
+                    # project = self.session.projects['Prj_2_dcm']
+                    # print(project.pi)
+                    # break
+            
         except exception as e:
             messagebox.showerror("Error!", str(e))
         
