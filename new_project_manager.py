@@ -26,6 +26,8 @@ class NewProjectManager():
         #root.eval(f'tk::PlaceWindow {str(self.popup_prj)} center')
         self.popup_prj.resizable(False, False)
         self.popup_prj.grab_set()
+        # If you want the logo 
+        self.popup_prj.iconbitmap(PATH_IMAGE + "logo3.ico")
 
         # Closing window event: if it occurs, the popup must be destroyed 
         def closed_window():
@@ -156,6 +158,9 @@ class NewSubjectManager():
         #root.eval(f'tk::PlaceWindow {str(self.popup_prj)} center')
         self.popup_sub.resizable(False, False)
         self.popup_sub.grab_set()
+        
+        # If you want the logo 
+        self.popup_sub.iconbitmap(PATH_IMAGE + "logo3.ico")
 
         # Closing window event: if it occurs, the popup must be destroyed 
         def closed_window():
@@ -303,6 +308,9 @@ class NewExperimentManager():
         #root.eval(f'tk::PlaceWindow {str(self.popup_prj)} center')
         self.popup_exp.resizable(False, False)
         self.popup_exp.grab_set()
+        
+        # If you want the logo 
+        self.popup_exp.iconbitmap(PATH_IMAGE + "logo3.ico")
 
         # Closing window event: if it occurs, the popup must be destroyed 
         def closed_window():

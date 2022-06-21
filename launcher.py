@@ -162,6 +162,39 @@ class xnat_pic_gui():
         self.root.geometry("%dx%d+0+0" % (self.width, self.height))
         self.root.title("   XNAT-PIC   ~   Molecular Imaging Center   ~   University of Torino   ")
 
+        # Load Accept icon
+        self.logo_accept = open_image(PATH_IMAGE + "Done.png", 15, 15)
+        # Load Delete icon
+        self.logo_delete = open_image(PATH_IMAGE + "Reject.png", 15, 15)
+        # Load Edit icon
+        self.logo_edit = open_image(PATH_IMAGE + "Edit.png", 15, 15)
+        # Load Clear icon
+        self.logo_clear = open_image(PATH_IMAGE + "delete.png", 15, 15)
+        # Load open eye
+        self.open_eye = open_image(PATH_IMAGE + "open_eye.png", 15, 15)
+        # Load closed eye
+        self.closed_eye = open_image(PATH_IMAGE + "closed_eye.png", 15, 15)
+        # Load sun icon DARK
+        self.sun_icon_dark = open_image(PATH_IMAGE + "sun_icon_dark.png", 20, 20)
+        # Load sun icon LIGHT
+        self.sun_icon_light = open_image(PATH_IMAGE + "sun_icon_light.png", 20, 20)
+        # Load home icon
+        self.logo_home = open_image(PATH_IMAGE + "home.png", 15, 15)
+        # Load add icon
+        self.logo_add = open_image(PATH_IMAGE + "add_icon.png", 15, 15)
+        # Load folder icon
+        self.logo_folder = open_image(PATH_IMAGE + "folder.png", 15, 15)
+        # Load save icon
+        self.logo_save = open_image(PATH_IMAGE + "save.png", 15, 15)
+        # Load exit icon
+        self.logo_exit = open_image(PATH_IMAGE + "exit.png", 15, 15)
+        # Load help icon
+        self.logo_help = open_image(PATH_IMAGE + "help.png", 15, 15)
+        # Load login icon
+        self.logo_login = open_image(PATH_IMAGE + "login.png", 15, 15)
+        # Load subdirectory icon
+        self.logo_subdirectory = open_image(PATH_IMAGE + "subdirectory.png", 15, 15)
+
         # Toolbar Menu
         def new_prj():
             project_manager = NewProjectManager(self.root)
@@ -176,14 +209,14 @@ class xnat_pic_gui():
         self.toolbar_menu = ttk.Menu(self.root)
         fileMenu = ttk.Menu(self.toolbar_menu, tearoff=0)
         new_menu = ttk.Menu(fileMenu, tearoff=0)
-        new_menu.add_command(label="Project", command=new_prj)
-        new_menu.add_command(label="Subject", command=new_sub)
-        new_menu.add_command(label="Experiment", command=new_exp)
+        new_menu.add_command(label="Project", image = self.logo_folder, compound = 'left', command=new_prj)
+        new_menu.add_command(label="Subject", image = self.logo_folder, compound = 'left',command=new_sub)
+        new_menu.add_command(label="Experiment", image = self.logo_folder, compound = 'left',command=new_exp)
 
-        fileMenu.add_cascade(label="New...", menu=new_menu)
-        fileMenu.add_command(label="Login")
+        fileMenu.add_cascade(label="New...", image = self.logo_subdirectory, compound = 'left', menu=new_menu)
+        fileMenu.add_command(label="Login", image = self.logo_login, compound = 'left')
         fileMenu.add_separator()
-        fileMenu.add_command(label="Exit", command=lambda: self.root.destroy())
+        fileMenu.add_command(label="Exit", image = self.logo_exit, compound = 'left', command=lambda: self.root.destroy())
         
         self.toolbar_menu.add_cascade(label="File", menu=fileMenu)
         self.toolbar_menu.add_cascade(label="Edit")
@@ -201,23 +234,6 @@ class xnat_pic_gui():
         # Initialize the working area size
         self.my_width = int(self.width*PERCENTAGE_SCREEN)
         self.my_height = int(self.height*PERCENTAGE_SCREEN)
-
-        # Load Accept icon
-        self.logo_accept = open_image(PATH_IMAGE + "Done.png", 15, 15)
-        # Load Delete icon
-        self.logo_delete = open_image(PATH_IMAGE + "Reject.png", 15, 15)
-        # Load Edit icon
-        self.logo_edit = open_image(PATH_IMAGE + "Edit.png", 15, 15)
-        # Load Clear icon
-        self.logo_clear = open_image(PATH_IMAGE + "delete.png", 15, 15)
-        # Load open eye
-        self.open_eye = open_image(PATH_IMAGE + "open_eye.png", 15, 15)
-        # Load closed eye
-        self.closed_eye = open_image(PATH_IMAGE + "closed_eye.png", 15, 15)
-        # Load sun icon DARK
-        self.sun_icon_dark = open_image(PATH_IMAGE + "sun_icon_dark.png", 20, 20)
-        # Load sun icon LIGHT
-        self.sun_icon_light = open_image(PATH_IMAGE + "sun_icon_light.png", 20, 20)
 
         def resize_window(*args):
             # Get the current window size
@@ -325,14 +341,14 @@ class xnat_pic_gui():
             self.toolbar_menu = ttk.Menu(self.root)
             fileMenu = ttk.Menu(self.toolbar_menu, tearoff=0)
             new_menu = ttk.Menu(fileMenu, tearoff=0)
-            new_menu.add_command(label="Project", command=new_prj)
-            new_menu.add_command(label="Subject", command=new_sub)
-            new_menu.add_command(label="Experiment", command=new_exp)
+            new_menu.add_command(label="Project", image = self.logo_folder, compound = 'left', command=new_prj)
+            new_menu.add_command(label="Subject", image = self.logo_folder, compound = 'left',command=new_sub)
+            new_menu.add_command(label="Experiment", image = self.logo_folder, compound = 'left',command=new_exp)
 
-            fileMenu.add_cascade(label="New...", menu=new_menu)
-            fileMenu.add_command(label="Login")
+            fileMenu.add_cascade(label="New...", image = self.logo_subdirectory, compound = 'left', menu=new_menu)
+            fileMenu.add_command(label="Login", image = self.logo_login, compound = 'left')
             fileMenu.add_separator()
-            fileMenu.add_command(label="Exit", command=lambda: self.root.destroy())
+            fileMenu.add_command(label="Exit", image = self.logo_exit, compound = 'left', command=lambda: self.root.destroy())
             
             self.toolbar_menu.add_cascade(label="File", menu=fileMenu)
             self.toolbar_menu.add_cascade(label="Edit")
@@ -1080,6 +1096,9 @@ class xnat_pic_gui():
             #master.root.eval(f'tk::PlaceWindow {str(self.popup_metadata)} center')
             self.popup_metadata.resizable(False, False)
             self.popup_metadata.grab_set()
+            
+            # If you want the logo 
+            self.popup_metadata.iconbitmap(PATH_IMAGE + "logo3.ico")
 
             # Browse: select if it is a project, subject or experiment
             self.popup_metadata_frame = ttk.LabelFrame(self.popup_metadata, text="Select directory", style="Popup.TLabelframe")
@@ -1188,19 +1207,28 @@ class xnat_pic_gui():
 
             self.menu = ttk.Menu(master.root)
             file_menu = ttk.Menu(self.menu, tearoff=0)
-            file_menu.add_command(label="Home", command = lambda: self.home_metadata(master))
-            file_menu.add_separator()
-            file_menu.add_command(label="Select Folder", command = browse_fun)
-            file_menu.add_separator()
-            file_menu.add_command(label="Add ID", command = lambda: self.add_ID(master))
-            file_menu.add_command(label="Add Custom Variables", command = lambda: self.add_custom_variable(master))
-            file_menu.add_command(label="Clear Custom Variables", command = lambda: self.clear_metadata())
-            file_menu.add_separator()
-            file_menu.add_command(label="Save All", command = lambda: self.save_metadata())
+            home_menu = ttk.Menu(self.menu, tearoff=0)
+            exit_menu = ttk.Menu(self.menu, tearoff=0)
+            help_menu = ttk.Menu(self.menu, tearoff=0)
 
+            home_menu.add_command(label="Home", image = master.logo_home, compound='left', command = lambda: self.home_metadata(master))
+
+            file_menu.add_command(label="Select Folder", image = master.logo_folder, compound='left', command = browse_fun)
+            file_menu.add_separator()
+            file_menu.add_command(label="Add ID", image = master.logo_add, compound='left',command = lambda: self.add_ID(master))
+            file_menu.add_command(label="Add Custom Variables", image = master.logo_add, compound='left', command = lambda: self.add_custom_variable(master))
+            file_menu.add_command(label="Clear Custom Variables", image = master.logo_clear, compound='left', command = lambda: self.clear_metadata())
+            file_menu.add_separator()
+            file_menu.add_command(label="Save All", image = master.logo_save, compound='left', command = lambda: self.save_metadata())
+            
+            exit_menu.add_command(label="Exit", image = master.logo_exit, compound='left', command = lambda: self.exit_metadata(master))
+
+            help_menu.add_command(label="Help", image = master.logo_help, compound='left', command = lambda: messagebox.showinfo("XNAT-PIC","Help"))
+
+            self.menu.add_cascade(label='Home', menu=home_menu)
             self.menu.add_cascade(label="File", menu=file_menu)
-            self.menu.add_command(label="About", command = lambda: messagebox.showinfo("XNAT-PIC","Help"))
-            self.menu.add_command(label="Exit", command = lambda: self.exit_metadata(master))
+            self.menu.add_cascade(label="About", menu=help_menu)
+            self.menu.add_cascade(label="Exit", menu=exit_menu)
             master.root.config(menu=self.menu)
 
             #################### Folder list #################### 
