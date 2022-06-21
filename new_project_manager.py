@@ -115,28 +115,31 @@ class NewProjectManager():
         
         if not self.exp_path:
             return
+
         # The project already exists. Overwrite it?
         if os.path.exists((str(self.exp_path) + '//' + str(self.popup_prj.entry_prj.get())).replace('//', os.sep)):
             answer = messagebox.askyesno('XNAT-PIC', 'The project ' +(str(self.exp_path) + '//' + str(self.popup_prj.entry_prj.get())).replace('//', os.sep) +
                                         ' already exists. Overwrite it?')
-        if answer is True:
-            shutil.rmtree((str(self.exp_path) + '//' + str(self.popup_prj.entry_prj.get())).replace('//', os.sep))
-            for row in save_list:
-                self.exp_path_new = (str(self.exp_path) + '//' + str(self.popup_prj.entry_prj.get()) + '//' + str(row.values[0]) + '//' + str(row.values[1])).replace('//', os.sep)
-                if not os.path.exists(self.exp_path_new):
-                    try:
-                        shutil.copytree(row.values[2], self.exp_path_new)
-                    except Exception as e:
-                        messagebox.showerror("XNAT-PIC", str(e))
-                        raise
-                else:
-                    messagebox.showerror("XNAT-PIC", 'The path: ' + self.exp_path_new + ' already exists!')
-                    return
-                    
-            messagebox.showinfo("XNAT-PIC", 'The new project was created!')
-            self.popup_prj.destroy()
-        else:
-            return
+            if answer is True:
+                shutil.rmtree((str(self.exp_path) + '//' + str(self.popup_prj.entry_prj.get())).replace('//', os.sep))
+            else:
+                return
+
+        for row in save_list:
+            self.exp_path_new = (str(self.exp_path) + '//' + str(self.popup_prj.entry_prj.get()) + '//' + str(row.values[0]) + '//' + str(row.values[1])).replace('//', os.sep)
+            if not os.path.exists(self.exp_path_new):
+                try:
+                    shutil.copytree(row.values[2], self.exp_path_new)
+                except Exception as e:
+                    messagebox.showerror("XNAT-PIC", str(e))
+                    raise
+            else:
+                messagebox.showerror("XNAT-PIC", 'The path: ' + self.exp_path_new + ' already exists!')
+                return
+                
+        messagebox.showinfo("XNAT-PIC", 'The new project was created!')
+        self.popup_prj.destroy()
+
 
 
 class NewSubjectManager():
@@ -277,7 +280,7 @@ class NewSubjectManager():
                     return
 
             try:
-                shutil.copytree(row.values[2], self.exp_path_new)
+                shutil.copytree(row.values[2], (self.exp_path_new + '//' + str(row.values[1])).replace('//', os.sep))
             except Exception as e:
                 messagebox.showerror("XNAT-PIC", str(e))
                 raise

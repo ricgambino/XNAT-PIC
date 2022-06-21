@@ -1157,6 +1157,8 @@ class xnat_pic_gui():
 
             self.menu = ttk.Menu(master.root)
             file_menu = ttk.Menu(self.menu, tearoff=0)
+            file_menu.add_command(label="Home", command = lambda: self.home_metadata(master))
+            file_menu.add_separator()
             file_menu.add_command(label="Select Folder", command = browse_fun)
             file_menu.add_separator()
             file_menu.add_command(label="Add ID", command = lambda: self.add_ID(master))
@@ -2011,7 +2013,10 @@ class xnat_pic_gui():
                 destroy_widgets([self.frame_metadata, self.menu])
                 xnat_pic_gui.choose_your_action(master)
 
-                
+        ##################### Home ####################
+        def home_metadata(self, master):
+                destroy_widgets([self.frame_metadata, self.menu])
+                xnat_pic_gui.choose_your_action(master)
     
     class XNATUploader():
 
