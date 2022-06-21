@@ -161,6 +161,35 @@ class xnat_pic_gui():
         self.height = self.root.screenheight
         self.root.geometry("%dx%d+0+0" % (self.width, self.height))
         self.root.title("   XNAT-PIC   ~   Molecular Imaging Center   ~   University of Torino   ")
+
+        # Toolbar Menu
+        def new_prj():
+            project_manager = NewProjectManager(self.root)
+            self.root.wait_window(project_manager.popup_prj)
+        def new_sub():
+            subject_manager = NewSubjectManager(self.root)
+            self.root.wait_window(subject_manager.popup_sub)
+        def new_exp():
+            experiment_manager = NewExperimentManager(self.root)
+            self.root.wait_window(experiment_manager.popup_exp)
+
+        self.toolbar_menu = ttk.Menu(self.root)
+        fileMenu = ttk.Menu(self.toolbar_menu, tearoff=0)
+        new_menu = ttk.Menu(fileMenu, tearoff=0)
+        new_menu.add_command(label="Project", command=new_prj)
+        new_menu.add_command(label="Subject", command=new_sub)
+        new_menu.add_command(label="Experiment", command=new_exp)
+
+        fileMenu.add_cascade(label="New...", menu=new_menu)
+        fileMenu.add_command(label="Login")
+        fileMenu.add_separator()
+        fileMenu.add_command(label="Exit", command=lambda: self.root.destroy())
+        
+        self.toolbar_menu.add_cascade(label="File", menu=fileMenu)
+        self.toolbar_menu.add_cascade(label="Edit")
+        self.toolbar_menu.add_cascade(label="Options")
+        self.root.config(menu=self.toolbar_menu)
+
         # If you want the logo 
         self.root.iconbitmap(PATH_IMAGE + "logo3.ico")
 
@@ -280,33 +309,35 @@ class xnat_pic_gui():
             
     # Choose to upload files, fill in the info, convert files, process images
     def choose_your_action(self):
-        # Toolbar Menu
-        def new_prj():
-            project_manager = NewProjectManager(self.root)
-            self.root.wait_window(project_manager.popup_prj)
-        def new_sub():
-            subject_manager = NewSubjectManager(self.root)
-            self.root.wait_window(subject_manager.popup_sub)
-        def new_exp():
-            experiment_manager = NewExperimentManager(self.root)
-            self.root.wait_window(experiment_manager.popup_exp)
-
-        self.toolbar_menu = ttk.Menu(self.root)
-        fileMenu = ttk.Menu(self.toolbar_menu, tearoff=0)
-        new_menu = ttk.Menu(fileMenu, tearoff=0)
-        new_menu.add_command(label="Project", command=new_prj)
-        new_menu.add_command(label="Subject", command=new_sub)
-        new_menu.add_command(label="Experiment", command=new_exp)
-
-        fileMenu.add_cascade(label="New...", menu=new_menu)
-        fileMenu.add_command(label="Login")
-        fileMenu.add_separator()
-        fileMenu.add_command(label="Exit", command=lambda: self.root.destroy())
         
-        self.toolbar_menu.add_cascade(label="File", menu=fileMenu)
-        self.toolbar_menu.add_cascade(label="Edit")
-        self.toolbar_menu.add_cascade(label="Options")
-        self.root.config(menu=self.toolbar_menu)
+        if self.toolbar_menu.winfo_exists() == 0:
+            # Toolbar Menu
+            def new_prj():
+                project_manager = NewProjectManager(self.root)
+                self.root.wait_window(project_manager.popup_prj)
+            def new_sub():
+                subject_manager = NewSubjectManager(self.root)
+                self.root.wait_window(subject_manager.popup_sub)
+            def new_exp():
+                experiment_manager = NewExperimentManager(self.root)
+                self.root.wait_window(experiment_manager.popup_exp)
+
+            self.toolbar_menu = ttk.Menu(self.root)
+            fileMenu = ttk.Menu(self.toolbar_menu, tearoff=0)
+            new_menu = ttk.Menu(fileMenu, tearoff=0)
+            new_menu.add_command(label="Project", command=new_prj)
+            new_menu.add_command(label="Subject", command=new_sub)
+            new_menu.add_command(label="Experiment", command=new_exp)
+
+            fileMenu.add_cascade(label="New...", menu=new_menu)
+            fileMenu.add_command(label="Login")
+            fileMenu.add_separator()
+            fileMenu.add_command(label="Exit", command=lambda: self.root.destroy())
+            
+            self.toolbar_menu.add_cascade(label="File", menu=fileMenu)
+            self.toolbar_menu.add_cascade(label="Edit")
+            self.toolbar_menu.add_cascade(label="Options")
+            self.root.config(menu=self.toolbar_menu)
 
 
         if self.xnat_pic_logo_label.winfo_exists() == 0:
@@ -1144,7 +1175,7 @@ class xnat_pic_gui():
             self.path_list = params[2]
 
             #################### Update the frame ####################
-            destroy_widgets([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn, master.xnat_pic_logo_label])
+            destroy_widgets([master.toolbar_menu, master.convert_btn, master.info_btn, master.upload_btn, master.close_btn, master.xnat_pic_logo_label])
             self.frame_metadata = ttk.Frame(master.frame)
             self.frame_metadata.place(relx = 0.2, rely= 0, relheight=1, relwidth=0.8, anchor=tk.NW)
             # Frame Title
@@ -2011,12 +2042,12 @@ class xnat_pic_gui():
             result = messagebox.askquestion("Exit", "Do you want to exit?", icon='warning')
             if result == 'yes':
                 destroy_widgets([self.frame_metadata, self.menu])
-                xnat_pic_gui.choose_your_action(master)
+                master.root.after(1500, xnat_pic_gui.choose_your_action(master))
 
         ##################### Home ####################
         def home_metadata(self, master):
                 destroy_widgets([self.frame_metadata, self.menu])
-                xnat_pic_gui.choose_your_action(master)
+                master.root.after(2000, xnat_pic_gui.choose_your_action(master))
     
     class XNATUploader():
 
