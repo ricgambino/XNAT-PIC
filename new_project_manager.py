@@ -94,7 +94,6 @@ class NewProjectManager():
                                     cursor=CURSOR_HAND, style="MainPopup.TButton")
         self.popup_prj.button_quit.grid(row=5, column=0, padx=10, pady=5, sticky=tk.NW)
 
-        
     def add_exp(self):
         if not self.popup_prj.entry_prj.get():
             messagebox.showerror('XNAT-PIC','Insert Project Name!')
@@ -110,9 +109,10 @@ class NewProjectManager():
        
         self.dt.insert_row('end', [str(self.popup_prj.entry_sub.get()), str(self.exp_path_old).rsplit("/",1)[1], str(self.exp_path_old)])
         self.dt.load_table_data()
-
+    
     def save_prj(self):
-        save_list = self.dt.get_rows()
+
+        self.save_list = self.dt.get_rows()
         if not self.popup_prj.entry_prj.get():
             messagebox.showerror('XNAT-PIC','Insert Project Name!')
             return
@@ -135,27 +135,45 @@ class NewProjectManager():
             else:
                 return
         
-        # Case 1: the user wants create only the new projects, without subject and experiment
-        if not self.popup_prj.entry_sub.get() and len(save_list) == 0:
-            os.makedirs((str(self.exp_path) + '//' + str(self.popup_prj.entry_prj.get())).replace('//', os.sep))
+        def func_save_prj():
+               
+            # Case 1: the user wants create only the new projects, without subject and experiment
+            if not self.popup_prj.entry_sub.get() and len(self.save_list) == 0:
+                os.makedirs((str(self.exp_path) + '//' + str(self.popup_prj.entry_prj.get())).replace('//', os.sep))
 
-        # Case 2: the user wants create the new projects with subject and without experiment
-        elif self.popup_prj.entry_sub.get() and len(save_list) == 0:
-            os.makedirs((str(self.exp_path) + '//' + str(self.popup_prj.entry_prj.get()) + '//' + str(self.popup_prj.entry_sub.get())).replace('//', os.sep))
+            # Case 2: the user wants create the new projects with subject and without experiment
+            elif self.popup_prj.entry_sub.get() and len(self.save_list) == 0:
+                os.makedirs((str(self.exp_path) + '//' + str(self.popup_prj.entry_prj.get()) + '//' + str(self.popup_prj.entry_sub.get())).replace('//', os.sep))
 
-        # Case 3: the user wants create the new projects with subject and experiment
-        elif self.popup_prj.entry_sub.get() and len(save_list) != 0 :
-           
-            for row in save_list:
-                self.exp_path_new = (str(self.exp_path) + '//' + str(self.popup_prj.entry_prj.get()) + '//' + str(row.values[0]) + '//' + str(row.values[1])).replace('//', os.sep)
-                try:
-                    shutil.copytree(row.values[2], self.exp_path_new)
-                except Exception as e:
-                    messagebox.showerror("XNAT-PIC", str(e))
-                    continue
+            # Case 3: the user wants create the new projects with subject and experiment
+            elif self.popup_prj.entry_sub.get() and len(self.save_list) != 0 :
                 
+                for row in self.save_list:
+                    self.exp_path_new = (str(self.exp_path) + '//' + str(self.popup_prj.entry_prj.get()) + '//' + str(row.values[0]) + '//' + str(row.values[1])).replace('//', os.sep)
+                    progressbar.set_caption('Creating: ' + self.exp_path_new.replace(os.sep, '/'))
+                    try:
+                        shutil.copytree(row.values[2], self.exp_path_new)
+                    except Exception as e:
+                        messagebox.showerror("XNAT-PIC", str(e))
+                        continue
+
+        # Start the progress bar
+        progressbar = ProgressBar(self.popup_prj, bar_title='XNAT-PIC New Project')
+        progressbar.start_indeterminate_bar()
+        
+        # Disable button
+        disable_buttons([self.popup_prj.entry_prj, self.popup_prj.entry_sub, self.popup_prj.add_exp_btn, self.popup_prj.button_save, self.popup_prj.button_quit])
+        # Save the project through separate thread (different from the main thread)
+        tp = threading.Thread(target=func_save_prj, args=())
+        tp.start()
+        while tp.is_alive() == True:
+            # As long as the thread is working, update the progress bar
+            progressbar.update_bar()
+        progressbar.stop_progress_bar()
+        
         messagebox.showinfo("XNAT-PIC", 'The new project was created!')
         self.popup_prj.destroy()
+
 
 class NewSubjectManager():
 
@@ -289,36 +307,53 @@ class NewSubjectManager():
         if not self.popup_sub.entry_sub.get():
             messagebox.showerror('XNAT-PIC','Insert Subject Name!')
             return
+        
+        def func_save_sub():
+            # Case 1: the user wants create only the new subjects, without experiment
+            if self.popup_sub.entry_sub.get() and len(save_list) == 0:
+                if os.path.exists((str(self.prj_path) + '//' + str(self.popup_sub.entry_sub.get())).replace('//', os.sep)):
+                    answer = messagebox.askyesno('XNAT-PIC', 'The subject ' +  (str(self.prj_path) + '//' + str(self.popup_sub.entry_sub.get())).replace('//', os.sep)
+                                                + ' already exists. Overwrite it?')
 
-        # Case 1: the user wants create only the new subjects, without experiment
-        if self.popup_sub.entry_sub.get() and len(save_list) == 0:
-            if os.path.exists((str(self.prj_path) + '//' + str(self.popup_sub.entry_sub.get())).replace('//', os.sep)):
-                answer = messagebox.askyesno('XNAT-PIC', 'The subject ' +  (str(self.prj_path) + '//' + str(self.popup_sub.entry_sub.get())).replace('//', os.sep)
-                                               + ' already exists. Overwrite it?')
+                    # The subject already exists. Overwrite it?
+                    if answer is True:    
+                        try:
+                            shutil.rmtree((str(self.prj_path) + '//' + str(self.popup_sub.entry_sub.get())).replace('//', os.sep))
+                        except Exception as e:
+                            messagebox.showerror("XNAT-PIC", str(e))
+                            raise
+                    else:
+                        return
 
-                # The subject already exists. Overwrite it?
-                if answer is True:    
+                os.makedirs((str(self.prj_path) + '//' + str(self.popup_sub.entry_sub.get())).replace('//', os.sep))
+
+            # Case 2: the user wants create the new subjects with experiment
+            elif self.popup_sub.entry_sub.get() and  len(save_list) != 0 :
+                for row in save_list:
+                    self.exp_path_new = (str(self.prj_path) + '//' + str(row.values[0])).replace('//', os.sep)
+                    progressbar.set_caption('Creating: ' + (self.exp_path_new + '//' + str(row.values[1])).replace('//', '/'))
+
                     try:
-                        shutil.rmtree((str(self.prj_path) + '//' + str(self.popup_sub.entry_sub.get())).replace('//', os.sep))
+                        shutil.copytree(row.values[2], (self.exp_path_new + '//' + str(row.values[1])).replace('//', os.sep))
                     except Exception as e:
                         messagebox.showerror("XNAT-PIC", str(e))
-                        raise
-                else:
-                    return
+                        continue
 
-            os.makedirs((str(self.prj_path) + '//' + str(self.popup_sub.entry_sub.get())).replace('//', os.sep))
+        # Start the progress bar
+        progressbar = ProgressBar(self.popup_sub, bar_title='XNAT-PIC New Subject')
+        progressbar.start_indeterminate_bar()
+        
+        # Disable buttons
+        disable_buttons([self.popup_sub.btn_prj, self.popup_sub.entry_sub, self.popup_sub.add_exp_btn, self.popup_sub.button_save, self.popup_sub.button_quit])
 
-        # Case 2: the user wants create the new subjects with experiment
-        elif self.popup_sub.entry_sub.get() and  len(save_list) != 0 :
-            for row in save_list:
-                self.exp_path_new = (str(self.prj_path) + '//' + str(row.values[0])).replace('//', os.sep)
+        # Save the subject through separate thread (different from the main thread)
+        tp = threading.Thread(target=func_save_sub, args=())
+        tp.start()
+        while tp.is_alive() == True:
+            # As long as the thread is working, update the progress bar
+            progressbar.update_bar()
+        progressbar.stop_progress_bar()
 
-                try:
-                    shutil.copytree(row.values[2], (self.exp_path_new + '//' + str(row.values[1])).replace('//', os.sep))
-                except Exception as e:
-                    messagebox.showerror("XNAT-PIC", str(e))
-                    continue
-            
         messagebox.showinfo("XNAT-PIC", 'The new subject was created!')
         self.popup_sub.destroy()
 
@@ -454,27 +489,45 @@ class NewExperimentManager():
             messagebox.showerror('XNAT-PIC','No records present in the list!')
             return
         
-        for row in save_list:
-            self.exp_path_new = (str(self.sub_path) + '//' + str(row.values[0])).replace('//', os.sep)
-            if os.path.exists(self.exp_path_new):
-                answer = messagebox.askyesno('XNAT-PIC', 'The experiment ' +  self.exp_path_new + ' already exists. Overwrite it?')
+        def func_save_exp():
+            for row in save_list:
+                self.exp_path_new = (str(self.sub_path) + '//' + str(row.values[0])).replace('//', os.sep)
+                progressbar.set_caption('Creating: ' + self.exp_path_new.replace(os.sep, '/'))
 
-                # The experiment already exists. Overwrite it?
-                if answer is True:    
-                    try:
-                       shutil.rmtree(self.exp_path_new)
-                    except Exception as e:
-                        messagebox.showerror("XNAT-PIC", str(e))
-                        raise
-                else:
+                if os.path.exists(self.exp_path_new):
+                    answer = messagebox.askyesno('XNAT-PIC', 'The experiment ' +  self.exp_path_new + ' already exists. Overwrite it?')
+
+                    # The experiment already exists. Overwrite it?
+                    if answer is True:    
+                        try:
+                            shutil.rmtree(self.exp_path_new)
+                        except Exception as e:
+                            messagebox.showerror("XNAT-PIC", str(e))
+                            raise
+                    else:
+                        continue
+
+                try:
+                    shutil.copytree(row.values[1], self.exp_path_new)
+                except Exception as e:
+                    messagebox.showerror("XNAT-PIC", str(e))
                     continue
 
-            try:
-                shutil.copytree(row.values[1], self.exp_path_new)
-            except Exception as e:
-                messagebox.showerror("XNAT-PIC", str(e))
-                continue
-            
+        # Start the progress bar
+        progressbar = ProgressBar(self.popup_exp, bar_title='XNAT-PIC New Experiment')
+        progressbar.start_indeterminate_bar()
+        
+        # Disable buttons
+        disable_buttons([self.popup_exp.btn_sub, self.popup_exp.add_exp_btn, self.popup_exp.button_save, self.popup_exp.button_quit])
+
+        # Save the experiment through separate thread (different from the main thread)
+        tp = threading.Thread(target=func_save_exp, args=())
+        tp.start()
+        while tp.is_alive() == True:
+            # As long as the thread is working, update the progress bar
+            progressbar.update_bar()
+        progressbar.stop_progress_bar()
+
         messagebox.showinfo("XNAT-PIC", 'The new experiment was created!')
         self.popup_exp.destroy()
 
