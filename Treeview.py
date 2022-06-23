@@ -40,7 +40,10 @@ class Treeview():
                 for subchild in self.tree.get_children(child):
                     if item.lower() in self.tree.item(subchild)['text'].lower():
                         data.append(subchild)
-        self.tree.selection_set(data[0])
+        if data != []:
+            self.tree.selection_set(data[0])
+            self.tree.focus(data[0])
+            self.tree.see(data[0])
 
     def remove_selection(self):
         for i in self.tree.selection():
