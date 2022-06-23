@@ -7,6 +7,8 @@ from ttkbootstrap.tableview import Tableview
 from ttkbootstrap.constants import *
 from ttkbootstrap.tooltip import ToolTip
 import shutil
+from progress_bar import ProgressBar
+import threading
 
 PATH_IMAGE = "images\\"
 CURSOR_HAND = "hand2"
@@ -91,7 +93,8 @@ class NewProjectManager():
         self.popup_prj.button_quit = ttk.Button(self.popup_prj, text = 'Quit', command=closed_window, 
                                     cursor=CURSOR_HAND, style="MainPopup.TButton")
         self.popup_prj.button_quit.grid(row=5, column=0, padx=10, pady=5, sticky=tk.NW)
-    
+
+        
     def add_exp(self):
         if not self.popup_prj.entry_prj.get():
             messagebox.showerror('XNAT-PIC','Insert Project Name!')
@@ -110,39 +113,49 @@ class NewProjectManager():
 
     def save_prj(self):
         save_list = self.dt.get_rows()
-        if len(save_list) == 0 :
-            messagebox.showerror('XNAT-PIC','No records present in the list!')
+        if not self.popup_prj.entry_prj.get():
+            messagebox.showerror('XNAT-PIC','Insert Project Name!')
             return
+
         self.exp_path = filedialog.askdirectory(parent=self.popup_prj, initialdir=os.path.expanduser("~"), title="XNAT-PIC: Select the folder where to save the new project!")
         
         if not self.exp_path:
             return
-
+        
         # The project already exists. Overwrite it?
         if os.path.exists((str(self.exp_path) + '//' + str(self.popup_prj.entry_prj.get())).replace('//', os.sep)):
             answer = messagebox.askyesno('XNAT-PIC', 'The project ' +(str(self.exp_path) + '//' + str(self.popup_prj.entry_prj.get())).replace('//', os.sep) +
                                         ' already exists. Overwrite it?')
             if answer is True:
-                shutil.rmtree((str(self.exp_path) + '//' + str(self.popup_prj.entry_prj.get())).replace('//', os.sep))
-            else:
-                return
-
-        for row in save_list:
-            self.exp_path_new = (str(self.exp_path) + '//' + str(self.popup_prj.entry_prj.get()) + '//' + str(row.values[0]) + '//' + str(row.values[1])).replace('//', os.sep)
-            if not os.path.exists(self.exp_path_new):
                 try:
-                    shutil.copytree(row.values[2], self.exp_path_new)
+                    shutil.rmtree((str(self.exp_path) + '//' + str(self.popup_prj.entry_prj.get())).replace('//', os.sep))
                 except Exception as e:
                     messagebox.showerror("XNAT-PIC", str(e))
                     raise
             else:
-                messagebox.showerror("XNAT-PIC", 'The path: ' + self.exp_path_new + ' already exists!')
                 return
+        
+        # Case 1: the user wants create only the new projects, without subject and experiment
+        if not self.popup_prj.entry_sub.get() and len(save_list) == 0:
+            os.makedirs((str(self.exp_path) + '//' + str(self.popup_prj.entry_prj.get())).replace('//', os.sep))
+
+        # Case 2: the user wants create the new projects with subject and without experiment
+        elif self.popup_prj.entry_sub.get() and len(save_list) == 0:
+            os.makedirs((str(self.exp_path) + '//' + str(self.popup_prj.entry_prj.get()) + '//' + str(self.popup_prj.entry_sub.get())).replace('//', os.sep))
+
+        # Case 3: the user wants create the new projects with subject and experiment
+        elif self.popup_prj.entry_sub.get() and len(save_list) != 0 :
+           
+            for row in save_list:
+                self.exp_path_new = (str(self.exp_path) + '//' + str(self.popup_prj.entry_prj.get()) + '//' + str(row.values[0]) + '//' + str(row.values[1])).replace('//', os.sep)
+                try:
+                    shutil.copytree(row.values[2], self.exp_path_new)
+                except Exception as e:
+                    messagebox.showerror("XNAT-PIC", str(e))
+                    continue
                 
         messagebox.showinfo("XNAT-PIC", 'The new project was created!')
         self.popup_prj.destroy()
-
-
 
 class NewSubjectManager():
 
@@ -269,29 +282,45 @@ class NewSubjectManager():
 
     def save_sub(self):
         save_list = self.dt.get_rows()
-        if len(save_list) == 0 :
-            messagebox.showerror('XNAT-PIC','No records present in the list!')
+        
+        if not self.popup_sub.entry_selected_prj.get():
+            messagebox.showerror('XNAT-PIC','Select a project!')
+            return
+        if not self.popup_sub.entry_sub.get():
+            messagebox.showerror('XNAT-PIC','Insert Subject Name!')
             return
 
-        for row in save_list:
-            self.exp_path_new = (str(self.prj_path) + '//' + str(row.values[0])).replace('//', os.sep)
-            if os.path.exists(self.exp_path_new):
-                answer = messagebox.askyesno('XNAT-PIC', 'The subject ' +  self.exp_path_new + ' already exists. Overwrite it?')
+        # Case 1: the user wants create only the new subjects, without experiment
+        if self.popup_sub.entry_sub.get() and len(save_list) == 0:
+            if os.path.exists((str(self.prj_path) + '//' + str(self.popup_sub.entry_sub.get())).replace('//', os.sep)):
+                answer = messagebox.askyesno('XNAT-PIC', 'The subject ' +  (str(self.prj_path) + '//' + str(self.popup_sub.entry_sub.get())).replace('//', os.sep)
+                                               + ' already exists. Overwrite it?')
 
                 # The subject already exists. Overwrite it?
                 if answer is True:    
-                    shutil.rmtree(self.exp_path_new)
+                    try:
+                        shutil.rmtree((str(self.prj_path) + '//' + str(self.popup_sub.entry_sub.get())).replace('//', os.sep))
+                    except Exception as e:
+                        messagebox.showerror("XNAT-PIC", str(e))
+                        raise
                 else:
                     return
 
-            try:
-                shutil.copytree(row.values[2], (self.exp_path_new + '//' + str(row.values[1])).replace('//', os.sep))
-            except Exception as e:
-                messagebox.showerror("XNAT-PIC", str(e))
-                raise
+            os.makedirs((str(self.prj_path) + '//' + str(self.popup_sub.entry_sub.get())).replace('//', os.sep))
+
+        # Case 2: the user wants create the new subjects with experiment
+        elif self.popup_sub.entry_sub.get() and  len(save_list) != 0 :
+            for row in save_list:
+                self.exp_path_new = (str(self.prj_path) + '//' + str(row.values[0])).replace('//', os.sep)
+
+                try:
+                    shutil.copytree(row.values[2], (self.exp_path_new + '//' + str(row.values[1])).replace('//', os.sep))
+                except Exception as e:
+                    messagebox.showerror("XNAT-PIC", str(e))
+                    continue
             
-            messagebox.showinfo("XNAT-PIC", 'The new subject was created!')
-            self.popup_sub.destroy()
+        messagebox.showinfo("XNAT-PIC", 'The new subject was created!')
+        self.popup_sub.destroy()
 
 
 class NewExperimentManager():
@@ -430,19 +459,23 @@ class NewExperimentManager():
             if os.path.exists(self.exp_path_new):
                 answer = messagebox.askyesno('XNAT-PIC', 'The experiment ' +  self.exp_path_new + ' already exists. Overwrite it?')
 
-                # The subject already exists. Overwrite it?
+                # The experiment already exists. Overwrite it?
                 if answer is True:    
-                    shutil.rmtree(self.exp_path_new)
+                    try:
+                       shutil.rmtree(self.exp_path_new)
+                    except Exception as e:
+                        messagebox.showerror("XNAT-PIC", str(e))
+                        raise
                 else:
-                    return
+                    continue
 
             try:
                 shutil.copytree(row.values[1], self.exp_path_new)
             except Exception as e:
                 messagebox.showerror("XNAT-PIC", str(e))
-                raise
+                continue
             
-            messagebox.showinfo("XNAT-PIC", 'The new experiment was created!')
-            self.popup_exp.destroy()
+        messagebox.showinfo("XNAT-PIC", 'The new experiment was created!')
+        self.popup_exp.destroy()
 
         
