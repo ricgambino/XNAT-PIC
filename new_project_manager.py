@@ -9,6 +9,8 @@ from ttkbootstrap.tooltip import ToolTip
 import shutil
 from progress_bar import ProgressBar
 import threading
+from Treeview import Treeview
+import time
 
 PATH_IMAGE = "images\\"
 CURSOR_HAND = "hand2"
@@ -207,9 +209,15 @@ class NewSubjectManager():
         self.popup_sub.btn_prj = ttk.Button(self.popup_sub, text = 'Select Project', command = lambda: self.select_prj(), cursor=CURSOR_HAND, style="Secondary1.TButton")
         self.popup_sub.btn_prj.grid(row=1, column=0, padx=10, pady=10, sticky=tk.N, columnspan=2)
 
+        # TreeView
+        columns = [("#0", "Selected folder"), ("#1", "Last Update"), ("#2", "Size"), ("#3", "Type")]
+        self.tree_prj = Treeview(self.popup_sub, columns)
+        self.tree_prj.tree.grid(row=2, column=0, padx=(10, 35), pady=10, sticky=tk.N, columnspan=2)
+        self.tree_prj.scrollbar.grid(row=2, column=1, padx=10, pady=10, sticky=tk.NS + tk.E, columnspan=2)
+
         # Label Frame 
         self.popup_sub.frame = ttk.LabelFrame(self.popup_sub, text="New Subject", style="Popup.TLabelframe")
-        self.popup_sub.frame.grid(row=2, column=0, padx=10, pady=5, sticky=tk.E+tk.W+tk.N+tk.S, columnspan=2)
+        self.popup_sub.frame.grid(row=3, column=0, padx=10, pady=5, sticky=tk.E+tk.W+tk.N+tk.S, columnspan=2)
 
         # Existing prj      
         self.popup_sub.label_prj = ttk.Label(self.popup_sub.frame, text="Project Name")   
@@ -246,30 +254,38 @@ class NewSubjectManager():
             bootstyle=PRIMARY,
             height = 10
         )
-        self.dt.grid(row=3, column=0, padx=10, pady=10, sticky=tk.N, columnspan=2)
+        self.dt.grid(row=4, column=0, padx=10, pady=10, sticky=tk.N, columnspan=2)
 
         self.popup_sub.label_add_exp = ttk.Label(self.popup_sub, text="Add New Experiment", bootstyle="inverse")   
-        self.popup_sub.label_add_exp.grid(row=4, column=0, padx=10, pady=5, sticky=tk.N, columnspan=2)
+        self.popup_sub.label_add_exp.grid(row=5, column=0, padx=10, pady=5, sticky=tk.N, columnspan=2)
         self.popup_sub.add_exp_btn = ttk.Button(self.popup_sub, image= self.add_icon, command = lambda: self.add_exp(),
                                     cursor=CURSOR_HAND, style="Popup.TButton")
-        self.popup_sub.add_exp_btn.grid(row=5, column=0, padx=10, pady=5, sticky=tk.N, columnspan=2)
+        self.popup_sub.add_exp_btn.grid(row=6, column=0, padx=10, pady=5, sticky=tk.N, columnspan=2)
         ToolTip(self.popup_sub.add_exp_btn, text="Add New Experiment")
         
         # Button Save
         self.popup_sub.button_save = ttk.Button(self.popup_sub, text = 'Save', command = lambda: self.save_sub(),
                                     cursor=CURSOR_HAND, style="MainPopup.TButton")
-        self.popup_sub.button_save.grid(row=6, column=1, padx=10, pady=5, sticky=tk.NE)
+        self.popup_sub.button_save.grid(row=7, column=1, padx=10, pady=5, sticky=tk.NE)
 
         # Button Quit
         self.popup_sub.button_quit = ttk.Button(self.popup_sub, text = 'Quit', command=closed_window, 
                                     cursor=CURSOR_HAND, style="MainPopup.TButton")
-        self.popup_sub.button_quit.grid(row=6, column=0, padx=10, pady=5, sticky=tk.NW)
+        self.popup_sub.button_quit.grid(row=7, column=0, padx=10, pady=5, sticky=tk.NW)
 
     def select_prj(self):
         self.prj_path = filedialog.askdirectory(parent=self.popup_sub, initialdir=os.path.expanduser("~"), title="XNAT-PIC: Select project directory!")
-
         if not self.prj_path:
             return
+
+        # Tree        
+        if self.tree_prj.tree.exists(0):
+            self.tree_prj.tree.delete(*self.tree_prj.tree.get_children())
+            
+        dict_items = write_tree(self.prj_path)
+
+        self.tree_prj.set(dict_items)
+
         # Selected folder
         self.popup_sub.entry_selected_prj['state'] = 'normal'
         self.popup_sub.entry_selected_prj.delete(0, tk.END)
@@ -389,10 +405,16 @@ class NewExperimentManager():
         
         self.popup_exp.btn_sub = ttk.Button(self.popup_exp, text = 'Select Subject', command = lambda: self.select_exp(), cursor=CURSOR_HAND, style="Secondary1.TButton")
         self.popup_exp.btn_sub.grid(row=1, column=0, padx=10, pady=10, sticky=tk.N, columnspan=2)
+        
+        # TreeView
+        columns = [("#0", "Selected folder"), ("#1", "Last Update"), ("#2", "Size"), ("#3", "Type")]
+        self.tree_sub = Treeview(self.popup_exp, columns)
+        self.tree_sub.tree.grid(row=2, column=0, padx=(10, 35), pady=10, sticky=tk.N, columnspan=2)
+        self.tree_sub.scrollbar.grid(row=2, column=1, padx=10, pady=10, sticky=tk.NS + tk.E, columnspan=2)
 
         # Label Frame 
         self.popup_exp.frame = ttk.LabelFrame(self.popup_exp, text="New Experiment", style="Popup.TLabelframe")
-        self.popup_exp.frame.grid(row=2, column=0, padx=10, pady=5, sticky=tk.E+tk.W+tk.N+tk.S, columnspan=2)
+        self.popup_exp.frame.grid(row=3, column=0, padx=10, pady=5, sticky=tk.E+tk.W+tk.N+tk.S, columnspan=2)
 
         # Existing prj      
         self.popup_exp.label_prj = ttk.Label(self.popup_exp.frame, text="Project Name")   
@@ -428,30 +450,38 @@ class NewExperimentManager():
             bootstyle=PRIMARY,
             height = 10
         )
-        self.dt.grid(row=3, column=0, padx=10, pady=10, sticky=tk.N, columnspan=2)
+        self.dt.grid(row=4, column=0, padx=10, pady=10, sticky=tk.N, columnspan=2)
 
         self.popup_exp.label_add_exp = ttk.Label(self.popup_exp, text="Add New Experiment", bootstyle="inverse")   
-        self.popup_exp.label_add_exp.grid(row=4, column=0, padx=10, pady=5, sticky=tk.N, columnspan=2)
+        self.popup_exp.label_add_exp.grid(row=5, column=0, padx=10, pady=5, sticky=tk.N, columnspan=2)
         self.popup_exp.add_exp_btn = ttk.Button(self.popup_exp, image= self.add_icon, command = lambda: self.add_exp(),
                                     cursor=CURSOR_HAND, style="Popup.TButton")
-        self.popup_exp.add_exp_btn.grid(row=5, column=0, padx=10, pady=5, sticky=tk.N, columnspan=2)
+        self.popup_exp.add_exp_btn.grid(row=6, column=0, padx=10, pady=5, sticky=tk.N, columnspan=2)
         ToolTip(self.popup_exp.add_exp_btn, text="Add New Experiment")
         
         # Button Save
         self.popup_exp.button_save = ttk.Button(self.popup_exp, text = 'Save', command = lambda: self.save_exp(),
                                     cursor=CURSOR_HAND, style="MainPopup.TButton")
-        self.popup_exp.button_save.grid(row=6, column=1, padx=10, pady=5, sticky=tk.NE)
+        self.popup_exp.button_save.grid(row=7, column=1, padx=10, pady=5, sticky=tk.NE)
 
         # Button Quit
         self.popup_exp.button_quit = ttk.Button(self.popup_exp, text = 'Quit', command=closed_window, 
                                     cursor=CURSOR_HAND, style="MainPopup.TButton")
-        self.popup_exp.button_quit.grid(row=6, column=0, padx=10, pady=5, sticky=tk.NW)
+        self.popup_exp.button_quit.grid(row=7, column=0, padx=10, pady=5, sticky=tk.NW)
 
     def select_exp(self):
         self.sub_path = filedialog.askdirectory(parent=self.popup_exp, initialdir=os.path.expanduser("~"), title="XNAT-PIC: Select subject directory!")
 
         if not self.sub_path:
             return
+
+        # Tree        
+        if self.tree_sub.tree.exists(0):
+            self.tree_sub.tree.delete(*self.tree_sub.tree.get_children())
+            
+        dict_items = write_tree(self.sub_path)
+
+        self.tree_sub.set(dict_items)
         # Selected folder
         self.popup_exp.entry_selected_sub['state'] = 'normal'
         self.popup_exp.entry_selected_sub.delete(0, tk.END)

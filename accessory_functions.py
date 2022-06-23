@@ -13,6 +13,7 @@ from read_visupars import read_visupars_parameters
 import pydicom
 import datetime 
 import datefinder
+import time
 
 # Accessory functions
 def disable_buttons(list_of_buttons):
@@ -225,3 +226,88 @@ def metadata_params(information_folder, value):
 
     return [results_dict, todos, path_list]
 
+def write_tree(folder_path):
+    dict_items = {}
+    j = 0
+    dict_items[str(j)] = {}
+    dict_items[str(j)]['parent'] = ""
+    dict_items[str(j)]['text'] = folder_path.split('/')[-1]
+
+    subdir = os.listdir(folder_path)
+    subdirectories = [x for x in subdir if x.endswith('.ini') == False]
+    total_weight = 0
+    last_edit_time = ''
+    j = 1
+    for sub in subdirectories:
+        
+        if os.path.isfile(os.path.join(folder_path, sub)):
+            # Check for last edit time
+            edit_time = str(time.strftime("%d/%m/%Y,%H:%M:%S", time.localtime(os.path.getmtime(os.path.join(folder_path, sub)))))
+            if last_edit_time == '' or edit_time > last_edit_time:
+                # Update the last edit time
+                last_edit_time = edit_time
+            # Check for file dimension
+            file_weight = round(os.path.getsize(os.path.join(folder_path, sub))/1024, 2)
+            total_weight += round(file_weight/1024, 2)
+            # Add the item like a file
+            dict_items[str(j)] = {}
+            dict_items[str(j)]['parent'] = '0'
+            dict_items[str(j)]['text'] = sub
+            dict_items[str(j)]['values'] = (edit_time, str(file_weight) + "KB", "File")
+            # Update the j counter
+            j += 1
+
+        elif os.path.isdir(os.path.join(folder_path, sub)):
+            current_weight = 0
+            last_edit_time_lev2 = ''
+            branch_idx = j
+            dict_items[str(j)] = {}
+            dict_items[str(j)]['parent'] = '0'
+            dict_items[str(j)]['text'] = sub
+            j += 1
+            # Scan directories to get subfolders
+            sub_level2 = os.listdir(os.path.join(folder_path, sub))
+            subdirectories2 = [x for x in sub_level2 if x.endswith('.ini') == False]
+            for sub2 in subdirectories2:
+                if os.path.isfile(os.path.join(folder_path, sub, sub2)):
+                    # Check for last edit time
+                    edit_time = str(time.strftime("%d/%m/%Y,%H:%M:%S", time.localtime(os.path.getmtime(os.path.join(folder_path, sub, sub2)))))
+                    if last_edit_time_lev2 == '' or edit_time > last_edit_time_lev2:
+                        # Update the last edit time
+                        last_edit_time_lev2 = edit_time
+                    if last_edit_time_lev2 > last_edit_time:
+                        last_edit_time = last_edit_time_lev2
+                    # Check for file dimension
+                    file_weight = round(os.path.getsize(os.path.join(folder_path, sub, sub2))/1024, 2)
+                    current_weight += round(file_weight/1024, 2)
+                    # Add the item like a file
+                    dict_items[str(j)] = {}
+                    dict_items[str(j)]['parent'] = '1'
+                    dict_items[str(j)]['text'] = sub2
+                    dict_items[str(j)]['values'] = (edit_time, str(file_weight) + "KB", "File")
+                    # Update the j counter
+                    j += 1
+
+                elif os.path.isdir(os.path.join(folder_path, sub, sub2)):
+                    # Check for last edit time
+                    edit_time = str(time.strftime("%d/%m/%Y,%H:%M:%S", time.localtime(os.path.getmtime(os.path.join(folder_path, sub, sub2)))))
+                    if last_edit_time_lev2 == '' or edit_time > last_edit_time_lev2:
+                        # Update the last edit time
+                        last_edit_time_lev2 = edit_time
+                    if last_edit_time_lev2 > last_edit_time:
+                        last_edit_time = last_edit_time_lev2
+
+                    folder_size = round(get_dir_size(os.path.join(folder_path, sub, sub2))/1024/1024, 2)
+                    current_weight += folder_size
+                    dict_items[str(j)] = {}
+                    dict_items[str(j)]['parent'] = '1'
+                    dict_items[str(j)]['text'] = sub2
+                    dict_items[str(j)]['values'] = (edit_time, str(folder_size) + 'MB', "Folder")
+                    j += 1
+                
+            total_weight += current_weight
+            dict_items[str(branch_idx)]['values'] = (last_edit_time_lev2, str(round(current_weight, 2)) + "MB", "Folder")
+
+    # Update the fields of the parent object
+    dict_items['0']['values'] = (last_edit_time, str(round(total_weight/1024, 2)) + "GB", "Folder")
+    return dict_items
