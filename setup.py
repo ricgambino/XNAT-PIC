@@ -48,7 +48,7 @@ bdist_msi_options = {
 
 build_exe_options = {
     "packages": ['ttkbootstrap'],
-    'include_files': [("layout_colors.json", ""), ("investigators.json", ""), ("images", ""), ("tcl", "./lib/tkinter")]
+    'include_files': [("layout_colors.json", ""), ("images", ""), ("tcl", "./lib/tkinter")]
 }
 
 

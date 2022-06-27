@@ -362,17 +362,20 @@ class NewSubjectManager():
         # Disable buttons
         disable_buttons([self.popup_sub.btn_prj, self.popup_sub.entry_sub, self.popup_sub.add_exp_btn, self.popup_sub.button_save, self.popup_sub.button_quit])
 
-        # Save the subject through separate thread (different from the main thread)
-        tp = threading.Thread(target=func_save_sub, args=())
-        tp.start()
-        while tp.is_alive() == True:
-            # As long as the thread is working, update the progress bar
-            progressbar.update_bar()
-        progressbar.stop_progress_bar()
+        try:
+            # Save the subject through separate thread (different from the main thread)
+            tp = threading.Thread(target=func_save_sub, args=())
+            tp.start()
+            while tp.is_alive() == True:
+                # As long as the thread is working, update the progress bar
+                progressbar.update_bar()
+            progressbar.stop_progress_bar()
 
-        messagebox.showinfo("XNAT-PIC", 'The new subject was created!')
-        self.popup_sub.destroy()
-
+            messagebox.showinfo("XNAT-PIC", 'The new subject was created!')
+            self.popup_sub.destroy()
+        except Exception as e:
+            enable_buttons([self.popup_sub.btn_prj, self.popup_sub.entry_sub, self.popup_sub.add_exp_btn, self.popup_sub.button_save, self.popup_sub.button_quit])
+            raise    
 
 class NewExperimentManager():
 

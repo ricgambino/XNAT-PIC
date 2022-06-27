@@ -1128,7 +1128,7 @@ class xnat_pic_gui():
             self.popup_metadata.button_browse = ttk.Button(self.popup_metadata_frame, text='Browse', command = lambda: self.select_folder(master), style="MainPopup.TButton")
             self.popup_metadata.button_browse.grid(row=3, column=0, padx=10, pady=5, sticky=tk.N)
 
-            self.popup_metadata.button_ok = ttk.Button(self.popup_metadata, image = master.logo_accept, state = tk.DISABLED,
+            self.popup_metadata.button_ok = ttk.Button(self.popup_metadata, image = master.logo_accept,
                                                 command = lambda: self.layout_metadata(master) , cursor=CURSOR_HAND)
             self.popup_metadata.button_ok.grid(row=2, column=1, padx=10, pady=5, sticky=NW)
 
@@ -1141,7 +1141,7 @@ class xnat_pic_gui():
                     pass
                 enable_buttons([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn])
                 
-            self.popup_metadata.button_cancel = ttk.Button(self.popup_metadata, image = master.logo_delete,  state = tk.DISABLED,
+            self.popup_metadata.button_cancel = ttk.Button(self.popup_metadata, image = master.logo_delete,
                                                 command = enable, cursor=CURSOR_HAND)
             self.popup_metadata.button_cancel.grid(row=2, column=0, padx=10, pady=5, sticky=NE)
 
@@ -1170,6 +1170,10 @@ class xnat_pic_gui():
             master.frame_label.set("Project Data")         
 
         def layout_metadata(self, master): 
+            
+            if not self.popup_metadata.entry_browse.get():
+                messagebox.showerror('XNAT-PIC','Select a folder!')
+                return
 
             self.popup_metadata.destroy()
 
@@ -1194,6 +1198,7 @@ class xnat_pic_gui():
             self.results_dict = params[0]
             self.todos = params[1]
             self.path_list = params[2]
+            self.path_list1 = params[3]
 
             #################### Update the frame ####################
             destroy_widgets([master.toolbar_menu, master.convert_btn, master.info_btn, master.upload_btn, master.close_btn, master.xnat_pic_logo_label])
@@ -1222,6 +1227,8 @@ class xnat_pic_gui():
             file_menu.add_command(label="Clear Custom Variables", image = master.logo_clear, compound='left', command = lambda: self.clear_metadata())
             file_menu.add_separator()
             file_menu.add_command(label="Save All", image = master.logo_save, compound='left', command = lambda: self.save_metadata())
+            file_menu.add_separator()
+            file_menu.add_command(label="Save New Project", image = master.logo_save, compound='left', command = lambda: self.save_new_project(master))
             
             exit_menu.add_command(label="Exit", image = master.logo_exit, compound='left', command = lambda: self.exit_metadata(master))
 
@@ -1714,10 +1721,9 @@ class xnat_pic_gui():
             self.selected_dose.set('')
             disable_buttons([self.group_menu, self.timepoint_menu, self.time_entry, self.timepoint_menu1, self.dose_menu, self.cal])
             # Saves the changes made by the user in the txt file
-            substring = str(my_key).replace('#','/')
-            index = [i for i, s in enumerate(self.path_list) if substring in s]
+            substring = self.path_list1.get(my_key)
             name_txt = str(my_key).rsplit('#', 1)[1] + "_" + "Custom_Variables.txt"
-            tmp_path = self.path_list[index[0]] + "\\" + name_txt
+            tmp_path = substring + "\\" + name_txt
             try:
                 with open(tmp_path.replace('\\', '/'), 'w+') as meta_file:
                     meta_file.write(tabulate(self.results_dict[my_key].items(), headers=['Variable', 'Value']))
@@ -2054,6 +2060,57 @@ class xnat_pic_gui():
                     self.entries_value_CV[i].delete(0, tk.END)
                     self.entries_value_CV[i]['state'] = state
 
+        def save_new_project(self, master):
+            # Save the new project based on the information entered by the user
+            new_prj_path = filedialog.askdirectory(parent=self.frame_metadata, initialdir=os.path.expanduser("~"), title="XNAT-PIC: Select the folder where to save the new project!")
+            
+            if not new_prj_path:
+                return
+            
+            def func_save_prj():
+                for key, value in self.results_dict.items():
+                    new_exp_path = new_prj_path + '\\' + value.get('Project') + '\\' + value.get('Subject') + '\\' + value.get('Experiment')
+                    progressbar.set_caption('Creating: ' + new_exp_path.replace('\\', '/'))
+
+                    # The path already exists
+                    if os.path.exists(new_exp_path.replace('\\', '/')):
+                        answer = messagebox.askyesno('XNAT-PIC', 'The experiment ' + new_exp_path.replace('\\', '/') + ' already exists. Overwrite it?')
+
+                        if answer is True:
+                            try:
+                                shutil.rmtree((new_exp_path).replace('//', os.sep))
+                            except Exception as e:
+                                messagebox.showerror("XNAT-PIC", str(e))
+                                raise
+                        else:
+                            continue
+                    
+                    # Save the experiment
+                    try:
+                        shutil.copytree(self.path_list1.get(key), new_exp_path.replace('\\', '/'))
+                    except Exception as e:
+                        messagebox.showerror("XNAT-PIC", str(e))
+                        continue
+            
+            # Start the progress bar
+            progressbar = ProgressBar(self.frame_metadata, bar_title='XNAT-PIC New Project')
+            progressbar.start_indeterminate_bar()
+            
+            # Disable button
+            disable_buttons([self.browse_btn,self.modify_btn, self.confirm_btn, self.multiple_confirm_btn])
+            try:
+                # Save the project through separate thread (different from the main thread)
+                tp = threading.Thread(target=func_save_prj, args=())
+                tp.start()
+                while tp.is_alive() == True:
+                    # As long as the thread is working, update the progress bar
+                    progressbar.update_bar()
+                progressbar.stop_progress_bar()
+                enable_buttons([self.browse_btn,self.modify_btn, self.confirm_btn, self.multiple_confirm_btn])
+                messagebox.showinfo("XNAT-PIC", 'The new project was created!')
+            except Exception as e:
+                enable_buttons([self.browse_btn,self.modify_btn, self.confirm_btn, self.multiple_confirm_btn])
+                
         # #################### Save all the metadata ####################
         def save_metadata(self):
             tmp_global_path = str(self.information_folder) + "\\" + self.project_name + '_' + 'Custom_Variables.xlsx'

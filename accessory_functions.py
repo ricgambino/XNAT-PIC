@@ -159,6 +159,7 @@ def metadata_params(information_folder, value):
                 exp = []
             todos.update(todos_tmp)
             todos_tmp = {}
+
     elif value == 1:
         tmp_dict = {}
         results_dict = {}
@@ -187,6 +188,7 @@ def metadata_params(information_folder, value):
         path_list = [information_folder]
         todos = {str(information_folder).rsplit("/",3)[2] : [str(information_folder).rsplit("/",3)[3]]}
     
+    path_list1 = {}
     # Scan all files contained in the folder that the user has provided
     for path in path_list:
         exp = str(path).rsplit("/",3)[3]
@@ -194,6 +196,7 @@ def metadata_params(information_folder, value):
         prj = str(path).rsplit("/",3)[1]
         name = exp + "_" + "Custom_Variables.txt"
         keys = sub + "#" + exp
+        path_list1.update({keys : path})
         # Check if the txt file is in folder of the patient
         # If the file exists, read le info
         if os.path.exists((path + "\\" + name).replace('\\', '/')):
@@ -224,7 +227,7 @@ def metadata_params(information_folder, value):
 
         results_dict.update(tmp_dict)
 
-    return [results_dict, todos, path_list]
+    return [results_dict, todos, path_list, path_list1]
 
 def write_tree(folder_path):
     dict_items = {}
