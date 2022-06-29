@@ -249,15 +249,15 @@ class xnat_pic_gui():
             self.panel_img.label = ttk.Label(self.frame, image=self.panel_img)
             self.panel_img.label.place(x=0, y=0, anchor=tk.NW, relheight=1, relwidth=0.2)
             # Load XNAT-PIC Logo
-            self.xnat_pic_logo_dark = open_image(PATH_IMAGE + "XNAT-PIC-logo-dark.png", 3*self.my_width/5, self.my_height/3)
-            self.xnat_pic_logo_light = open_image(PATH_IMAGE + "XNAT-PIC-logo-light.png", 3*self.my_width/5, self.my_height/3)
+            self.xnat_pic_logo_dark = open_image(PATH_IMAGE + "XNAT-PIC_logo.png", 2*self.my_width/5, self.my_height/3)
+            self.xnat_pic_logo_light = open_image(PATH_IMAGE + "XNAT-PIC-logo-light.png", 2*self.my_width/5, self.my_height/3)
             
             if self.frame_label.get() in ["Enter", "Main"]:
                 if self.style_label.get() == 'cerculean':
                     self.xnat_pic_logo_label = ttk.Label(self.frame, image=self.xnat_pic_logo_dark)
                 else:
                     self.xnat_pic_logo_label = ttk.Label(self.frame, image=self.xnat_pic_logo_light)
-                self.xnat_pic_logo_label.place(relx=0.3, rely=0.1, anchor=tk.NW, relheight=0.3, relwidth=0.7)
+                self.xnat_pic_logo_label.place(relx=0.6, rely=0.3, anchor=tk.CENTER)
 
             # Load Sun icon to swith to dark/light mode
             def switch_mode(*args):
@@ -363,7 +363,7 @@ class xnat_pic_gui():
                 self.xnat_pic_logo_label = ttk.Label(self.frame, image=self.xnat_pic_logo_dark)
             else:
                 self.xnat_pic_logo_label = ttk.Label(self.frame, image=self.xnat_pic_logo_light)
-            self.xnat_pic_logo_label.place(relx=0.3, rely=0.1, anchor=tk.NW, relheight=0.3, relwidth=0.7)
+            self.xnat_pic_logo_label.place(relx=0.6, rely=0.3, anchor=tk.CENTER)
 
         # if self.dark_mode_btn.winfo_exists() == 0:
         #     if self.style_label.get() == 'cerculean':
@@ -426,7 +426,7 @@ class xnat_pic_gui():
             self.frame_title.pack(fill='x', padx=25, pady=10, anchor=tk.CENTER)
 
             # Label Frame for Select Converter
-            self.conv_selection = ttk.LabelFrame(master.frame, text="Converter Selection")
+            self.conv_selection = ttk.LabelFrame(master.frame, style="Hidden.TLabelframe")
             self.conv_selection.place(relx=0.25, rely=0.15, anchor=tk.NW)
 
             # Initialize variables
@@ -463,12 +463,12 @@ class xnat_pic_gui():
             Hovertip(self.exp_conv_btn, "Convert an experiment from Bruker format to DICOM standard")
 
             # Label Frame for Checkbuttons
-            self.label_frame_checkbtn = ttk.LabelFrame(master.frame, text="Options")
+            self.label_frame_checkbtn = ttk.LabelFrame(master.frame, style="Hidden.TLabelframe")
             self.label_frame_checkbtn.place(relx=0.95, rely=0.15, anchor=tk.NE)
             # Overwrite button
             self.overwrite_flag = tk.IntVar()
             self.btn_overwrite = ttk.Checkbutton(self.label_frame_checkbtn, text="Overwrite existing folders",                               
-                                onvalue=1, offvalue=0, variable=self.overwrite_flag, style="Mini.TCheckbutton")
+                                onvalue=1, offvalue=0, variable=self.overwrite_flag, bootstyle="round-toggle")
             self.btn_overwrite.grid(row=1, column=1, sticky=tk.NW, padx=5, pady=5)
             Hovertip(self.btn_overwrite, "Overwrite already existent folders if they occur")
 
@@ -477,12 +477,12 @@ class xnat_pic_gui():
                 self.params['results_flag'] = self.results_flag.get()
             self.results_flag = tk.IntVar()
             self.btn_results = ttk.Checkbutton(self.label_frame_checkbtn, text='Copy additional files', variable=self.results_flag,
-                                onvalue=1, offvalue=0, command=add_results_handler, style="Mini.TCheckbutton")
+                                onvalue=1, offvalue=0, command=add_results_handler, bootstyle="round-toggle")
             self.btn_results.grid(row=2, column=1, sticky=tk.NW, padx=5, pady=5)
             Hovertip(self.btn_results, "Copy additional files (results, parametric maps, graphs, ...)\ninto converted folders")
 
             # Treeview Label Frame for folder selection
-            self.tree_labelframe = ttk.LabelFrame(master.frame, text="Folder to Convert")
+            self.tree_labelframe = ttk.LabelFrame(master.frame, style="Hidden.TLabelframe")
             self.tree_labelframe.place(relx=0.25, rely=0.25, anchor=tk.NW)
 
             def select_folder(*args):
@@ -737,7 +737,7 @@ class xnat_pic_gui():
                     enable_buttons([self.prj_conv_btn, self.sbj_conv_btn, self.exp_conv_btn])
 
             # Treeview Label Frame post_convertion
-            self.tree_labelframe_post = ttk.LabelFrame(master.frame, text="Converted Folder")
+            self.tree_labelframe_post = ttk.LabelFrame(master.frame, style="Hidden.TLabelframe")
             self.tree_labelframe_post.place(relx=0.95, rely=0.25, anchor=tk.NE)
 
             self.fake_btn = ttk.Button(self.tree_labelframe_post, text="", style="TButton",
@@ -817,7 +817,7 @@ class xnat_pic_gui():
         def check_buttons(self, master, press_btn=0):
 
             def back():
-                destroy_widgets([self.conv_selection, self.labelframe_main, self.tree_labelframe,
+                destroy_widgets([self.conv_selection, self.labelframe_main, self.tree_labelframe, self.label_frame_checkbtn,
                                 self.exit_btn, self.next_btn, self.tree_labelframe_post, self.frame_title])
                 self.overall_converter(master)
 
