@@ -1135,10 +1135,10 @@ class xnat_pic_gui():
             # If the popup is closed, it re-enables the buttons
             def enable():
                 self.popup_metadata.destroy()
-                try:
-                    enable_buttons([self.browse_btn, self.modify_btn, self.confirm_btn, self.multiple_confirm_btn]) 
-                except:
-                    pass
+                # try:
+                #     enable_buttons([self.browse_btn, self.modify_btn, self.confirm_btn, self.multiple_confirm_btn]) 
+                # except:
+                #     pass
                 enable_buttons([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn])
                 
             self.popup_metadata.button_cancel = ttk.Button(self.popup_metadata, image = master.logo_delete,
@@ -1209,7 +1209,7 @@ class xnat_pic_gui():
             self.frame_title.place(relx = 0.5, rely = 0.05, anchor = CENTER)
             #################### Menu ###########################
             def browse_fun():
-                disable_buttons([self.browse_btn, self.modify_btn, self.confirm_btn, self.multiple_confirm_btn]) 
+                #disable_buttons([self.browse_btn, self.modify_btn, self.confirm_btn, self.multiple_confirm_btn]) 
                 self.__init__(master)
 
             self.menu = ttk.Menu(master.root)
