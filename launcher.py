@@ -1645,7 +1645,8 @@ class xnat_pic_gui():
                 self.entries_value_CV[1].config(state=tk.DISABLED)
 
             self.timepoint_menu.bind("<<ComboboxSelected>>", timepoint_changed)
-            self.time_entry.bind("<<Return>>", timepoint_changed)
+            self.time_entry.bind('<Return>', timepoint_changed)
+            self.time_entry.bind('<FocusOut>', timepoint_changed)
             #self.time_entry_value.trace('w', timepoint_changed)
             self.timepoint_menu1.bind("<<ComboboxSelected>>", timepoint_changed)
 
@@ -2793,11 +2794,11 @@ class xnat_pic_gui():
                                     if ans != True:
                                         return
                                 params['subject_id'] = self.sub.get()
-                                self.exp.set('_'.join([subject_data['Project'], subject_data['Subject'], subject_data['Group'], 
-                                                        subject_data['Timepoint']]).replace(' ', '_'))
+                                self.exp.set('_'.join([subject_data['Project'], subject_data['Subject'], subject_data['Experiment'],
+                                                        subject_data['Group'], subject_data['Timepoint']]).replace(' ', '_'))
                                 params['experiment_id'] = self.exp.get()
                                 for var in subject_data.keys():
-                                    if var not in ['Project', 'Subject', 'AcquisitionDate']:
+                                    if var not in ['Project', 'Subject', 'Experiment', 'Acquisition_date']:
                                         params[var] = subject_data[var]
                             except:
                                 # Define the subject_id and the experiment_id if the custom variables file is not available
@@ -2900,11 +2901,11 @@ class xnat_pic_gui():
                                 return
                         params['subject_id'] = self.sub.get()
                         if self.exp.get() == '--':
-                            self.exp.set('_'.join([subject_data['Project'], subject_data['Subject'], subject_data['Group'], 
-                                                    subject_data['Timepoint']]).replace(' ', '_'))
+                            self.exp.set('_'.join([subject_data['Project'], subject_data['Subject'], subject_data['Experiment'],
+                                                    subject_data['Group'], subject_data['Timepoint']]).replace(' ', '_'))
                         params['experiment_id'] = self.exp.get()
                         for var in subject_data.keys():
-                            if var not in ['Project', 'Subject', 'AcquisitionDate']:
+                            if var not in ['Project', 'Subject', 'Experiment', 'Acquisition_date']:
                                 params[var] = subject_data[var]
                     except:
                         # Define the subject_id and the experiment_id if the custom variables file is not available
@@ -3003,11 +3004,11 @@ class xnat_pic_gui():
                                 return
                         params['subject_id'] = self.sub.get()
                         if self.exp.get() == '--':
-                            self.exp.set('_'.join([subject_data['Project'], subject_data['Subject'], subject_data['Group'], 
-                                                    subject_data['Timepoint']]).replace(' ', '_'))
+                            self.exp.set('_'.join([subject_data['Project'], subject_data['Subject'], subject_data['Experiment'],
+                                                    subject_data['Group'], subject_data['Timepoint']]).replace(' ', '_'))
                         params['experiment_id'] = self.exp.get()
                         for var in subject_data.keys():
-                            if var not in ['Project', 'Subject', 'AcquisitionDate']:
+                            if var not in ['Project', 'Subject', 'Experiment', 'Acquisition_date']:
                                 params[var] = subject_data[var]
                     except:
                         # Define the subject_id and the experiment_id if the custom variables file is not available
