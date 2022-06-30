@@ -7,6 +7,10 @@ from ttkbootstrap.tableview import Tableview
 from ttkbootstrap.constants import *
 from ttkbootstrap.tooltip import ToolTip
 import shutil
+from progress_bar import ProgressBar
+import threading
+from Treeview import Treeview
+import time
 
 PATH_IMAGE = "images\\"
 CURSOR_HAND = "hand2"
@@ -91,7 +95,7 @@ class NewProjectManager():
         self.popup_prj.button_quit = ttk.Button(self.popup_prj, text = 'Quit', command=closed_window, 
                                     cursor=CURSOR_HAND, style="MainPopup.TButton")
         self.popup_prj.button_quit.grid(row=5, column=0, padx=10, pady=5, sticky=tk.NW)
-    
+
     def add_exp(self):
         if not self.popup_prj.entry_prj.get():
             messagebox.showerror('XNAT-PIC','Insert Project Name!')
@@ -107,41 +111,70 @@ class NewProjectManager():
        
         self.dt.insert_row('end', [str(self.popup_prj.entry_sub.get()), str(self.exp_path_old).rsplit("/",1)[1], str(self.exp_path_old)])
         self.dt.load_table_data()
-
+    
     def save_prj(self):
-        save_list = self.dt.get_rows()
-        if len(save_list) == 0 :
-            messagebox.showerror('XNAT-PIC','No records present in the list!')
+
+        self.save_list = self.dt.get_rows()
+        if not self.popup_prj.entry_prj.get():
+            messagebox.showerror('XNAT-PIC','Insert Project Name!')
             return
+
         self.exp_path = filedialog.askdirectory(parent=self.popup_prj, initialdir=os.path.expanduser("~"), title="XNAT-PIC: Select the folder where to save the new project!")
         
         if not self.exp_path:
             return
-
+        
         # The project already exists. Overwrite it?
         if os.path.exists((str(self.exp_path) + '//' + str(self.popup_prj.entry_prj.get())).replace('//', os.sep)):
             answer = messagebox.askyesno('XNAT-PIC', 'The project ' +(str(self.exp_path) + '//' + str(self.popup_prj.entry_prj.get())).replace('//', os.sep) +
                                         ' already exists. Overwrite it?')
             if answer is True:
-                shutil.rmtree((str(self.exp_path) + '//' + str(self.popup_prj.entry_prj.get())).replace('//', os.sep))
-            else:
-                return
-
-        for row in save_list:
-            self.exp_path_new = (str(self.exp_path) + '//' + str(self.popup_prj.entry_prj.get()) + '//' + str(row.values[0]) + '//' + str(row.values[1])).replace('//', os.sep)
-            if not os.path.exists(self.exp_path_new):
                 try:
-                    shutil.copytree(row.values[2], self.exp_path_new)
+                    shutil.rmtree((str(self.exp_path) + '//' + str(self.popup_prj.entry_prj.get())).replace('//', os.sep))
                 except Exception as e:
                     messagebox.showerror("XNAT-PIC", str(e))
                     raise
             else:
-                messagebox.showerror("XNAT-PIC", 'The path: ' + self.exp_path_new + ' already exists!')
                 return
+        
+        def func_save_prj():
+               
+            # Case 1: the user wants create only the new projects, without subject and experiment
+            if not self.popup_prj.entry_sub.get() and len(self.save_list) == 0:
+                os.makedirs((str(self.exp_path) + '//' + str(self.popup_prj.entry_prj.get())).replace('//', os.sep))
+
+            # Case 2: the user wants create the new projects with subject and without experiment
+            elif self.popup_prj.entry_sub.get() and len(self.save_list) == 0:
+                os.makedirs((str(self.exp_path) + '//' + str(self.popup_prj.entry_prj.get()) + '//' + str(self.popup_prj.entry_sub.get())).replace('//', os.sep))
+
+            # Case 3: the user wants create the new projects with subject and experiment
+            elif self.popup_prj.entry_sub.get() and len(self.save_list) != 0 :
                 
+                for row in self.save_list:
+                    self.exp_path_new = (str(self.exp_path) + '//' + str(self.popup_prj.entry_prj.get()) + '//' + str(row.values[0]) + '//' + str(row.values[1])).replace('//', os.sep)
+                    progressbar.set_caption('Creating: ' + self.exp_path_new.replace(os.sep, '/'))
+                    try:
+                        shutil.copytree(row.values[2], self.exp_path_new)
+                    except Exception as e:
+                        messagebox.showerror("XNAT-PIC", str(e))
+                        continue
+
+        # Start the progress bar
+        progressbar = ProgressBar(self.popup_prj, bar_title='XNAT-PIC New Project')
+        progressbar.start_indeterminate_bar()
+        
+        # Disable button
+        disable_buttons([self.popup_prj.entry_prj, self.popup_prj.entry_sub, self.popup_prj.add_exp_btn, self.popup_prj.button_save, self.popup_prj.button_quit])
+        # Save the project through separate thread (different from the main thread)
+        tp = threading.Thread(target=func_save_prj, args=())
+        tp.start()
+        while tp.is_alive() == True:
+            # As long as the thread is working, update the progress bar
+            progressbar.update_bar()
+        progressbar.stop_progress_bar()
+        
         messagebox.showinfo("XNAT-PIC", 'The new project was created!')
         self.popup_prj.destroy()
-
 
 
 class NewSubjectManager():
@@ -176,9 +209,15 @@ class NewSubjectManager():
         self.popup_sub.btn_prj = ttk.Button(self.popup_sub, text = 'Select Project', command = lambda: self.select_prj(), cursor=CURSOR_HAND, style="Secondary1.TButton")
         self.popup_sub.btn_prj.grid(row=1, column=0, padx=10, pady=10, sticky=tk.N, columnspan=2)
 
+        # TreeView
+        columns = [("#0", "Selected folder"), ("#1", "Last Update"), ("#2", "Size"), ("#3", "Type")]
+        self.tree_prj = Treeview(self.popup_sub, columns)
+        self.tree_prj.tree.grid(row=2, column=0, padx=(10, 35), pady=10, sticky=tk.N, columnspan=2)
+        self.tree_prj.scrollbar.grid(row=2, column=1, padx=10, pady=10, sticky=tk.NS + tk.E, columnspan=2)
+
         # Label Frame 
         self.popup_sub.frame = ttk.LabelFrame(self.popup_sub, text="New Subject", style="Popup.TLabelframe")
-        self.popup_sub.frame.grid(row=2, column=0, padx=10, pady=5, sticky=tk.E+tk.W+tk.N+tk.S, columnspan=2)
+        self.popup_sub.frame.grid(row=3, column=0, padx=10, pady=5, sticky=tk.E+tk.W+tk.N+tk.S, columnspan=2)
 
         # Existing prj      
         self.popup_sub.label_prj = ttk.Label(self.popup_sub.frame, text="Project Name")   
@@ -215,30 +254,38 @@ class NewSubjectManager():
             bootstyle=PRIMARY,
             height = 10
         )
-        self.dt.grid(row=3, column=0, padx=10, pady=10, sticky=tk.N, columnspan=2)
+        self.dt.grid(row=4, column=0, padx=10, pady=10, sticky=tk.N, columnspan=2)
 
         self.popup_sub.label_add_exp = ttk.Label(self.popup_sub, text="Add New Experiment", bootstyle="inverse")   
-        self.popup_sub.label_add_exp.grid(row=4, column=0, padx=10, pady=5, sticky=tk.N, columnspan=2)
+        self.popup_sub.label_add_exp.grid(row=5, column=0, padx=10, pady=5, sticky=tk.N, columnspan=2)
         self.popup_sub.add_exp_btn = ttk.Button(self.popup_sub, image= self.add_icon, command = lambda: self.add_exp(),
                                     cursor=CURSOR_HAND, style="Popup.TButton")
-        self.popup_sub.add_exp_btn.grid(row=5, column=0, padx=10, pady=5, sticky=tk.N, columnspan=2)
+        self.popup_sub.add_exp_btn.grid(row=6, column=0, padx=10, pady=5, sticky=tk.N, columnspan=2)
         ToolTip(self.popup_sub.add_exp_btn, text="Add New Experiment")
         
         # Button Save
         self.popup_sub.button_save = ttk.Button(self.popup_sub, text = 'Save', command = lambda: self.save_sub(),
                                     cursor=CURSOR_HAND, style="MainPopup.TButton")
-        self.popup_sub.button_save.grid(row=6, column=1, padx=10, pady=5, sticky=tk.NE)
+        self.popup_sub.button_save.grid(row=7, column=1, padx=10, pady=5, sticky=tk.NE)
 
         # Button Quit
         self.popup_sub.button_quit = ttk.Button(self.popup_sub, text = 'Quit', command=closed_window, 
                                     cursor=CURSOR_HAND, style="MainPopup.TButton")
-        self.popup_sub.button_quit.grid(row=6, column=0, padx=10, pady=5, sticky=tk.NW)
+        self.popup_sub.button_quit.grid(row=7, column=0, padx=10, pady=5, sticky=tk.NW)
 
     def select_prj(self):
         self.prj_path = filedialog.askdirectory(parent=self.popup_sub, initialdir=os.path.expanduser("~"), title="XNAT-PIC: Select project directory!")
-
         if not self.prj_path:
             return
+
+        # Tree        
+        if self.tree_prj.tree.exists(0):
+            self.tree_prj.tree.delete(*self.tree_prj.tree.get_children())
+            
+        dict_items = write_tree(self.prj_path)
+
+        self.tree_prj.set(dict_items)
+
         # Selected folder
         self.popup_sub.entry_selected_prj['state'] = 'normal'
         self.popup_sub.entry_selected_prj.delete(0, tk.END)
@@ -269,30 +316,66 @@ class NewSubjectManager():
 
     def save_sub(self):
         save_list = self.dt.get_rows()
-        if len(save_list) == 0 :
-            messagebox.showerror('XNAT-PIC','No records present in the list!')
+        
+        if not self.popup_sub.entry_selected_prj.get():
+            messagebox.showerror('XNAT-PIC','Select a project!')
             return
+        if not self.popup_sub.entry_sub.get():
+            messagebox.showerror('XNAT-PIC','Insert Subject Name!')
+            return
+        
+        def func_save_sub():
+            # Case 1: the user wants create only the new subjects, without experiment
+            if self.popup_sub.entry_sub.get() and len(save_list) == 0:
+                if os.path.exists((str(self.prj_path) + '//' + str(self.popup_sub.entry_sub.get())).replace('//', os.sep)):
+                    answer = messagebox.askyesno('XNAT-PIC', 'The subject ' +  (str(self.prj_path) + '//' + str(self.popup_sub.entry_sub.get())).replace('//', os.sep)
+                                                + ' already exists. Overwrite it?')
 
-        for row in save_list:
-            self.exp_path_new = (str(self.prj_path) + '//' + str(row.values[0])).replace('//', os.sep)
-            if os.path.exists(self.exp_path_new):
-                answer = messagebox.askyesno('XNAT-PIC', 'The subject ' +  self.exp_path_new + ' already exists. Overwrite it?')
+                    # The subject already exists. Overwrite it?
+                    if answer is True:    
+                        try:
+                            shutil.rmtree((str(self.prj_path) + '//' + str(self.popup_sub.entry_sub.get())).replace('//', os.sep))
+                        except Exception as e:
+                            messagebox.showerror("XNAT-PIC", str(e))
+                            raise
+                    else:
+                        return
 
-                # The subject already exists. Overwrite it?
-                if answer is True:    
-                    shutil.rmtree(self.exp_path_new)
-                else:
-                    return
+                os.makedirs((str(self.prj_path) + '//' + str(self.popup_sub.entry_sub.get())).replace('//', os.sep))
 
-            try:
-                shutil.copytree(row.values[2], (self.exp_path_new + '//' + str(row.values[1])).replace('//', os.sep))
-            except Exception as e:
-                messagebox.showerror("XNAT-PIC", str(e))
-                raise
-            
+            # Case 2: the user wants create the new subjects with experiment
+            elif self.popup_sub.entry_sub.get() and  len(save_list) != 0 :
+                for row in save_list:
+                    self.exp_path_new = (str(self.prj_path) + '//' + str(row.values[0])).replace('//', os.sep)
+                    progressbar.set_caption('Creating: ' + (self.exp_path_new + '//' + str(row.values[1])).replace('//', '/'))
+
+                    try:
+                        shutil.copytree(row.values[2], (self.exp_path_new + '//' + str(row.values[1])).replace('//', os.sep))
+                    except Exception as e:
+                        messagebox.showerror("XNAT-PIC", str(e))
+                        continue
+
+        # Start the progress bar
+        progressbar = ProgressBar(self.popup_sub, bar_title='XNAT-PIC New Subject')
+        progressbar.start_indeterminate_bar()
+        
+        # Disable buttons
+        disable_buttons([self.popup_sub.btn_prj, self.popup_sub.entry_sub, self.popup_sub.add_exp_btn, self.popup_sub.button_save, self.popup_sub.button_quit])
+
+        try:
+            # Save the subject through separate thread (different from the main thread)
+            tp = threading.Thread(target=func_save_sub, args=())
+            tp.start()
+            while tp.is_alive() == True:
+                # As long as the thread is working, update the progress bar
+                progressbar.update_bar()
+            progressbar.stop_progress_bar()
+
             messagebox.showinfo("XNAT-PIC", 'The new subject was created!')
             self.popup_sub.destroy()
-
+        except Exception as e:
+            enable_buttons([self.popup_sub.btn_prj, self.popup_sub.entry_sub, self.popup_sub.add_exp_btn, self.popup_sub.button_save, self.popup_sub.button_quit])
+            raise    
 
 class NewExperimentManager():
 
@@ -325,10 +408,16 @@ class NewExperimentManager():
         
         self.popup_exp.btn_sub = ttk.Button(self.popup_exp, text = 'Select Subject', command = lambda: self.select_exp(), cursor=CURSOR_HAND, style="Secondary1.TButton")
         self.popup_exp.btn_sub.grid(row=1, column=0, padx=10, pady=10, sticky=tk.N, columnspan=2)
+        
+        # TreeView
+        columns = [("#0", "Selected folder"), ("#1", "Last Update"), ("#2", "Size"), ("#3", "Type")]
+        self.tree_sub = Treeview(self.popup_exp, columns)
+        self.tree_sub.tree.grid(row=2, column=0, padx=(10, 35), pady=10, sticky=tk.N, columnspan=2)
+        self.tree_sub.scrollbar.grid(row=2, column=1, padx=10, pady=10, sticky=tk.NS + tk.E, columnspan=2)
 
         # Label Frame 
         self.popup_exp.frame = ttk.LabelFrame(self.popup_exp, text="New Experiment", style="Popup.TLabelframe")
-        self.popup_exp.frame.grid(row=2, column=0, padx=10, pady=5, sticky=tk.E+tk.W+tk.N+tk.S, columnspan=2)
+        self.popup_exp.frame.grid(row=3, column=0, padx=10, pady=5, sticky=tk.E+tk.W+tk.N+tk.S, columnspan=2)
 
         # Existing prj      
         self.popup_exp.label_prj = ttk.Label(self.popup_exp.frame, text="Project Name")   
@@ -364,30 +453,38 @@ class NewExperimentManager():
             bootstyle=PRIMARY,
             height = 10
         )
-        self.dt.grid(row=3, column=0, padx=10, pady=10, sticky=tk.N, columnspan=2)
+        self.dt.grid(row=4, column=0, padx=10, pady=10, sticky=tk.N, columnspan=2)
 
         self.popup_exp.label_add_exp = ttk.Label(self.popup_exp, text="Add New Experiment", bootstyle="inverse")   
-        self.popup_exp.label_add_exp.grid(row=4, column=0, padx=10, pady=5, sticky=tk.N, columnspan=2)
+        self.popup_exp.label_add_exp.grid(row=5, column=0, padx=10, pady=5, sticky=tk.N, columnspan=2)
         self.popup_exp.add_exp_btn = ttk.Button(self.popup_exp, image= self.add_icon, command = lambda: self.add_exp(),
                                     cursor=CURSOR_HAND, style="Popup.TButton")
-        self.popup_exp.add_exp_btn.grid(row=5, column=0, padx=10, pady=5, sticky=tk.N, columnspan=2)
+        self.popup_exp.add_exp_btn.grid(row=6, column=0, padx=10, pady=5, sticky=tk.N, columnspan=2)
         ToolTip(self.popup_exp.add_exp_btn, text="Add New Experiment")
         
         # Button Save
         self.popup_exp.button_save = ttk.Button(self.popup_exp, text = 'Save', command = lambda: self.save_exp(),
                                     cursor=CURSOR_HAND, style="MainPopup.TButton")
-        self.popup_exp.button_save.grid(row=6, column=1, padx=10, pady=5, sticky=tk.NE)
+        self.popup_exp.button_save.grid(row=7, column=1, padx=10, pady=5, sticky=tk.NE)
 
         # Button Quit
         self.popup_exp.button_quit = ttk.Button(self.popup_exp, text = 'Quit', command=closed_window, 
                                     cursor=CURSOR_HAND, style="MainPopup.TButton")
-        self.popup_exp.button_quit.grid(row=6, column=0, padx=10, pady=5, sticky=tk.NW)
+        self.popup_exp.button_quit.grid(row=7, column=0, padx=10, pady=5, sticky=tk.NW)
 
     def select_exp(self):
         self.sub_path = filedialog.askdirectory(parent=self.popup_exp, initialdir=os.path.expanduser("~"), title="XNAT-PIC: Select subject directory!")
 
         if not self.sub_path:
             return
+
+        # Tree        
+        if self.tree_sub.tree.exists(0):
+            self.tree_sub.tree.delete(*self.tree_sub.tree.get_children())
+            
+        dict_items = write_tree(self.sub_path)
+
+        self.tree_sub.set(dict_items)
         # Selected folder
         self.popup_exp.entry_selected_sub['state'] = 'normal'
         self.popup_exp.entry_selected_sub.delete(0, tk.END)
@@ -425,24 +522,46 @@ class NewExperimentManager():
             messagebox.showerror('XNAT-PIC','No records present in the list!')
             return
         
-        for row in save_list:
-            self.exp_path_new = (str(self.sub_path) + '//' + str(row.values[0])).replace('//', os.sep)
-            if os.path.exists(self.exp_path_new):
-                answer = messagebox.askyesno('XNAT-PIC', 'The experiment ' +  self.exp_path_new + ' already exists. Overwrite it?')
+        def func_save_exp():
+            for row in save_list:
+                self.exp_path_new = (str(self.sub_path) + '//' + str(row.values[0])).replace('//', os.sep)
+                progressbar.set_caption('Creating: ' + self.exp_path_new.replace(os.sep, '/'))
 
-                # The subject already exists. Overwrite it?
-                if answer is True:    
-                    shutil.rmtree(self.exp_path_new)
-                else:
-                    return
+                if os.path.exists(self.exp_path_new):
+                    answer = messagebox.askyesno('XNAT-PIC', 'The experiment ' +  self.exp_path_new + ' already exists. Overwrite it?')
 
-            try:
-                shutil.copytree(row.values[1], self.exp_path_new)
-            except Exception as e:
-                messagebox.showerror("XNAT-PIC", str(e))
-                raise
-            
-            messagebox.showinfo("XNAT-PIC", 'The new experiment was created!')
-            self.popup_exp.destroy()
+                    # The experiment already exists. Overwrite it?
+                    if answer is True:    
+                        try:
+                            shutil.rmtree(self.exp_path_new)
+                        except Exception as e:
+                            messagebox.showerror("XNAT-PIC", str(e))
+                            raise
+                    else:
+                        continue
+
+                try:
+                    shutil.copytree(row.values[1], self.exp_path_new)
+                except Exception as e:
+                    messagebox.showerror("XNAT-PIC", str(e))
+                    continue
+
+        # Start the progress bar
+        progressbar = ProgressBar(self.popup_exp, bar_title='XNAT-PIC New Experiment')
+        progressbar.start_indeterminate_bar()
+        
+        # Disable buttons
+        disable_buttons([self.popup_exp.btn_sub, self.popup_exp.add_exp_btn, self.popup_exp.button_save, self.popup_exp.button_quit])
+
+        # Save the experiment through separate thread (different from the main thread)
+        tp = threading.Thread(target=func_save_exp, args=())
+        tp.start()
+        while tp.is_alive() == True:
+            # As long as the thread is working, update the progress bar
+            progressbar.update_bar()
+        progressbar.stop_progress_bar()
+
+        messagebox.showinfo("XNAT-PIC", 'The new experiment was created!')
+        self.popup_exp.destroy()
 
         
