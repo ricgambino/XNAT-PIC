@@ -252,9 +252,9 @@ class ProjectManager():
             self.master.deiconify()
             return
         try:
-            project = self.session.projects['Prj_2_dcm']
-            # project = self.session.classes.ProjectData(
-            #                 name=self.project_id.get(), parent=self.session)
+            # project = self.session.projects['Prj_2_dcm']
+            project = self.session.classes.ProjectData(
+                            name=self.project_id.get(), parent=self.session)
             project.description = self.project_description_entry.get("1.0", END)
             project.keywords = ",".join(self.project_keywords_list)
             self.session.put(os.path.join(project.uri, 'accessibility', self.access_status.get()).replace('\\', '/'))
