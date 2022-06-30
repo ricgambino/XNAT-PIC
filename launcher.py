@@ -1645,7 +1645,8 @@ class xnat_pic_gui():
                 self.entries_value_CV[1].config(state=tk.DISABLED)
 
             self.timepoint_menu.bind("<<ComboboxSelected>>", timepoint_changed)
-            self.time_entry.bind("<<Return>>", timepoint_changed)
+            self.time_entry.bind('<Return>', timepoint_changed)
+            self.time_entry.bind('<FocusOut>', timepoint_changed)
             #self.time_entry_value.trace('w', timepoint_changed)
             self.timepoint_menu1.bind("<<ComboboxSelected>>", timepoint_changed)
 
