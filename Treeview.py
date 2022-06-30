@@ -3,7 +3,7 @@ import tkinter as tk
 
 class Treeview():
 
-    def __init__(self, root, columns):
+    def __init__(self, root, columns, width):
 
         self.root = root
         
@@ -13,7 +13,7 @@ class Treeview():
         self.tree["columns"] = [x[0] for x in columns if x[0] != "#0"]
         for idx, col in columns:
             self.tree.heading(idx, text=col, anchor=tk.NW)
-            self.tree.column(idx, stretch=tk.YES, width=150)
+            self.tree.column(idx, stretch=tk.YES, width=width)
 
     def set(self, dict_items):
 

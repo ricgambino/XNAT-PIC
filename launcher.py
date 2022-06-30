@@ -623,7 +623,7 @@ class xnat_pic_gui():
 
             # Treeview widget pre_convertion
             columns = [("#0", "Selected folder"), ("#1", "Last Update"), ("#2", "Size"), ("#3", "Type")]
-            self.tree_to_convert = Treeview(self.tree_labelframe, columns)
+            self.tree_to_convert = Treeview(self.tree_labelframe, columns, width=100)
             self.tree_to_convert.tree.grid(row=2, column=0, padx=5, pady=5, sticky=tk.NW)
             self.tree_to_convert.scrollbar.grid(row=2, column=1, padx=5, pady=5, sticky=tk.NS)
 
@@ -760,7 +760,7 @@ class xnat_pic_gui():
             self.clear_tree_btn_post.grid(row=1, column=1, sticky=tk.W, padx=5, pady=5)
 
             # Treeview widget post_convertion
-            self.tree_converted = Treeview(self.tree_labelframe_post, columns)
+            self.tree_converted = Treeview(self.tree_labelframe_post, columns, width=100)
             self.tree_converted.tree.grid(row=2, column=0, padx=5, pady=5, sticky=tk.NW)
             self.tree_converted.scrollbar.grid(row=2, column=1, padx=5, pady=5, sticky=tk.NS)
 
@@ -2165,7 +2165,7 @@ class xnat_pic_gui():
 
             # Frame Title
             self.frame_title = ttk.Label(self.label_frame_main, text="XNAT-PIC Uploader", style="Title.TLabel", anchor=tk.CENTER)
-            self.frame_title.pack(side='top', expand=True, padx=25, pady=10, anchor=tk.CENTER)
+            self.frame_title.pack(side='top', expand=True, padx=25, anchor=tk.CENTER)
 
             # User Icon
             self.user_btn = ttk.Menubutton(self.label_frame_main, text=self.session.logged_in_user, image=master.user_icon, compound='right',
@@ -2365,7 +2365,7 @@ class xnat_pic_gui():
                                 self.tree.tree.item(selected_item, "text")]))
             
             columns = [("#0", "Selected folder"), ("#1", "Last Update"), ("#2", "Size"), ("#3", "Type")]
-            self.tree = Treeview(self.folder_selection_label_frame, columns)
+            self.tree = Treeview(self.folder_selection_label_frame, columns, width=150)
             self.tree.tree.grid(row=2, column=0, padx=5, pady=5, sticky=tk.NW, columnspan=3)
             self.tree.scrollbar.grid(row=2, column=3, padx=5, pady=5, sticky=tk.NS)
             self.tree.tree.bind("<ButtonRelease-1>", get_selected_item)
