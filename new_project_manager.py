@@ -211,7 +211,7 @@ class NewSubjectManager():
 
         # TreeView
         columns = [("#0", "Selected folder"), ("#1", "Last Update"), ("#2", "Size"), ("#3", "Type")]
-        self.tree_prj = Treeview(self.popup_sub, columns)
+        self.tree_prj = Treeview(self.popup_sub, columns, width=150)
         self.tree_prj.tree.grid(row=2, column=0, padx=(10, 35), pady=10, sticky=tk.N, columnspan=2)
         self.tree_prj.scrollbar.grid(row=2, column=1, padx=10, pady=10, sticky=tk.NS + tk.E, columnspan=2)
 
@@ -411,7 +411,7 @@ class NewExperimentManager():
         
         # TreeView
         columns = [("#0", "Selected folder"), ("#1", "Last Update"), ("#2", "Size"), ("#3", "Type")]
-        self.tree_sub = Treeview(self.popup_exp, columns)
+        self.tree_sub = Treeview(self.popup_exp, columns, width=150)
         self.tree_sub.tree.grid(row=2, column=0, padx=(10, 35), pady=10, sticky=tk.N, columnspan=2)
         self.tree_sub.scrollbar.grid(row=2, column=1, padx=10, pady=10, sticky=tk.NS + tk.E, columnspan=2)
 

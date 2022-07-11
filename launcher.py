@@ -1346,7 +1346,7 @@ class xnat_pic_gui():
 
             # Be sure that we call OnFrameConfigure on the right canvas
             self.frame_CV.bind("<Configure>", lambda event, canvas=self.canvas_CV: OnFrameConfigure(canvas))
-            self.label_frame_CV.place(relx = 0.40, rely = 0.53, relheight=0.25, relwidth=0.43, anchor = tk.NW)
+            self.label_frame_CV.place(relx = 0.40, rely = 0.53, relheight=0.16, relwidth=0.43, anchor = tk.NW)
             
             def OnFrameConfigure(canvas):
                     canvas.configure(scrollregion=canvas.bbox("all"))
@@ -1413,15 +1413,15 @@ class xnat_pic_gui():
 
             #################### Modify the metadata ####################
             self.modify_btn = ttk.Button(self.frame_metadata, text="Modify", command = lambda: self.modify_metadata(), cursor=CURSOR_HAND, takefocus = 0, style = "Secondary1.TButton")
-            self.modify_btn.place(relx=0.20, rely=0.9, anchor=tk.CENTER, relwidth=0.2)
+            self.modify_btn.place(relx=0.20, rely=0.8, anchor=tk.CENTER, relwidth=0.2)
 
             #################### Confirm the metadata ####################
             self.confirm_btn = ttk.Button(self.frame_metadata, text="Confirm", command = lambda: self.confirm_metadata(), cursor=CURSOR_HAND, takefocus = 0, style = "Secondary1.TButton")
-            self.confirm_btn.place(relx=0.50, rely=0.9, anchor=tk.CENTER, relwidth=0.2)
+            self.confirm_btn.place(relx=0.50, rely=0.8, anchor=tk.CENTER, relwidth=0.2)
 
             #################### Confirm multiple metadata ####################
             self.multiple_confirm_btn = ttk.Button(self.frame_metadata, text="Multiple Confirm", command = lambda: self.confirm_multiple_metadata(master), cursor=CURSOR_HAND, takefocus = 0, style = "Secondary1.TButton")
-            self.multiple_confirm_btn.place(relx=0.80, rely=0.9, anchor=tk.CENTER, relwidth=0.2)
+            self.multiple_confirm_btn.place(relx=0.80, rely=0.8, anchor=tk.CENTER, relwidth=0.2)
             
             self.load_info(master)
 
