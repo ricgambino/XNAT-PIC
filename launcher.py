@@ -33,6 +33,7 @@ import babel.numbers
 from multiprocessing import freeze_support
 from ScrollableNotebook import *
 from create_objects import ProjectManager, SubjectManager, ExperimentManager
+from content_reader import *
 from access_manager import AccessManager
 from new_project_manager import NewProjectManager, NewSubjectManager, NewExperimentManager
 import itertools
@@ -196,6 +197,8 @@ class xnat_pic_gui():
         self.logo_subdirectory = open_image(PATH_IMAGE + "subdirectory.png", 15, 15)
         # Load user icon
         self.user_icon = open_image(PATH_IMAGE + "user.png", 20, 20)
+        # Load user icon
+        self.details_icon = open_image(PATH_IMAGE + "details_icon.png", 15, 15)
 
         # Toolbar Menu
         def new_prj():
@@ -620,6 +623,32 @@ class xnat_pic_gui():
             self.search_entry = ttk.Entry(self.tree_labelframe, cursor=CURSOR_HAND, textvariable=self.search_var)
             self.search_entry.grid(row=1, column=0, sticky=tk.NE, padx=5, pady=5)
             self.search_var.trace('w', scankey)
+            
+            # Details Button
+            def show_folder_details(*args):
+            
+                folder_reader = FolderDetails(self.object_folder.get())
+                folder_reader.read_folder_details()
+                folder_reader.save_folder_details()
+                folder_reader.show_folder_details(master.root)
+                master.root.wait_window(folder_reader.popup)
+                  
+            def selected_object_handler(*args):
+                curItem = self.tree_to_convert.tree.focus()
+                parentItem = self.tree_to_convert.tree.parent(curItem)
+                self.object_folder.set(os.path.join(self.folder_to_convert.get(), self.tree_to_convert.tree.item(parentItem)['text'],
+                                    self.tree_to_convert.tree.item(curItem)['text']).replace("\\", "/"))
+                if glob(self.object_folder.get() + '/**/**/**/2dseq', recursive=False) != []:
+                    self.details_btn.config(state='normal')
+                elif glob(self.object_folder.get().replace("\\", "/") + '/**/**/*.dcm', recursive=False):
+                    self.details_btn.config(state='normal')
+                else:
+                    self.details_btn.config(state='disabled')
+
+            self.object_folder = tk.StringVar()
+            self.details_btn = ttk.Button(self.tree_labelframe, cursor=CURSOR_HAND, image=master.details_icon, command=show_folder_details,
+                                            style="WithoutBack.TButton", state='disabled')
+            self.details_btn.grid(row=1, column=0, sticky=tk.W, padx=5, pady=5)
 
             # Treeview widget pre_convertion
             columns = [("#0", "Selected folder"), ("#1", "Last Update"), ("#2", "Size"), ("#3", "Type")]
@@ -736,6 +765,7 @@ class xnat_pic_gui():
                     progressbar_tree.stop_progress_bar()
                     enable_buttons([self.prj_conv_btn, self.sbj_conv_btn, self.exp_conv_btn])
 
+            self.tree_to_convert.tree.bind("<ButtonRelease-1>", selected_object_handler)
             # Treeview Label Frame post_convertion
             self.tree_labelframe_post = ttk.LabelFrame(master.frame, style="Hidden.TLabelframe")
             self.tree_labelframe_post.place(relx=0.95, rely=0.25, anchor=tk.NE)
@@ -2152,6 +2182,7 @@ class xnat_pic_gui():
             else:
                 destroy_widgets([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn, master.xnat_pic_logo_label])
                 self.session = access_manager.session
+                self.start_time = access_manager.log_time
                 self.overall_uploader(master)
 
         def overall_uploader(self, master):
