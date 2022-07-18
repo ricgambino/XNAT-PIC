@@ -1252,6 +1252,7 @@ class xnat_pic_gui():
 
             file_menu.add_command(label="Select Folder", image = master.logo_folder, compound='left', command = browse_fun)
             file_menu.add_separator()
+            file_menu.add_command(label ="Show details",  image=master.details_icon, compound='left', command= lambda: self.show_folder_details(master),)
             file_menu.add_command(label="Add ID", image = master.logo_add, compound='left',command = lambda: self.add_ID(master))
             file_menu.add_command(label="Add Custom Variables", image = master.logo_add, compound='left', command = lambda: self.add_custom_variable(master))
             file_menu.add_command(label="Clear Custom Variables", image = master.logo_clear, compound='left', command = lambda: self.clear_metadata())
@@ -1436,7 +1437,7 @@ class xnat_pic_gui():
             self.dose_menu['values'] = OPTIONS2
             self.dose_menu['state'] = 'disabled'
             self.dose_menu.grid(row=2, column=2, padx = 5, pady = 5, sticky=W)
-          
+            
             #################### Browse the metadata ####################
             self.browse_btn = ttk.Button(self.frame_metadata, text="Browse", command = browse_fun, cursor=CURSOR_HAND, takefocus = 0, style = "Secondary.TButton")
             self.browse_btn.place(relx=0.20, rely=0.55, anchor=tk.CENTER, relwidth=0.15)
@@ -1452,7 +1453,7 @@ class xnat_pic_gui():
             #################### Confirm multiple metadata ####################
             self.multiple_confirm_btn = ttk.Button(self.frame_metadata, text="Multiple Confirm", command = lambda: self.confirm_multiple_metadata(master), cursor=CURSOR_HAND, takefocus = 0, style = "Secondary1.TButton")
             self.multiple_confirm_btn.place(relx=0.80, rely=0.8, anchor=tk.CENTER, relwidth=0.2)
-            
+
             self.load_info(master)
 
         #################### Load the info about the selected subject ####################
@@ -1570,6 +1571,19 @@ class xnat_pic_gui():
             # Add the event to the list of listbox (press Tab)   
             for i in range(len(self.listbox_notebook)):
                 self.listbox_notebook[i].bind('<Tab>', items_selected)
+            
+        # Details Button
+        def show_folder_details(self, master):
+            if self.selected_folder is None:
+                messagebox.showerror("XNAT-PIC", "Click Tab to select a folder from the list box on the left")
+                return 
+            substring = self.path_list1.get(self.selected_folder)
+            folder_reader = FolderDetails(substring)
+            folder_reader.read_folder_details()
+            folder_reader.save_folder_details()
+            folder_reader.show_folder_details(master.root)
+            master.root.wait_window(folder_reader.popup)
+
 
         def modify_metadata(self):
             # Check before editing the data
