@@ -2185,7 +2185,6 @@ class xnat_pic_gui():
             else:
                 destroy_widgets([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn, master.xnat_pic_logo_label])
                 self.session = access_manager.session
-                self.start_time = access_manager.log_time
                 self.overall_uploader(master)
 
         def overall_uploader(self, master):
