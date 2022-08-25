@@ -403,11 +403,10 @@ class xnat_pic_gui():
             self.results_flag = tk.IntVar()
             self.btn_results = ttk.Checkbutton(self.frame_converter, text='Copy additional files', variable=self.results_flag,
                                 onvalue=1, offvalue=0, command=add_results_handler, bootstyle="round-toggle")
-            self.btn_results.place(relx = 0.1, rely = 0.3, relwidth=0.22, anchor = NW)
+            self.btn_results.place(relx = 0.1, rely = 0.27, relwidth=0.22, anchor = NW)
             Hovertip(self.btn_results, "Copy additional files (results, parametric maps, graphs, ...)\ninto converted folders")
 
-            # Treeview Label Frame for folder selection
-
+            # Treeview 
             def select_folder(*args):
                 # Disable the buttons
                 disable_buttons([self.prj_conv_btn, self.sbj_conv_btn, self.exp_conv_btn])
@@ -518,8 +517,8 @@ class xnat_pic_gui():
             
             # Initialize the folder_to_upload path
             self.select_folder_button = ttk.Button(self.frame_converter, text="Select folder", style="TButton",
-                                                    state='disabled', cursor=CURSOR_HAND, width=20, command=select_folder)
-            self.select_folder_button.place(relx = 0.1, rely = 0.35, relwidth=0.22, anchor = NW)
+                                                    state='disabled', cursor=CURSOR_HAND, command=select_folder)
+            self.select_folder_button.place(relx = 0.9, rely = 0.55, relwidth=0.22, anchor = NE)
 
             # Clear Tree buttons
             def clear_tree(*args):
@@ -530,7 +529,7 @@ class xnat_pic_gui():
 
             self.clear_tree_btn = ttk.Button(self.frame_converter, image=master.logo_clear,
                                     cursor=CURSOR_HAND, command=clear_tree, style="WithoutBack.TButton")
-            self.clear_tree_btn.grid(row=1, column=1, sticky=tk.W, padx=5, pady=5)
+            self.clear_tree_btn.place(relx = 0.9, rely = 0.55, anchor = NE)
 
             # Search entry to find objects
             def scankey(*args):
@@ -540,7 +539,7 @@ class xnat_pic_gui():
                     self.tree_to_convert.remove_selection()
 
             self.search_var = tk.StringVar()
-            self.search_entry = ttk.Entry(self.tree_labelframe, cursor=CURSOR_HAND, textvariable=self.search_var)
+            self.search_entry = ttk.Entry(self.frame_converter, cursor=CURSOR_HAND, textvariable=self.search_var)
             self.search_entry.grid(row=1, column=0, sticky=tk.NE, padx=5, pady=5)
             self.search_var.trace('w', scankey)
             
@@ -569,14 +568,14 @@ class xnat_pic_gui():
                     self.details_btn.config(state='disabled')
 
             self.object_folder = tk.StringVar()
-            self.details_btn = ttk.Button(self.tree_labelframe, cursor=CURSOR_HAND, image=master.details_icon, command=show_folder_details,
+            self.details_btn = ttk.Button(self.frame_converter, cursor=CURSOR_HAND, image=master.details_icon, command=show_folder_details,
                                             style="WithoutBack.TButton", state='disabled')
             self.details_btn.grid(row=1, column=0, sticky=tk.W, padx=5, pady=5)
 
             # Treeview widget pre_convertion
             columns = [("#0", "Selected folder"), ("#1", "Last Update"), ("#2", "Size"), ("#3", "Type")]
-            self.tree_to_convert = Treeview(self.tree_labelframe, columns, width=100)
-            self.tree_to_convert.tree.grid(row=2, column=0, padx=5, pady=5, sticky=tk.NW)
+            self.tree_to_convert = Treeview(self.frame_converter, columns, width=100)
+            self.tree_to_convert.tree.place(relx = 0.1, rely = 0.4, relwidth=0.51, anchor = NW)
             self.tree_to_convert.scrollbar.grid(row=2, column=1, padx=5, pady=5, sticky=tk.NS)
 
             def tree_thread(*args):
@@ -690,34 +689,34 @@ class xnat_pic_gui():
 
             self.tree_to_convert.tree.bind("<ButtonRelease-1>", selected_object_handler)
             # Treeview Label Frame post_convertion
-            self.tree_labelframe_post = ttk.LabelFrame(master.frame, style="Hidden.TLabelframe")
-            self.tree_labelframe_post.place(relx=0.95, rely=0.25, anchor=tk.NE)
+            # self.tree_labelframe_post = ttk.LabelFrame(master.frame, style="Hidden.TLabelframe")
+            # self.tree_labelframe_post.place(relx=0.95, rely=0.25, anchor=tk.NE)
 
-            self.fake_btn = ttk.Button(self.tree_labelframe_post, text="", style="TButton",
-                                                    state='disabled', width=20)
-            self.fake_btn.grid(row=0, column=0, padx=10, pady=10, sticky=tk.W)
+            # self.fake_btn = ttk.Button(self.tree_labelframe_post, text="", style="TButton",
+            #                                         state='disabled', width=20)
+            # self.fake_btn.grid(row=0, column=0, padx=10, pady=10, sticky=tk.W)
             # Search entry to find objects
-            def scankey(*args):
-                if self.search_var.get() != '':
-                    self.tree_converted.find_items(self.search_var.get())
-                else:
-                    self.tree_converted.remove_selection()
+            # def scankey(*args):
+            #     if self.search_var.get() != '':
+            #         self.tree_converted.find_items(self.search_var.get())
+            #     else:
+            #         self.tree_converted.remove_selection()
 
-            self.search_var = tk.StringVar()
-            self.search_entry = ttk.Entry(self.tree_labelframe_post, cursor=CURSOR_HAND, textvariable=self.search_var)
-            self.search_entry.grid(row=1, column=0, sticky=tk.NE, padx=5, pady=5)
-            self.search_var.trace('w', scankey)
+            # self.search_var = tk.StringVar()
+            # self.search_entry = ttk.Entry(self.tree_labelframe_post, cursor=CURSOR_HAND, textvariable=self.search_var)
+            # self.search_entry.grid(row=1, column=0, sticky=tk.NE, padx=5, pady=5)
+            # self.search_var.trace('w', scankey)
 
-            self.clear_tree_btn_post = ttk.Button(self.tree_labelframe_post, image=master.logo_clear,
-                                    cursor=CURSOR_HAND, command=clear_tree, style="WithoutBack.TButton")
-            self.clear_tree_btn_post.grid(row=1, column=1, sticky=tk.W, padx=5, pady=5)
+            # self.clear_tree_btn_post = ttk.Button(self.tree_labelframe_post, image=master.logo_clear,
+            #                         cursor=CURSOR_HAND, command=clear_tree, style="WithoutBack.TButton")
+            # self.clear_tree_btn_post.grid(row=1, column=1, sticky=tk.W, padx=5, pady=5)
 
-            # Treeview widget post_convertion
-            self.tree_converted = Treeview(self.tree_labelframe_post, columns, width=100)
-            self.tree_converted.tree.grid(row=2, column=0, padx=5, pady=5, sticky=tk.NW)
-            self.tree_converted.scrollbar.grid(row=2, column=1, padx=5, pady=5, sticky=tk.NS)
+            # # Treeview widget post_convertion
+            # self.tree_converted = Treeview(self.tree_labelframe_post, columns)
+            # self.tree_converted.tree.grid(row=2, column=0, padx=5, pady=5, sticky=tk.NW)
+            # self.tree_converted.scrollbar.grid(row=2, column=1, padx=5, pady=5, sticky=tk.NS)
 
-            self.convertion_state.trace('w', tree_thread)
+            # self.convertion_state.trace('w', tree_thread)
 
             # Bottom Labelframe
             self.bottom_labelframe = ttk.Labelframe(master.frame, text="", style="Hidden.TLabelframe")
