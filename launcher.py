@@ -368,7 +368,7 @@ class xnat_pic_gui():
                 self.check_buttons(master, press_btn=0)
             self.prj_conv_btn = ttk.Button(self.frame_converter, text="Convert Project", 
                                             command=prj_conv_handler, cursor=CURSOR_HAND)
-            self.prj_conv_btn.place(relx = 0.1, rely = 0.18, relwidth=0.22, anchor = NW)
+            self.prj_conv_btn.place(relx = 0.05, rely = 0.18, relwidth=0.22, anchor = NW)
             Hovertip(self.prj_conv_btn, "Convert a project from Bruker format to DICOM standard")
 
             # Convert Subject
@@ -386,7 +386,7 @@ class xnat_pic_gui():
                 self.check_buttons(master, press_btn=2)
             self.exp_conv_btn = ttk.Button(self.frame_converter, text="Convert Experiment",
                                             command=exp_conv_handler, cursor=CURSOR_HAND)
-            self.exp_conv_btn.place(relx = 0.9, rely = 0.18, relwidth=0.22, anchor = NE)
+            self.exp_conv_btn.place(relx = 0.95, rely = 0.18, relwidth=0.22, anchor = NE)
 
             Hovertip(self.exp_conv_btn, "Convert an experiment from Bruker format to DICOM standard")
 
@@ -394,7 +394,7 @@ class xnat_pic_gui():
             self.overwrite_flag = tk.IntVar()
             self.btn_overwrite = ttk.Checkbutton(self.frame_converter, text="Overwrite existing folders",                               
                                 onvalue=1, offvalue=0, variable=self.overwrite_flag, bootstyle="round-toggle")
-            self.btn_overwrite.place(relx = 0.1, rely = 0.24, relwidth=0.22, anchor = NW)
+            self.btn_overwrite.place(relx = 0.05, rely = 0.24, relwidth=0.22, anchor = NW)
             Hovertip(self.btn_overwrite, "Overwrite already existent folders if they occur")
 
             # Results button
@@ -403,7 +403,7 @@ class xnat_pic_gui():
             self.results_flag = tk.IntVar()
             self.btn_results = ttk.Checkbutton(self.frame_converter, text='Copy additional files', variable=self.results_flag,
                                 onvalue=1, offvalue=0, command=add_results_handler, bootstyle="round-toggle")
-            self.btn_results.place(relx = 0.1, rely = 0.27, relwidth=0.22, anchor = NW)
+            self.btn_results.place(relx = 0.05, rely = 0.27, relwidth=0.22, anchor = NW)
             Hovertip(self.btn_results, "Copy additional files (results, parametric maps, graphs, ...)\ninto converted folders")
 
             # Treeview 
@@ -518,7 +518,7 @@ class xnat_pic_gui():
             # Initialize the folder_to_upload path
             self.select_folder_button = ttk.Button(self.frame_converter, text="Select folder", style="TButton",
                                                     state='disabled', cursor=CURSOR_HAND, command=select_folder)
-            self.select_folder_button.place(relx = 0.9, rely = 0.55, relwidth=0.22, anchor = NE)
+            self.select_folder_button.place(relx = 0.05, rely = 0.65, relwidth=0.22, anchor = NW)
 
             # Clear Tree buttons
             def clear_tree(*args):
@@ -575,8 +575,8 @@ class xnat_pic_gui():
             # Treeview widget pre_convertion
             columns = [("#0", "Selected folder"), ("#1", "Last Update"), ("#2", "Size"), ("#3", "Type")]
             self.tree_to_convert = Treeview(self.frame_converter, columns, width=100)
-            self.tree_to_convert.tree.place(relx = 0.1, rely = 0.4, relwidth=0.51, anchor = NW)
-            self.tree_to_convert.scrollbar.grid(row=2, column=1, padx=5, pady=5, sticky=tk.NS)
+            self.tree_to_convert.tree.place(relx = 0.05, rely = 0.4, relheight=0.2, relwidth=0.3, anchor = NW)
+            self.tree_to_convert.scrollbar.place(relx = 0.37, rely = 0.4, relheight=0.2, anchor = NW)
 
             def tree_thread(*args):
                 progressbar_tree = ProgressBar(master.root, "XNAT-PIC Converter")
@@ -716,7 +716,7 @@ class xnat_pic_gui():
             # self.tree_converted.tree.grid(row=2, column=0, padx=5, pady=5, sticky=tk.NW)
             # self.tree_converted.scrollbar.grid(row=2, column=1, padx=5, pady=5, sticky=tk.NS)
 
-            # self.convertion_state.trace('w', tree_thread)
+            self.convertion_state.trace('w', tree_thread)
 
             # Bottom Labelframe
             self.bottom_labelframe = ttk.Labelframe(master.frame, text="", style="Hidden.TLabelframe")
