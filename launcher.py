@@ -74,71 +74,12 @@ def check_credentials(root):
         credential_manager = CredentialManager(root)
         root.wait_window(credential_manager.popup)
 
-class SplashScreen(tk.Toplevel):
-    def __init__(self, master, timeout=1000):
-        """(master, image, timeout=1000) -> create a splash screen
-        from specified image file.  Keep splashscreen up for timeout
-        milliseconds"""
-        tk.Toplevel.__init__(self, master)
-        self.main = master
-        self.main.withdraw()
-        self.overrideredirect(1)
-        im = Image.open(PATH_IMAGE + "logo-xnat-pic.png")
-        self.image = ImageTk.PhotoImage(im)
-        self.after_idle(self.centerOnScreen)
-
-        self.update()
-        self.after(timeout, self.destroy)
-
-    def centerOnScreen(self):
-        self.update_idletasks()
-        if (platform.system()=='Linux'):
-                cmd_show_screen_resolution = subprocess.Popen("xrandr --query | grep -oG 'primary [0-9]*x[0-9]*'",\
-                                                            stdout=subprocess.PIPE, shell=True)
-                screen_output =str(cmd_show_screen_resolution.communicate()).split()[1]
-                self.screenwidth, self.root.screenheight = re.findall("[0-9]+",screen_output)
-            ###
-            ###
-        else :
-                self.screenwidth=self.winfo_screenwidth()
-                self.screenheight=self.winfo_screenheight()
-
-        # Adjust size based on screen resolution
-        self.w = int(self.screenwidth/2)
-        self.h = int(self.screenheight/6)
-        x = int(self.screenwidth/2)-int(self.w/2)
-        y =  int(self.screenheight/2)-int(self.h/2)
-        self.geometry("%dx%d+%d+%d" % (self.w, self.h, x, y))
-        self.createWidgets()
-
-    def createWidgets(self):
-        # Need to fill in here
-        im = Image.open(PATH_IMAGE + "logo-xnat-pic.png")
-        width = int(self.w)
-        wpercent = (width/float(im.size[0]))
-        height = int((float(im.size[1])*float(wpercent)))
-        self.my_canvas = tk.Canvas(self, height=height, width=width, bg="white", highlightthickness=1, highlightbackground=LIGHT_GREY)
-        self.my_canvas.pack()
-    
-        # Adapt the size of the logo to the size of the canvas
-        im = im.resize((self.w, height), Image.ANTIALIAS)  
-        self.im = ImageTk.PhotoImage(im)
-        self.my_canvas.create_image(2, 0, anchor=tk.NW, image=self.im)
-
-    def destroy(self):
-        self.main.update()
-        self.main.state('zoomed')
-        self.main.deiconify()
-        self.withdraw()
-
 class xnat_pic_gui():
 
     def __init__(self, root):
                    
-        # self.root = tk.Tk()
         self.root = root
         self.root.state('zoomed') # The root widget is adapted to the screen size
-        self.root.minsize(width=1000, height=500) # Set the minimum size of the working window
         # Define the style of the root widget
         self.style_label = tk.StringVar()
         self.style_label.set('cerculean')
@@ -154,13 +95,18 @@ class xnat_pic_gui():
         else :
             self.root.screenwidth=self.root.winfo_screenwidth()
             self.root.screenheight=self.root.winfo_screenheight()
-
+       
         # Adjust size based on screen resolution
         self.width = self.root.screenwidth
         self.height = self.root.screenheight
+        self.my_width = self.width
+        self.my_height = self.height
         self.root.geometry("%dx%d+0+0" % (self.width, self.height))
         self.root.title("   XNAT-PIC   ~   Molecular Imaging Center   ~   University of Torino   ")
+        self.root.minsize(width=int(self.width/2), height=int(self.height/2)) # Set the minimum size of the working window
 
+
+        # Load the images
         # Load Accept icon
         self.logo_accept = open_image(PATH_IMAGE + "Done.png", 15, 15)
         # Load Delete icon
@@ -228,32 +174,26 @@ class xnat_pic_gui():
         self.toolbar_menu.add_cascade(label="Options")
         self.root.config(menu=self.toolbar_menu)
 
-        # If you want the logo 
+        # Logo on the top
         self.root.iconbitmap(PATH_IMAGE + "logo3.ico")
 
-        # Initialize the Frame widget which parent is the root widget
+        # Initialize the Frame widget which parent is the root widgeth
         self.frame = ttk.Frame(self.root)
         self.frame.pack(fill='both', expand=1)
         self.frame_label = tk.StringVar()
         self.frame_label.set('Enter')
-        # Initialize the working area size
-        self.my_width = int(self.width*PERCENTAGE_SCREEN)
-        self.my_height = int(self.height*PERCENTAGE_SCREEN)
-
+        
         def resize_window(*args):
             # Get the current window size
             self.width = self.root.winfo_width()
             self.height = self.root.winfo_height()
-            # Update the working area size
-            self.my_width = int(self.width*PERCENTAGE_SCREEN)
-            self.my_height = int(self.height*PERCENTAGE_SCREEN)
             # Load Side Logo Panel
-            self.panel_img = open_image(PATH_IMAGE + "logo-panel.png", self.my_width/5, self.my_height)
+            self.panel_img = open_image(PATH_IMAGE + "logo-panel.png", self.width/5, self.height)
             self.panel_img.label = ttk.Label(self.frame, image=self.panel_img)
             self.panel_img.label.place(x=0, y=0, anchor=tk.NW, relheight=1, relwidth=0.2)
             # Load XNAT-PIC Logo
-            self.xnat_pic_logo_dark = open_image(PATH_IMAGE + "XNAT-PIC_logo.png", 2*self.my_width/5, self.my_height/3)
-            self.xnat_pic_logo_light = open_image(PATH_IMAGE + "XNAT-PIC-logo-light.png", 2*self.my_width/5, self.my_height/3)
+            self.xnat_pic_logo_dark = open_image(PATH_IMAGE + "XNAT-PIC_logo.png", 2*self.width/5, self.height/3)
+            self.xnat_pic_logo_light = open_image(PATH_IMAGE + "XNAT-PIC-logo-light.png", 2*self.width/5, self.height/3)
             
             if self.frame_label.get() in ["Enter", "Main"]:
                 if self.style_label.get() == 'cerculean':
@@ -293,17 +233,14 @@ class xnat_pic_gui():
                         pass
                     self.frame.update()
 
-            # self.dark_mode_btn = ttk.Button(self.frame, cursor=CURSOR_HAND, image=self.sun_icon_dark,
-            #                                 command=switch_mode, style="WithoutBack.TButton")
-            # self.dark_mode_btn.place(relx=0.98, rely=0.02, anchor=tk.NE)
             # Change font according to window size
-            if self.width > 1700:
+            if self.width > int(2/3*self.my_width):
                 self.style.configure('TButton', font = LARGE_FONT)
                 
-            elif self.width > 1000 and self.width < 1700:
+            elif self.width > int(self.my_width/3) and self.width < int(2/3*self.my_width):
                 self.style.configure('TButton', font = SMALL_FONT)
             
-            elif self.width < 1000:
+            elif self.width < int(self.my_width/3):
                 self.style.configure('TButton', font = SMALL_FONT_2)
             # Update the frame widget
             self.frame.update()
@@ -325,8 +262,6 @@ class xnat_pic_gui():
             self.root.destroy()
             self.root.quit()
         self.root.protocol("WM_DELETE_WINDOW", closed_window)
-
-        # self.root.mainloop()
             
     # Choose to upload files, fill in the info, convert files, process images
     def choose_your_action(self):
@@ -367,13 +302,6 @@ class xnat_pic_gui():
             else:
                 self.xnat_pic_logo_label = ttk.Label(self.frame, image=self.xnat_pic_logo_light)
             self.xnat_pic_logo_label.place(relx=0.6, rely=0.3, anchor=tk.CENTER)
-
-        # if self.dark_mode_btn.winfo_exists() == 0:
-        #     if self.style_label.get() == 'cerculean':
-        #         self.dark_mode_btn = ttk.Label(self.frame, image=self.sun_icon_dark)
-        #     else:
-        #         self.dark_mode_btn = ttk.Label(self.frame, image=self.sun_icon_light)
-        #     self.dark_mode_btn.place(relx=0.3, rely=0.1, anchor=tk.NW, relheight=0.3, relwidth=0.7)
 
         self.frame_label.set("Main")
         # Action buttons           
@@ -422,15 +350,11 @@ class xnat_pic_gui():
             master.frame_label.set("Converter")
 
             # Label Frame Main (for Title only)
-            self.labelframe_main = ttk.LabelFrame(master.frame, style="Hidden.TLabelframe")
-            self.labelframe_main.place(relx=0.25, rely=0, anchor=tk.NW, relwidth=0.7)
+            self.frame_converter = ttk.Frame(master.frame, style="Hidden.TLabelframe")
+            self.frame_converter.place(relx = 0.2, rely= 0, relheight=1, relwidth=0.8, anchor=tk.NW)
             # Frame Title
-            self.frame_title = ttk.Label(self.labelframe_main, text="XNAT-PIC Converter", style="Title.TLabel", anchor=tk.CENTER)
-            self.frame_title.pack(fill='x', padx=25, pady=10, anchor=tk.CENTER)
-
-            # Label Frame for Select Converter
-            self.conv_selection = ttk.LabelFrame(master.frame, style="Hidden.TLabelframe")
-            self.conv_selection.place(relx=0.25, rely=0.15, anchor=tk.NW)
+            self.frame_title = ttk.Label(self.frame_converter, text="XNAT-PIC Converter", style="Title.TLabel", anchor=tk.CENTER)
+            self.frame_title.place(relx = 0.5, rely = 0.05, anchor = CENTER)
 
             # Initialize variables
             self.conv_flag = tk.IntVar()
@@ -442,51 +366,47 @@ class xnat_pic_gui():
             def prj_conv_handler(*args):
                 self.conv_flag.set(0)
                 self.check_buttons(master, press_btn=0)
-            self.prj_conv_btn = ttk.Button(self.conv_selection, text="Convert Project", width=21, 
+            self.prj_conv_btn = ttk.Button(self.frame_converter, text="Convert Project", 
                                             command=prj_conv_handler, cursor=CURSOR_HAND)
-            self.prj_conv_btn.grid(row=0, column=0, sticky=tk.NW, padx=10, pady=10)
+            self.prj_conv_btn.place(relx = 0.1, rely = 0.18, relwidth=0.22, anchor = NW)
             Hovertip(self.prj_conv_btn, "Convert a project from Bruker format to DICOM standard")
 
             # Convert Subject
             def sbj_conv_handler(*args):
                 self.conv_flag.set(1)
                 self.check_buttons(master, press_btn=1)
-            self.sbj_conv_btn = ttk.Button(self.conv_selection, text="Convert Subject", width=21,
+            self.sbj_conv_btn = ttk.Button(self.frame_converter, text="Convert Subject",
                                             command=sbj_conv_handler, cursor=CURSOR_HAND)
-            self.sbj_conv_btn.grid(row=0, column=1, sticky=tk.NW, padx=10, pady=10)
+            self.sbj_conv_btn.place(relx = 0.5, rely = 0.18, relwidth=0.22, anchor = N)
             Hovertip(self.sbj_conv_btn, "Convert a subject from Bruker format to DICOM standard")
 
             # Convert Experiment
             def exp_conv_handler(*args):
                 self.conv_flag.set(2)
                 self.check_buttons(master, press_btn=2)
-            self.exp_conv_btn = ttk.Button(self.conv_selection, text="Convert Experiment", width=21,
+            self.exp_conv_btn = ttk.Button(self.frame_converter, text="Convert Experiment",
                                             command=exp_conv_handler, cursor=CURSOR_HAND)
-            self.exp_conv_btn.grid(row=0, column=2, sticky=tk.NW, padx=10, pady=10)
+            self.exp_conv_btn.place(relx = 0.9, rely = 0.18, relwidth=0.22, anchor = NE)
+
             Hovertip(self.exp_conv_btn, "Convert an experiment from Bruker format to DICOM standard")
 
-            # Label Frame for Checkbuttons
-            self.label_frame_checkbtn = ttk.LabelFrame(master.frame, style="Hidden.TLabelframe")
-            self.label_frame_checkbtn.place(relx=0.95, rely=0.15, anchor=tk.NE)
             # Overwrite button
             self.overwrite_flag = tk.IntVar()
-            self.btn_overwrite = ttk.Checkbutton(self.label_frame_checkbtn, text="Overwrite existing folders",                               
+            self.btn_overwrite = ttk.Checkbutton(self.frame_converter, text="Overwrite existing folders",                               
                                 onvalue=1, offvalue=0, variable=self.overwrite_flag, bootstyle="round-toggle")
-            self.btn_overwrite.grid(row=1, column=1, sticky=tk.NW, padx=5, pady=5)
+            self.btn_overwrite.place(relx = 0.1, rely = 0.24, relwidth=0.22, anchor = NW)
             Hovertip(self.btn_overwrite, "Overwrite already existent folders if they occur")
 
             # Results button
             def add_results_handler(*args):
                 self.params['results_flag'] = self.results_flag.get()
             self.results_flag = tk.IntVar()
-            self.btn_results = ttk.Checkbutton(self.label_frame_checkbtn, text='Copy additional files', variable=self.results_flag,
+            self.btn_results = ttk.Checkbutton(self.frame_converter, text='Copy additional files', variable=self.results_flag,
                                 onvalue=1, offvalue=0, command=add_results_handler, bootstyle="round-toggle")
-            self.btn_results.grid(row=2, column=1, sticky=tk.NW, padx=5, pady=5)
+            self.btn_results.place(relx = 0.1, rely = 0.3, relwidth=0.22, anchor = NW)
             Hovertip(self.btn_results, "Copy additional files (results, parametric maps, graphs, ...)\ninto converted folders")
 
             # Treeview Label Frame for folder selection
-            self.tree_labelframe = ttk.LabelFrame(master.frame, style="Hidden.TLabelframe")
-            self.tree_labelframe.place(relx=0.25, rely=0.25, anchor=tk.NW)
 
             def select_folder(*args):
                 # Disable the buttons
@@ -597,9 +517,9 @@ class xnat_pic_gui():
                     self.tree_to_convert.set(dict_items)
             
             # Initialize the folder_to_upload path
-            self.select_folder_button = ttk.Button(self.tree_labelframe, text="Select folder", style="TButton",
+            self.select_folder_button = ttk.Button(self.frame_converter, text="Select folder", style="TButton",
                                                     state='disabled', cursor=CURSOR_HAND, width=20, command=select_folder)
-            self.select_folder_button.grid(row=0, column=0, padx=10, pady=10, sticky=tk.NW)
+            self.select_folder_button.place(relx = 0.1, rely = 0.35, relwidth=0.22, anchor = NW)
 
             # Clear Tree buttons
             def clear_tree(*args):
@@ -608,7 +528,7 @@ class xnat_pic_gui():
                 if self.tree_converted.tree.exists(0):
                     self.tree_converted.tree.delete(*self.tree_converted.tree.get_children())
 
-            self.clear_tree_btn = ttk.Button(self.tree_labelframe, image=master.logo_clear,
+            self.clear_tree_btn = ttk.Button(self.frame_converter, image=master.logo_clear,
                                     cursor=CURSOR_HAND, command=clear_tree, style="WithoutBack.TButton")
             self.clear_tree_btn.grid(row=1, column=1, sticky=tk.W, padx=5, pady=5)
 
