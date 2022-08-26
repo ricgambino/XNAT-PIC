@@ -537,9 +537,9 @@ class xnat_pic_gui():
                     self.tree_converted.tree.delete(*self.tree_converted.tree.get_children())
 
             self.clear_tree_btn = ttk.Button(self.frame_converter, image=master.logo_clear,
-                                    cursor=CURSOR_HAND, command=clear_tree, style="WithoutBack.TButton")
+                                    cursor=CURSOR_HAND, state='disabled', command=clear_tree, style="WithoutBack.TButton")
             self.clear_tree_btn.place(relx = 0.37, rely = 0.72, anchor = NE)
-            Hovertip(self.clear_tree_btn, "Delete TreeView")
+            Hovertip(self.clear_tree_btn, "Delete tree")
 
             # Search entry to find objects
             def scankey(*args):
@@ -549,9 +549,12 @@ class xnat_pic_gui():
                     self.tree_to_convert.remove_selection()
             
             self.search_var = tk.StringVar()
-            self.search_entry = ttk.Entry(self.frame_converter, cursor=CURSOR_HAND, textvariable=self.search_var)
-            self.search_entry.place(relx = 0.05, rely = 0.72, anchor = NW)
-            Hovertip(self.search_entry, "Search")
+            self.search_entry = ttk.Entry(self.frame_converter, cursor=CURSOR_HAND, state='disabled', textvariable=self.search_var)
+            self.search_entry.place(relx = 0.07, rely = 0.72, anchor = NW)
+            self.search_pre_btn = ttk.Button(self.frame_converter, image=master.logo_search, state='disabled',
+                                    cursor=CURSOR_HAND, command = lambda: self.search_entry.focus_set(), style="WithoutBack.TButton")
+            self.search_pre_btn.place(relx = 0.05, rely = 0.72, anchor = NW)
+
             self.search_var.trace('w', scankey)
             
             # Details Button
@@ -710,15 +713,17 @@ class xnat_pic_gui():
                     self.tree_converted.remove_selection()
 
             self.search_var = tk.StringVar()
-            self.search_entry = ttk.Entry(self.frame_converter, cursor=CURSOR_HAND, textvariable=self.search_var)
-            self.search_entry.place(relx = 0.6, rely = 0.72, anchor = NW)
+            self.search_post_entry = ttk.Entry(self.frame_converter, cursor=CURSOR_HAND, state='disabled', textvariable=self.search_var)
+            self.search_post_entry.place(relx = 0.62, rely = 0.72, anchor = NW)
+            self.search_post_btn = ttk.Button(self.frame_converter, image=master.logo_search, state='disabled',
+                                                cursor=CURSOR_HAND, command = lambda: self.search_post_entry.focus_set(), style="WithoutBack.TButton")
+            self.search_post_btn.place(relx = 0.6, rely = 0.72, anchor = NW)
             self.search_var.trace('w', scankey)
-            Hovertip(self.search_entry, "Search")
 
             self.clear_tree_btn_post = ttk.Button(self.frame_converter, image=master.logo_clear,
-                                    cursor=CURSOR_HAND, command=clear_tree, style="WithoutBack.TButton")
+                                    cursor=CURSOR_HAND, state='disabled', command=clear_tree, style="WithoutBack.TButton")
             self.clear_tree_btn_post.place(relx = 0.95, rely = 0.72, anchor = NE)
-            Hovertip(self.clear_tree_btn_post, "Delete TreeView")
+            Hovertip(self.clear_tree_btn_post, "Delete Tree")
 
             # Treeview widget post_convertion
             self.tree_converted = Treeview(self.frame_converter, columns, width=100)
@@ -732,9 +737,7 @@ class xnat_pic_gui():
                 result = messagebox.askquestion("XNAT-PIC Converter", "Do you want to exit?", icon='warning')
                 if result == 'yes':
                     # Destroy all the existent widgets (Button, Checkbutton, ...)
-                    destroy_widgets([self.conv_selection, self.label_frame_checkbtn, 
-                                    self.tree_labelframe, self.tree_labelframe_post, self.labelframe_main,
-                                    self.bottom_labelframe])
+                    destroy_widgets([self.frame_converter])
                     # Restore the main frame
                     xnat_pic_gui.choose_your_action(master)
 
@@ -774,8 +777,7 @@ class xnat_pic_gui():
         def check_buttons(self, master, press_btn=0):
 
             def back():
-                destroy_widgets([self.conv_selection, self.labelframe_main, self.tree_labelframe, self.label_frame_checkbtn,
-                                self.exit_btn, self.next_btn, self.tree_labelframe_post, self.frame_title])
+                destroy_widgets([self.frame_converter])
                 self.overall_converter(master)
 
             # Initialize the press button value
@@ -788,7 +790,19 @@ class xnat_pic_gui():
             # if press_btn == 0:
             # Disable main buttons
             disable_buttons([self.prj_conv_btn, self.sbj_conv_btn, self.exp_conv_btn])
-            enable_buttons([self.select_folder_button])
+            enable_buttons([self.select_folder_button, self.search_entry, self.search_pre_btn, self.clear_tree_btn, self.search_post_entry, self.search_post_btn])
+
+            # View what conversion you are doing (Project, Subject, Experiment)
+            if self.conv_flag.get() == 0:
+                working_text = 'Convert Project'
+            elif self.conv_flag.get() == 1:
+                working_text = 'Convert Subject'
+            elif self.conv_flag.get() == 2:
+                working_text = 'Convert Experiment'
+
+            self.working_label = ttk.Label(self.frame_converter, text = working_text, font = SMALL_FONT)
+            self.working_label.place(relx = 0.5, rely = 0.30, anchor = N)
+
             # Enable NEXT button only if all the requested fields are filled
             def enable_next(*args):
                 if self.folder_to_convert.get() != '':
