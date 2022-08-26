@@ -1248,7 +1248,7 @@ class xnat_pic_gui():
             #################### Subject form ####################
             # ID
             # Label frame for ID: folder selected, project, subject, exp and acq. date
-            self.label_frame_ID = ttk.LabelFrame(self.frame_metadata, text="ID", padding=5, style = 'Hidden.TLabelframe')
+            self.label_frame_ID = ttk.LabelFrame(self.frame_metadata, text="ID", padding=5, bootstyle="primary")
             #
             # Scroll bar in the Label frame ID
             self.canvas_ID = tk.Canvas(self.label_frame_ID)
@@ -1300,7 +1300,7 @@ class xnat_pic_gui():
 
             #####################################################################
             # Custom Variables (CV)
-            self.label_frame_CV = ttk.LabelFrame(self.frame_metadata, text="Custom Variables", style = 'Hidden.TLabelframe')
+            self.label_frame_CV = ttk.LabelFrame(self.frame_metadata, text="Custom Variables", padding = 5, bootstyle="primary")
             
             # Scroll bar in the Label frame CV
             self.canvas_CV = tk.Canvas(self.label_frame_CV)
