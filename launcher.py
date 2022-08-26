@@ -55,6 +55,7 @@ TEXT_LBL_COLOR = "black"
 BG_BTN_COLOR = "#E5EAF0"
 BG_LBL_COLOR = "black"
 DISABLE_LBL_COLOR = '#D3D3D3'
+TITLE_FONT = ("Inkfree", 36, "italic")
 LARGE_FONT = ("Calibri", 22, "bold")
 SMALL_FONT = ("Calibri", 16, "bold")
 SMALL_FONT_2 = ("Calibri", 10)
@@ -236,12 +237,15 @@ class xnat_pic_gui():
             # Change font according to window size
             if self.width > int(2/3*self.my_width):
                 self.style.configure('TButton', font = LARGE_FONT)
-                
+                self.style.configure('Title.TLabel', font = ("Inkfree", 36, "italic"))
+
             elif self.width > int(self.my_width/3) and self.width < int(2/3*self.my_width):
                 self.style.configure('TButton', font = SMALL_FONT)
+                self.style.configure('Title.TLabel', font = ("Inkfree", 30, "italic"))
             
             elif self.width < int(self.my_width/3):
                 self.style.configure('TButton', font = SMALL_FONT_2)
+                self.style.configure('Title.TLabel', font = ("Inkfree", 24, "italic"))
             # Update the frame widget
             self.frame.update()
 
@@ -368,7 +372,7 @@ class xnat_pic_gui():
                 self.check_buttons(master, press_btn=0)
             self.prj_conv_btn = ttk.Button(self.frame_converter, text="Convert Project", 
                                             command=prj_conv_handler, cursor=CURSOR_HAND)
-            self.prj_conv_btn.place(relx = 0.05, rely = 0.18, relwidth=0.22, anchor = NW)
+            self.prj_conv_btn.place(relx = 0.05, rely = 0.16, relwidth=0.22, anchor = NW)
             Hovertip(self.prj_conv_btn, "Convert a project from Bruker format to DICOM standard")
 
             # Convert Subject
@@ -377,7 +381,7 @@ class xnat_pic_gui():
                 self.check_buttons(master, press_btn=1)
             self.sbj_conv_btn = ttk.Button(self.frame_converter, text="Convert Subject",
                                             command=sbj_conv_handler, cursor=CURSOR_HAND)
-            self.sbj_conv_btn.place(relx = 0.5, rely = 0.18, relwidth=0.22, anchor = N)
+            self.sbj_conv_btn.place(relx = 0.5, rely = 0.16, relwidth=0.22, anchor = N)
             Hovertip(self.sbj_conv_btn, "Convert a subject from Bruker format to DICOM standard")
 
             # Convert Experiment
@@ -386,7 +390,7 @@ class xnat_pic_gui():
                 self.check_buttons(master, press_btn=2)
             self.exp_conv_btn = ttk.Button(self.frame_converter, text="Convert Experiment",
                                             command=exp_conv_handler, cursor=CURSOR_HAND)
-            self.exp_conv_btn.place(relx = 0.95, rely = 0.18, relwidth=0.22, anchor = NE)
+            self.exp_conv_btn.place(relx = 0.95, rely = 0.16, relwidth=0.22, anchor = NE)
 
             Hovertip(self.exp_conv_btn, "Convert an experiment from Bruker format to DICOM standard")
 
@@ -394,7 +398,7 @@ class xnat_pic_gui():
             self.overwrite_flag = tk.IntVar()
             self.btn_overwrite = ttk.Checkbutton(self.frame_converter, text="Overwrite existing folders",                               
                                 onvalue=1, offvalue=0, variable=self.overwrite_flag, bootstyle="round-toggle")
-            self.btn_overwrite.place(relx = 0.05, rely = 0.24, relwidth=0.22, anchor = NW)
+            self.btn_overwrite.place(relx = 0.05, rely = 0.25, anchor = NW)
             Hovertip(self.btn_overwrite, "Overwrite already existent folders if they occur")
 
             # Results button
@@ -403,13 +407,18 @@ class xnat_pic_gui():
             self.results_flag = tk.IntVar()
             self.btn_results = ttk.Checkbutton(self.frame_converter, text='Copy additional files', variable=self.results_flag,
                                 onvalue=1, offvalue=0, command=add_results_handler, bootstyle="round-toggle")
-            self.btn_results.place(relx = 0.05, rely = 0.27, relwidth=0.22, anchor = NW)
+            self.btn_results.place(relx = 0.05, rely = 0.30, anchor = NW)
             Hovertip(self.btn_results, "Copy additional files (results, parametric maps, graphs, ...)\ninto converted folders")
+            
+
+            self.separator = ttk.Separator(self.frame_converter, bootstyle="primary")
+            self.separator.place(relx = 0.05, rely = 0.35, relwidth = 0.9, anchor = NW)
 
             # Treeview 
             def select_folder(*args):
                 # Disable the buttons
                 disable_buttons([self.prj_conv_btn, self.sbj_conv_btn, self.exp_conv_btn])
+
                 # Define the initial directory
                 init_dir = os.path.expanduser("~").replace('\\', '/') + '/Desktop/Dataset'
                 # Ask for project directory
@@ -516,9 +525,9 @@ class xnat_pic_gui():
                     self.tree_to_convert.set(dict_items)
             
             # Initialize the folder_to_upload path
-            self.select_folder_button = ttk.Button(self.frame_converter, text="Select folder", style="TButton",
+            self.select_folder_button = ttk.Button(self.frame_converter, text="Select folder", style="Secondary1.TButton",
                                                     state='disabled', cursor=CURSOR_HAND, command=select_folder)
-            self.select_folder_button.place(relx = 0.05, rely = 0.65, relwidth=0.22, anchor = NW)
+            self.select_folder_button.place(relx = 0.05, rely = 0.4, anchor = NW)
 
             # Clear Tree buttons
             def clear_tree(*args):
@@ -529,7 +538,8 @@ class xnat_pic_gui():
 
             self.clear_tree_btn = ttk.Button(self.frame_converter, image=master.logo_clear,
                                     cursor=CURSOR_HAND, command=clear_tree, style="WithoutBack.TButton")
-            self.clear_tree_btn.place(relx = 0.9, rely = 0.55, anchor = NE)
+            self.clear_tree_btn.place(relx = 0.37, rely = 0.72, anchor = NE)
+            Hovertip(self.clear_tree_btn, "Delete TreeView")
 
             # Search entry to find objects
             def scankey(*args):
@@ -537,10 +547,11 @@ class xnat_pic_gui():
                     self.tree_to_convert.find_items(self.search_var.get())
                 else:
                     self.tree_to_convert.remove_selection()
-
+            
             self.search_var = tk.StringVar()
             self.search_entry = ttk.Entry(self.frame_converter, cursor=CURSOR_HAND, textvariable=self.search_var)
-            self.search_entry.grid(row=1, column=0, sticky=tk.NE, padx=5, pady=5)
+            self.search_entry.place(relx = 0.05, rely = 0.72, anchor = NW)
+            Hovertip(self.search_entry, "Search")
             self.search_var.trace('w', scankey)
             
             # Details Button
@@ -570,13 +581,14 @@ class xnat_pic_gui():
             self.object_folder = tk.StringVar()
             self.details_btn = ttk.Button(self.frame_converter, cursor=CURSOR_HAND, image=master.details_icon, command=show_folder_details,
                                             style="WithoutBack.TButton", state='disabled')
-            self.details_btn.grid(row=1, column=0, sticky=tk.W, padx=5, pady=5)
+            self.details_btn.place(relx = 0.4, rely = 0.72, anchor = NE)
+            Hovertip(self.details_btn, "Show details")
 
             # Treeview widget pre_convertion
             columns = [("#0", "Selected folder"), ("#1", "Last Update"), ("#2", "Size"), ("#3", "Type")]
             self.tree_to_convert = Treeview(self.frame_converter, columns, width=100)
-            self.tree_to_convert.tree.place(relx = 0.05, rely = 0.4, relheight=0.2, relwidth=0.3, anchor = NW)
-            self.tree_to_convert.scrollbar.place(relx = 0.37, rely = 0.4, relheight=0.2, anchor = NW)
+            self.tree_to_convert.tree.place(relx = 0.05, rely = 0.48, relheight=0.2, relwidth=0.35, anchor = NW)
+            self.tree_to_convert.scrollbar.place(relx = 0.42, rely = 0.48, relheight=0.2, anchor = NW)
 
             def tree_thread(*args):
                 progressbar_tree = ProgressBar(master.root, "XNAT-PIC Converter")
@@ -688,39 +700,32 @@ class xnat_pic_gui():
                     enable_buttons([self.prj_conv_btn, self.sbj_conv_btn, self.exp_conv_btn])
 
             self.tree_to_convert.tree.bind("<ButtonRelease-1>", selected_object_handler)
-            # Treeview Label Frame post_convertion
-            # self.tree_labelframe_post = ttk.LabelFrame(master.frame, style="Hidden.TLabelframe")
-            # self.tree_labelframe_post.place(relx=0.95, rely=0.25, anchor=tk.NE)
 
-            # self.fake_btn = ttk.Button(self.tree_labelframe_post, text="", style="TButton",
-            #                                         state='disabled', width=20)
-            # self.fake_btn.grid(row=0, column=0, padx=10, pady=10, sticky=tk.W)
+            # Treeview post_convertion
             # Search entry to find objects
-            # def scankey(*args):
-            #     if self.search_var.get() != '':
-            #         self.tree_converted.find_items(self.search_var.get())
-            #     else:
-            #         self.tree_converted.remove_selection()
+            def scankey(*args):
+                if self.search_var.get() != '':
+                    self.tree_converted.find_items(self.search_var.get())
+                else:
+                    self.tree_converted.remove_selection()
 
-            # self.search_var = tk.StringVar()
-            # self.search_entry = ttk.Entry(self.tree_labelframe_post, cursor=CURSOR_HAND, textvariable=self.search_var)
-            # self.search_entry.grid(row=1, column=0, sticky=tk.NE, padx=5, pady=5)
-            # self.search_var.trace('w', scankey)
+            self.search_var = tk.StringVar()
+            self.search_entry = ttk.Entry(self.frame_converter, cursor=CURSOR_HAND, textvariable=self.search_var)
+            self.search_entry.place(relx = 0.6, rely = 0.72, anchor = NW)
+            self.search_var.trace('w', scankey)
+            Hovertip(self.search_entry, "Search")
 
-            # self.clear_tree_btn_post = ttk.Button(self.tree_labelframe_post, image=master.logo_clear,
-            #                         cursor=CURSOR_HAND, command=clear_tree, style="WithoutBack.TButton")
-            # self.clear_tree_btn_post.grid(row=1, column=1, sticky=tk.W, padx=5, pady=5)
+            self.clear_tree_btn_post = ttk.Button(self.frame_converter, image=master.logo_clear,
+                                    cursor=CURSOR_HAND, command=clear_tree, style="WithoutBack.TButton")
+            self.clear_tree_btn_post.place(relx = 0.95, rely = 0.72, anchor = NE)
+            Hovertip(self.clear_tree_btn_post, "Delete TreeView")
 
-            # # Treeview widget post_convertion
-            # self.tree_converted = Treeview(self.tree_labelframe_post, columns)
-            # self.tree_converted.tree.grid(row=2, column=0, padx=5, pady=5, sticky=tk.NW)
-            # self.tree_converted.scrollbar.grid(row=2, column=1, padx=5, pady=5, sticky=tk.NS)
+            # Treeview widget post_convertion
+            self.tree_converted = Treeview(self.frame_converter, columns, width=100)
+            self.tree_converted.tree.place(relx = 0.95, rely = 0.48, relheight=0.2, relwidth=0.35, anchor = NE)
+            self.tree_converted.scrollbar.place(relx = 0.58, rely = 0.48, relheight=0.2, anchor = NE)
 
             self.convertion_state.trace('w', tree_thread)
-
-            # Bottom Labelframe
-            self.bottom_labelframe = ttk.Labelframe(master.frame, text="", style="Hidden.TLabelframe")
-            self.bottom_labelframe.place(relx=0.25, rely=0.9, anchor=tk.NW, relwidth=0.7)
 
             # EXIT Button 
             def exit_converter():
@@ -734,10 +739,10 @@ class xnat_pic_gui():
                     xnat_pic_gui.choose_your_action(master)
 
             self.exit_text = tk.StringVar()
-            self.exit_btn = ttk.Button(self.bottom_labelframe, cursor=CURSOR_HAND,
-                                    textvariable=self.exit_text, command=exit_converter)
+            self.exit_btn = ttk.Button(self.frame_converter, cursor=CURSOR_HAND,
+                                    textvariable=self.exit_text,  style="Secondary1.TButton", command=exit_converter)
             self.exit_text.set('Exit')
-            self.exit_btn.pack(side='left', padx=25, anchor=tk.NW)
+            self.exit_btn.place(relx = 0.05, rely = 0.9, relwidth=0.15, anchor = NW)
 
             # NEXT Button
             def next_btn_handler(*args):
@@ -762,9 +767,9 @@ class xnat_pic_gui():
                 else:
                     self.converted_folder.set('')
 
-            self.next_btn = ttk.Button(self.bottom_labelframe, text="Next", cursor=CURSOR_HAND, command=next_btn_handler,
+            self.next_btn = ttk.Button(self.frame_converter, text="Next", cursor=CURSOR_HAND,  style="Secondary1.TButton", command=next_btn_handler,
                                     state='disabled')
-            self.next_btn.pack(side='right', padx=25, anchor=tk.NW)
+            self.next_btn.place(relx = 0.95, rely = 0.9, relwidth=0.15, anchor = NE)
 
         def check_buttons(self, master, press_btn=0):
 
