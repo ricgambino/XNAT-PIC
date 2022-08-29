@@ -2393,16 +2393,20 @@ class xnat_pic_gui():
             self.add_file_btn = ttk.Checkbutton(self.frame_uploader, variable=self.add_file_flag, onvalue=1, offvalue=0, 
                                 text="Additional Files", state='disabled', bootstyle="round-toggle", cursor=CURSOR_HAND)
             self.add_file_btn.place(relx = 0.29, rely = 0.25, relwidth = 0.18, anchor = NW)
-
+            
+            # Label Frame Uploader Custom Variables
+            self.custom_var_labelframe = ttk.LabelFrame(self.frame_uploader, style="Hidden.TLabelframe")
+            self.custom_var_labelframe.place(relx = 0.71, rely = 0.31, relwidth = 0.18, anchor = NE)
+            
             # Custom Variables
             self.n_custom_var = tk.IntVar()
             self.n_custom_var.set(3)
             custom_var_options = list(range(0, 4))
-            self.custom_var_list = ttk.OptionMenu(self.frame_uploader, self.n_custom_var, 0, *custom_var_options)
+            self.custom_var_list = ttk.OptionMenu(self.custom_var_labelframe, self.n_custom_var, 0, *custom_var_options)
             self.custom_var_list.config(width=2, cursor=CURSOR_HAND)
-            self.custom_var_list.place(relx = 0.95, rely = 0.25, anchor = NE)
-            self.custom_var_label = ttk.Label(self.frame_uploader, text="Custom Variables")
-            self.custom_var_label.place(relx = 0.77, rely = 0.25, anchor = NW)
+            self.custom_var_list.grid(row=0, column=0, padx=5, pady=5, sticky=tk.NW)
+            self.custom_var_label = ttk.Label(self.custom_var_labelframe, text="Custom Variables")
+            self.custom_var_label.grid(row=0, column=1, padx=2, pady=5, sticky=tk.NW)
 
             # Show Custom Variables
             def display_custom_var(*args):
