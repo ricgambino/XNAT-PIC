@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+"""
+Created on 29-08-2022
+
+@author: Gambino R.
+"""
+
+
 import ttkbootstrap as ttk
 import tkinter as tk
 
