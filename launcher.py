@@ -343,15 +343,36 @@ class xnat_pic_gui():
             self.params = {}
 
             try:
-                destroy_widgets([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn, master.xnat_pic_logo_label])
+                destroy_widgets([master.toolbar_menu, master.convert_btn, master.info_btn, master.upload_btn, master.close_btn, master.xnat_pic_logo_label])
             except:
                 pass
             self.overall_converter(master)
 
         def overall_converter(self, master):
-
+            
             # Create new frame
             master.frame_label.set("Converter")
+            
+            # Menu bar
+            self.menu = ttk.Menu(master.root)
+            file_menu = ttk.Menu(self.menu, tearoff=0)
+            home_menu = ttk.Menu(self.menu, tearoff=0)
+            #exit_menu = ttk.Menu(self.menu, tearoff=0)
+            help_menu = ttk.Menu(self.menu, tearoff=0)
+
+            home_menu.add_command(label="Home", image = master.logo_home, compound='left', command = lambda: exit_converter())
+
+            file_menu.add_command(label="Clear Tree", image = master.logo_clear, compound='left', command = lambda: clear_tree())
+            
+            #exit_menu.add_command(label="Exit", image = master.logo_exit, compound='left', command = lambda: self.exit_metadata(master))
+
+            help_menu.add_command(label="Help", image = master.logo_help, compound='left', command = lambda: messagebox.showinfo("XNAT-PIC","Help"))
+
+            self.menu.add_cascade(label='Home', menu=home_menu)
+            self.menu.add_cascade(label="File", menu=file_menu)
+            self.menu.add_cascade(label="About", menu=help_menu)
+            #self.menu.add_cascade(label="Exit", menu=exit_menu)
+            master.root.config(menu=self.menu)
 
             # Label Frame Main (for Title only)
             self.frame_converter = ttk.Frame(master.frame, style="Hidden.TLabelframe")
@@ -359,7 +380,7 @@ class xnat_pic_gui():
             # Frame Title
             self.frame_title = ttk.Label(self.frame_converter, text="XNAT-PIC Converter", style="Title.TLabel", anchor=tk.CENTER)
             self.frame_title.place(relx = 0.5, rely = 0.05, anchor = CENTER)
-
+            
             # Initialize variables
             self.conv_flag = tk.IntVar()
             self.folder_to_convert = tk.StringVar()
@@ -737,7 +758,7 @@ class xnat_pic_gui():
                 result = messagebox.askquestion("XNAT-PIC Converter", "Do you want to exit?", icon='warning')
                 if result == 'yes':
                     # Destroy all the existent widgets (Button, Checkbutton, ...)
-                    destroy_widgets([self.frame_converter])
+                    destroy_widgets([self.frame_converter, self.menu])
                     # Restore the main frame
                     xnat_pic_gui.choose_your_action(master)
 
@@ -801,7 +822,7 @@ class xnat_pic_gui():
                 working_text = 'Convert Experiment'
 
             self.working_label = ttk.Label(self.frame_converter, text = working_text, font = SMALL_FONT)
-            self.working_label.place(relx = 0.5, rely = 0.30, anchor = N)
+            self.working_label.place(relx = 0.5, rely = 0.35, anchor = CENTER)
 
             # Enable NEXT button only if all the requested fields are filled
             def enable_next(*args):
@@ -1183,7 +1204,7 @@ class xnat_pic_gui():
             self.menu = ttk.Menu(master.root)
             file_menu = ttk.Menu(self.menu, tearoff=0)
             home_menu = ttk.Menu(self.menu, tearoff=0)
-            exit_menu = ttk.Menu(self.menu, tearoff=0)
+            #exit_menu = ttk.Menu(self.menu, tearoff=0)
             help_menu = ttk.Menu(self.menu, tearoff=0)
 
             home_menu.add_command(label="Home", image = master.logo_home, compound='left', command = lambda: self.home_metadata(master))
@@ -1199,14 +1220,14 @@ class xnat_pic_gui():
             file_menu.add_separator()
             file_menu.add_command(label="Save New Project", image = master.logo_save, compound='left', command = lambda: self.save_new_project(master))
             
-            exit_menu.add_command(label="Exit", image = master.logo_exit, compound='left', command = lambda: self.exit_metadata(master))
+            #exit_menu.add_command(label="Exit", image = master.logo_exit, compound='left', command = lambda: self.exit_metadata(master))
 
             help_menu.add_command(label="Help", image = master.logo_help, compound='left', command = lambda: messagebox.showinfo("XNAT-PIC","Help"))
 
             self.menu.add_cascade(label='Home', menu=home_menu)
             self.menu.add_cascade(label="File", menu=file_menu)
             self.menu.add_cascade(label="About", menu=help_menu)
-            self.menu.add_cascade(label="Exit", menu=exit_menu)
+            #self.menu.add_cascade(label="Exit", menu=exit_menu)
             master.root.config(menu=self.menu)
 
             #################### Folder list #################### 
@@ -2132,7 +2153,7 @@ class xnat_pic_gui():
             if access_manager.connected == False:
                 enable_buttons([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn])
             else:
-                destroy_widgets([master.convert_btn, master.info_btn, master.upload_btn, master.close_btn, master.xnat_pic_logo_label])
+                destroy_widgets([master.toolbar_menu, master.convert_btn, master.info_btn, master.upload_btn, master.close_btn, master.xnat_pic_logo_label])
                 self.session = access_manager.session
                 self.overall_uploader(master)
 
@@ -2145,6 +2166,29 @@ class xnat_pic_gui():
 
             self.frame_uploader = ttk.Frame(master.frame, style="Hidden.TLabelframe")
             self.frame_uploader.place(relx = 0.2, rely= 0, relheight=1, relwidth=0.8, anchor=tk.NW)
+
+            # Menu
+            self.menu = ttk.Menu(master.root)
+            file_menu = ttk.Menu(self.menu, tearoff=0)
+            home_menu = ttk.Menu(self.menu, tearoff=0)
+            #exit_menu = ttk.Menu(self.menu, tearoff=0)
+            help_menu = ttk.Menu(self.menu, tearoff=0)
+
+            home_menu.add_command(label="Home", image = master.logo_home, compound='left', command = lambda: exit_uploader())
+
+            file_menu.add_command(label="Clear Tree", image = master.logo_clear, compound='left', command = lambda: clear_tree())
+            
+            #exit_menu.add_command(label="Exit", image = master.logo_exit, compound='left', command = lambda: self.exit_metadata(master))
+
+            help_menu.add_command(label="Help", image = master.logo_help, compound='left', command = lambda: messagebox.showinfo("XNAT-PIC","Help"))
+
+            self.menu.add_cascade(label='Home', menu=home_menu)
+            self.menu.add_cascade(label="File", menu=file_menu)
+            self.menu.add_cascade(label="About", menu=help_menu)
+            #self.menu.add_cascade(label="Exit", menu=exit_menu)
+            master.root.config(menu=self.menu)
+
+
             # Frame Title
             self.frame_title = ttk.Label(self.frame_uploader, text="XNAT-PIC Uploader", style="Title.TLabel", anchor=tk.CENTER)
             self.frame_title.place(relx = 0.5, rely = 0.05, anchor = CENTER)
@@ -2371,7 +2415,7 @@ class xnat_pic_gui():
 
             self.clear_tree_btn = ttk.Button(self.frame_uploader, image=master.logo_clear,
                                     cursor=CURSOR_HAND, command=clear_tree, style="WithoutBack.TButton")
-            self.clear_tree_btn.place(relx = 0.4, rely = 0.65, anchor = NE)
+            self.clear_tree_btn.place(relx = 0.47, rely = 0.25, anchor = NE)
 
             # Search Bar
             def scankey(*args):
@@ -2381,22 +2425,22 @@ class xnat_pic_gui():
                     self.tree.remove_selection()
             self.search_var = tk.StringVar()
             self.search_entry = ttk.Entry(self.frame_uploader, cursor=CURSOR_HAND, textvariable=self.search_var,
-                                            state='disabled')
-            self.search_entry.place(relx = 0.15, rely = 0.65, relwidth=0.1, anchor = NW)
+                                             state='disabled')
+            #self.search_entry.place(relx = 0.15, rely = 0.65, relwidth=0.1, anchor = NW)
             self.search_label = ttk.Button(self.frame_uploader, image=master.logo_search, command = lambda: self.search_entry.focus_set(), state='disabled', cursor=CURSOR_HAND)
-            self.search_label.place(relx = 0.05, rely = 0.65, anchor = NW)
+            # self.search_label.place(relx = 0.05, rely = 0.65, anchor = NW)
 
-            self.search_var.trace('w', scankey)
+            # self.search_var.trace('w', scankey)
 
             # Upload additional files
             self.add_file_flag = tk.IntVar()
             self.add_file_btn = ttk.Checkbutton(self.frame_uploader, variable=self.add_file_flag, onvalue=1, offvalue=0, 
                                 text="Additional Files", state='disabled', bootstyle="round-toggle", cursor=CURSOR_HAND)
-            self.add_file_btn.place(relx = 0.29, rely = 0.25, relwidth = 0.18, anchor = NW)
+            self.add_file_btn.place(relx = 0.29, rely = 0.25, anchor = NW)
             
             # Label Frame Uploader Custom Variables
-            self.custom_var_labelframe = ttk.LabelFrame(self.frame_uploader, style="Hidden.TLabelframe")
-            self.custom_var_labelframe.place(relx = 0.71, rely = 0.31, relwidth = 0.18, anchor = NE)
+            self.custom_var_labelframe = ttk.Labelframe(self.frame_uploader, text = 'Custom Variables')
+            self.custom_var_labelframe.place(relx = 0.53, rely = 0.31, relheight=0.30, relwidth = 0.42, anchor = NW)
             
             # Custom Variables
             self.n_custom_var = tk.IntVar()
@@ -2453,7 +2497,7 @@ class xnat_pic_gui():
                              
                         edit_button = ttk.Button(self.custom_var_labelframe, image=master.logo_edit, command=edit_handler,
                                                     style="WithoutBack.TButton", cursor=CURSOR_HAND)
-                        edit_button.grid(row=1, column=2, padx=5, pady=5, sticky=tk.NW)
+                        edit_button.grid(row=0, column=2, padx=5, pady=5, sticky=tk.NW)
 
                         # Button to confirm changes
                         def accept_changes(*args):
@@ -2467,7 +2511,7 @@ class xnat_pic_gui():
 
                         confirm_button = ttk.Button(self.custom_var_labelframe, image=master.logo_accept, command=accept_changes,
                                                     state='disabled', style="WithoutBack.TButton", cursor=CURSOR_HAND)
-                        confirm_button.grid(row=1, column=3, padx=5, pady=5, sticky=tk.NW)
+                        confirm_button.grid(row=0, column=3, padx=5, pady=5, sticky=tk.NW)
 
                         # Button to abort changes
                         def reject_changes(*args):
@@ -2475,7 +2519,7 @@ class xnat_pic_gui():
                             display_custom_var()
                         reject_button = ttk.Button(self.custom_var_labelframe, image=master.logo_delete, command=reject_changes,
                                                     state='disabled', style="WithoutBack.TButton", cursor=CURSOR_HAND)
-                        reject_button.grid(row=1, column=4, padx=5, pady=5, sticky=tk.NW)
+                        reject_button.grid(row=0, column=4, padx=5, pady=5, sticky=tk.NW)
 
             self.n_custom_var.trace('w', display_custom_var)
             self.selected_item_path.trace('w', display_custom_var)
@@ -2483,13 +2527,14 @@ class xnat_pic_gui():
             ################# Project ###################
             # Menu
             self.project_list_label = ttk.Label(self.frame_uploader, text="Project", font = 'bold', anchor='center')
-            self.project_list_label.place(relx = 0.125, rely = 0.70, relwidth=0.15, anchor = N)
+            self.project_list_label.place(relx = 0.125, rely = 0.65, relwidth=0.15, anchor = N)
+            Hovertip(self.project_list_label, "Select an existing project or create a new one ")
             self.OPTIONS = list(self.session.projects)
             self.prj = tk.StringVar()
             default_value = "--"
             self.project_list = ttk.OptionMenu(self.frame_uploader, self.prj, default_value, *self.OPTIONS)
             self.project_list.configure(state="disabled", cursor=CURSOR_HAND)
-            self.project_list.place(relx = 0.05, rely = 0.74, relwidth=0.15, anchor = NW)
+            self.project_list.place(relx = 0.05, rely = 0.69, relwidth=0.15, anchor = NW)
 
             
             # Button to add a new project
@@ -2504,7 +2549,7 @@ class xnat_pic_gui():
 
             self.new_prj_btn = ttk.Button(self.frame_uploader, state=tk.DISABLED, style="Secondary.TButton", image=master.logo_add,
                                         command=add_project, cursor=CURSOR_HAND, text="New Project", compound='left')
-            self.new_prj_btn.place(relx = 0.05, rely = 0.80, relwidth=0.15, anchor = NW)
+            self.new_prj_btn.place(relx = 0.05, rely = 0.75, relwidth=0.15, anchor = NW)
             
             #############################################
 
@@ -2516,12 +2561,13 @@ class xnat_pic_gui():
             else:
                 self.OPTIONS2 = []
             self.subject_list_label = ttk.Label(self.frame_uploader, text="Subject", font = 'bold', anchor=CENTER)
-            self.subject_list_label.place(relx = 0.5, rely = 0.70, relwidth=0.15, anchor = N)
+            self.subject_list_label.place(relx = 0.5, rely = 0.65, relwidth=0.15, anchor = N)
+            Hovertip(self.subject_list_label, "Select an existing subject or create a new one ")
             self.sub = tk.StringVar()
             self.subject_list = ttk.OptionMenu(self.frame_uploader, self.sub, default_value, *self.OPTIONS2)
             self.subject_list.configure(state="disabled", cursor=CURSOR_HAND)
             
-            self.subject_list.place(relx = 0.5, rely = 0.74, relwidth=0.15, anchor = N)
+            self.subject_list.place(relx = 0.5, rely = 0.69, relwidth=0.15, anchor = N)
             
             # Button to add a new subject
             def add_subject():
@@ -2536,7 +2582,7 @@ class xnat_pic_gui():
 
             self.new_sub_btn = ttk.Button(self.frame_uploader, state=tk.DISABLED, style="Secondary.TButton", image=master.logo_add,
                                         command=add_subject, cursor=CURSOR_HAND, text="New Subject", compound='left')
-            self.new_sub_btn.place(relx = 0.5, rely = 0.80, relwidth=0.15, anchor = N)
+            self.new_sub_btn.place(relx = 0.5, rely = 0.75, relwidth=0.15, anchor = N)
             #############################################
 
             #############################################
@@ -2548,11 +2594,12 @@ class xnat_pic_gui():
             else:
                 self.OPTIONS3 = []
             self.experiment_list_label = ttk.Label(self.frame_uploader, text="Experiment", font = 'bold', anchor='center')
-            self.experiment_list_label.place(relx = 0.875, rely = 0.7, relwidth=0.15, anchor = N)
+            self.experiment_list_label.place(relx = 0.875, rely = 0.65, relwidth=0.15, anchor = N)
+            Hovertip(self.experiment_list_label, "Select an existing experiment or create a new one ")
             self.exp = tk.StringVar()
             self.experiment_list = ttk.OptionMenu(self.frame_uploader, self.exp, default_value, *self.OPTIONS3)
             self.experiment_list.configure(state="disabled", cursor=CURSOR_HAND)
-            self.experiment_list.place(relx = 0.95, rely = 0.74, relwidth=0.15, anchor = NE)
+            self.experiment_list.place(relx = 0.95, rely = 0.69, relwidth=0.15, anchor = NE)
             
             # Button to add a new experiment
             def add_experiment():
@@ -2568,7 +2615,7 @@ class xnat_pic_gui():
 
             self.new_exp_btn = ttk.Button(self.frame_uploader, state=tk.DISABLED, style="Secondary.TButton", image=master.logo_add,
                                         text="New Experiment", command=add_experiment, cursor=CURSOR_HAND, compound='left')
-            self.new_exp_btn.place(relx = 0.95, rely = 0.8, relwidth=0.15, anchor = NE)
+            self.new_exp_btn.place(relx = 0.95, rely = 0.75, relwidth=0.15, anchor = NE)
             #############################################
 
             # Callback methods
