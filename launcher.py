@@ -1538,7 +1538,10 @@ class xnat_pic_gui():
                 return 
             substring = self.path_list1.get(self.selected_folder)
             folder_reader = FolderDetails(substring)
-            folder_reader.read_folder_details()
+            if glob(os.path.join(substring).replace("\\", "/") + '/**/**/**/2dseq', recursive=False):
+                    folder_reader.read_folder_details_raw_images()
+            elif glob(os.path.join(substring).replace("\\", "/") + '/**/**/*.dcm', recursive=False):
+                    folder_reader.read_folder_details_dcm_images()
             folder_reader.save_folder_details()
             folder_reader.show_folder_details(master.root)
             master.root.wait_window(folder_reader.popup)
