@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Created on 29-08-2022
+
+@author: Gambino R.
+"""
+
 from datetime import datetime
 import os
 from glob import glob
