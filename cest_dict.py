@@ -5,6 +5,7 @@ Created on Fri Aug 10 11:18:01 2018
 @author: Sara Zullino
 """
 from pydicom.datadict import DicomDictionary, keyword_dict
+import pydicom.encoders.gdcm
 
 
 def add_cest_dict():

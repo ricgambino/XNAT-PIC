@@ -38,7 +38,6 @@ class Bruker2DicomConverter():
     def __init__(self, params):
 
         self.n_processes = int(cpu_count() - 1)
-        add_cest_dict()
 
         if 'results_flag' in params:
             self.results_flag = params['results_flag']
@@ -257,7 +256,8 @@ class Bruker2DicomConverter():
             img_data.LargestImagePixelValue = int(np.amax(img_data.pixel_array))
             img_data[0x0028, 0x0106].VR = "US"
             img_data[0x0028, 0x0107].VR = "US"
-
+            
+            add_cest_dict()
             # Loop over the number of frames found in img_data
             for iteration, layer in enumerate(img_data.pixel_array, 0):
 
