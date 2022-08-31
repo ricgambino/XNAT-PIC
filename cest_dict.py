@@ -4,7 +4,7 @@ Created on Fri Aug 10 11:18:01 2018
 
 @author: Sara Zullino
 """
-from pydicom.datadict import DicomDictionary, keyword_dict
+from pydicom import datadict
 import pydicom.encoders.gdcm
 import pydicom.encoders.pylibjpeg
 
@@ -33,9 +33,34 @@ def add_cest_dict():
     }
 
     # Update the dictionary itself
-    DicomDictionary.update(new_dict_items)
+    datadict.DicomDictionary.update(new_dict_items)
 
     # Update the reverse mapping from name to tag
     new_names_dict = dict([(val[4], tag) for tag, val in new_dict_items.items()])
 
-    keyword_dict.update(new_names_dict)
+    datadict.keyword_dict.update(new_names_dict)
+    
+def codify_cest_dict(private_creator):
+
+    dict_items = {
+        # tag: (VR, VM, description, is_retired)
+        0x10610010: ("LO", "1", "CEST Parameters Creator", ""), 
+        0x10611001: ("LO", "1", "Chemical Exchange Saturation Type", ""),
+        0x10611002: ("LO", "1", "Saturation Type", ""),
+        0x10611003: ("LO", "1", "Pulse Shape", ""),
+        0x10611004: ("DS", "1", "B1 Saturation (μT)", ""),
+        0x10611005: ("DS", "1", "Pulse Length (ms)", ""),
+        0x10611006: ("DS", "1", "Pulse Number", ""),
+        0x10611007: ("DS", "1", "Interpulse Delay", ""),
+        0x10611008: ("DS", "1", "Saturation Length (ms)", ""),
+        0x10611009: ("DS", "1", "Readout Time", ""),
+        0x10611010: ("DS", "1", "Pulse Length 2 (ms)", ""),
+        0x10611011: ("DS", "1", "Duty Cycle", ""),
+        0x10611012: ("DS", "1", "Recovery Time (ms)", ""),
+        0x10611013: ("DS", "1", "Measurement Number", ""),
+        0x10611014: ("DS", "1", "Saturation Offset (Hz)", ""),
+        0x10611015: ("DS", "1", "Saturation Offset (ppm)", ""),
+
+    }
+
+    datadict.add_private_dict_entries(private_creator, dict_items)
