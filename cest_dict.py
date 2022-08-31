@@ -6,6 +6,7 @@ Created on Fri Aug 10 11:18:01 2018
 """
 from pydicom.datadict import DicomDictionary, keyword_dict
 import pydicom.encoders.gdcm
+import pydicom.encoders.pylibjpeg
 
 
 def add_cest_dict():
