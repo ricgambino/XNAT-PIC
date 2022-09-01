@@ -18,7 +18,7 @@ from progress_bar import ProgressBar
 from dicom_converter import Bruker2DicomConverter
 from glob import glob
 from tabulate import tabulate
-import datetime 
+import datetime as dt
 from datetime import date
 import threading
 from dotenv import load_dotenv
@@ -1577,7 +1577,7 @@ class xnat_pic_gui():
                 self.entries_value_ID[4].insert(0, str(self.cal.entry.get()))
                 if self.entries_value_ID[4].get():
                     try:
-                        acq_date = datetime.datetime.strptime(self.entries_value_ID[4].get(), '%Y-%m-%d')
+                        acq_date = dt.datetime.strptime(self.entries_value_ID[4].get(), '%Y-%m-%d')
                         self.today = date.today()
                         self.today = self.today.strftime('%Y-%m-%d')
                         if acq_date.strftime('%Y-%m-%d') > self.today:
@@ -1666,7 +1666,8 @@ class xnat_pic_gui():
 
             if self.entries_value_ID[4].get():
                 try:
-                    datetime.datetime.strptime(self.entries_value_ID[4].get(), '%Y-%m-%d')
+                    a = self.entries_value_ID[4].get()
+                    dt.datetime.strptime(self.entries_value_ID[4].get(), '%Y-%m-%d')
                 except Exception as e:
                     raise Exception ("Incorrect data format in acquisition date, should be YYYY-MM-DD")
 
@@ -2872,8 +2873,7 @@ class xnat_pic_gui():
                 # Restore main frame buttons
                 messagebox.showinfo("XNAT-PIC Uploader","Done! Your project is uploaded on XNAT platform.")
             # Destroy all the existent widgets (Button, OptionMenu, ...)
-            destroy_widgets([self.label_frame_uploader, self.uploader_data, self.custom_var_labelframe,
-                                self.exit_btn, self.next_btn, self.folder_selection_label_frame, self.frame_title])
+            destroy_widgets([self.frame_uploader, self.menu])
             # Clear and update session cache
             self.session.clearcache()
             self.overall_uploader(master)
@@ -2979,8 +2979,7 @@ class xnat_pic_gui():
                 # Restore main frame buttons
                 messagebox.showinfo("XNAT-PIC Uploader","Done! Your subject is uploaded on XNAT platform.")
             # Destroy all the existent widgets (Button, OptionMenu, ...)
-            destroy_widgets([self.label_frame_uploader, self.uploader_data, self.custom_var_labelframe,
-                                self.exit_btn, self.next_btn, self.folder_selection_label_frame, self.frame_title])
+            destroy_widgets([self.frame_uploader, self.menu])
             # Clear and update session cache
             self.session.clearcache()
             self.overall_uploader(master)
@@ -3086,8 +3085,7 @@ class xnat_pic_gui():
                 # Restore main frame buttons
                 messagebox.showinfo("XNAT-PIC Uploader","Done! Your experiment is uploaded on XNAT platform.")
             # Destroy all the existent widgets (Button, OptionMenu, ...)
-            destroy_widgets([self.label_frame_uploader, self.uploader_data, self.custom_var_labelframe,
-                                self.exit_btn, self.next_btn, self.folder_selection_label_frame, self.frame_title])
+            destroy_widgets([self.frame_uploader, self.menu])
             # Clear and update session cache
             self.session.clearcache()
             self.overall_uploader(master)
@@ -3125,8 +3123,7 @@ class xnat_pic_gui():
                 messagebox.showinfo("XNAT-PIC Uploader","Done! Your file is uploaded on XNAT platform.")
 
             # Destroy all the existent widgets (Button, OptionMenu, ...)
-            destroy_widgets([self.label_frame_uploader, self.uploader_data, self.custom_var_labelframe,
-                                self.exit_btn, self.next_btn, self.folder_selection_label_frame, self.frame_title])
+            destroy_widgets([self.frame_uploader, self.menu])
             # Clear and update session cache
             self.session.clearcache()
             self.overall_uploader(master)
