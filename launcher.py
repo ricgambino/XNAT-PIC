@@ -579,13 +579,11 @@ class xnat_pic_gui():
             self.search_var.trace('w', scankey)
             
             # Details Button
-            def show_folder_details(*args):
+            def show_folder_details_pre(*args):
             
                 folder_reader = FolderDetails(self.object_folder.get())
                 if glob(os.path.join(self.object_folder.get()).replace("\\", "/") + '/**/**/**/2dseq', recursive=False):
                     folder_reader.read_folder_details_raw_images()
-                elif glob(os.path.join(self.object_folder.get()).replace("\\", "/") + '/**/**/*.dcm', recursive=False):
-                    folder_reader.read_folder_details_dcm_images()
                 folder_reader.save_folder_details()
                 folder_reader.show_folder_details(master.root)
                 master.root.wait_window(folder_reader.popup)
@@ -597,13 +595,11 @@ class xnat_pic_gui():
                                     self.tree_to_convert.tree.item(curItem)['text']).replace("\\", "/"))
                 if glob(self.object_folder.get() + '/**/**/**/2dseq', recursive=False) != []:
                     self.details_btn.config(state='normal')
-                elif glob(self.object_folder.get().replace("\\", "/") + '/**/**/*.dcm', recursive=False):
-                    self.details_btn.config(state='normal')
                 else:
                     self.details_btn.config(state='disabled')
 
             self.object_folder = tk.StringVar()
-            self.details_btn = ttk.Button(self.frame_converter, cursor=CURSOR_HAND, image=master.details_icon, command=show_folder_details,
+            self.details_btn = ttk.Button(self.frame_converter, cursor=CURSOR_HAND, image=master.details_icon, command=show_folder_details_pre,
                                             style="WithoutBack.TButton", state='disabled')
             self.details_btn.place(relx = 0.4, rely = 0.72, anchor = NE)
             Hovertip(self.details_btn, "Show details")
@@ -742,16 +738,43 @@ class xnat_pic_gui():
             self.search_var.trace('w', scankey)
 
             self.clear_tree_btn_post = ttk.Button(self.frame_converter, image=master.logo_clear,
-                                    cursor=CURSOR_HAND, state='disabled', command=clear_tree, style="WithoutBack.TButton")
-            self.clear_tree_btn_post.place(relx = 0.95, rely = 0.72, anchor = NE)
+                                    cursor=CURSOR_HAND, state='normal', command=clear_tree, style="WithoutBack.TButton")
+            self.clear_tree_btn_post.place(relx = 0.92, rely = 0.72, anchor = NE)
             Hovertip(self.clear_tree_btn_post, "Delete Tree")
+
+            def show_folder_details_post(*args):
+            
+                folder_reader = FolderDetails(self.object_folder_post.get())
+                if glob(os.path.join(self.object_folder_post.get()).replace("\\", "/") + '/**/**/*.dcm', recursive=False):
+                    folder_reader.read_folder_details_dcm_images()
+                folder_reader.save_folder_details()
+                folder_reader.show_folder_details(master.root)
+                master.root.wait_window(folder_reader.popup)
+
+            # Show Details Button
+            self.object_folder_post = tk.StringVar()
+            self.details_btn_post = ttk.Button(self.frame_converter, cursor=CURSOR_HAND, image=master.details_icon, command=show_folder_details_post,
+                                            style="WithoutBack.TButton", state='disabled')
+            self.details_btn_post.place(relx = 0.95, rely = 0.72, anchor = NE)
+            Hovertip(self.details_btn, "Show details")
 
             # Treeview widget post_convertion
             self.tree_converted = Treeview(self.frame_converter, columns, width=100)
             self.tree_converted.tree.place(relx = 0.95, rely = 0.48, relheight=0.2, relwidth=0.35, anchor = NE)
             self.tree_converted.scrollbar.place(relx = 0.58, rely = 0.48, relheight=0.2, anchor = NE)
 
+            def selected_object_handler_post(*args):
+                curItem = self.tree_converted.tree.focus()
+                parentItem = self.tree_converted.tree.parent(curItem)
+                self.object_folder_post.set(os.path.join(self.converted_folder.get(), self.tree_converted.tree.item(parentItem)['text'],
+                                    self.tree_converted.tree.item(curItem)['text']).replace("\\", "/"))
+                if glob(self.object_folder_post.get().replace("\\", "/") + '/**/**/*.dcm', recursive=False) != []:
+                    self.details_btn_post.config(state='normal')
+                else:
+                    self.details_btn_post.config(state='disabled')
+
             self.convertion_state.trace('w', tree_thread)
+            self.tree_converted.tree.bind("<ButtonRelease-1>", selected_object_handler_post)
 
             # EXIT Button 
             def exit_converter():
