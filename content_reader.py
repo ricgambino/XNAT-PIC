@@ -17,6 +17,8 @@ from read_method import read_method_parameters
 import pandas as pd
 from dateutil.parser import parse
 import pydicom
+from cest_dict import codify_cest_dict
+from pydicom import datadict
 
 
 class FolderDetails():
@@ -120,6 +122,12 @@ class FolderDetails():
             dcm_file = glob(current_dir + "/*.dcm", recursive=False)[0]
 
             dataset = pydicom.dcmread(dcm_file)
+            print(dataset[0x10610010].value)
+            codify_cest_dict(dataset[0x10610010].value)
+            for k,v in datadict.DicomDictionary.items():
+                print(k,v)
+            description = dataset[0x10611005].description
+            print(description)
             self.data[str(dir)]["ProtocolName"] = dataset.ProtocolName
             self.data[str(dir)]["Method"] = dataset.SequenceName.replace(" ", "")
             self.data[str(dir)]["NSlices"] = dataset.NumberOfSlices
@@ -128,7 +136,7 @@ class FolderDetails():
             self.data[str(dir)]["MatrixSize"] = list(dataset.AcquisitionMatrix)
             self.data[str(dir)]["InstanceModality"] = dataset.Modality
             self.data[str(dir)]["AcquisitionDate"] = datetime.strftime(datetime.strptime(dataset.AcquisitionDate, "%Y%m%d"), "%d/%m/%Y")
-            if hasattr(dataset, "PulseLength"):
+            if "Pulse Length (ms)" in dataset[0x10611005].description:
                 self.data[str(dir)]["PulseLength[ms]"] = dataset.PulseLength
             if hasattr(dataset, "PulseAmplitude"):
                 self.data[str(dir)]["PulseAmplitude[uT]"] = dataset.PulseAmplitude
