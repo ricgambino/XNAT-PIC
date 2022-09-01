@@ -122,12 +122,7 @@ class FolderDetails():
             dcm_file = glob(current_dir + "/*.dcm", recursive=False)[0]
 
             dataset = pydicom.dcmread(dcm_file)
-            print(dataset[0x10610010].value)
             codify_cest_dict(dataset[0x10610010].value)
-            for k,v in datadict.DicomDictionary.items():
-                print(k,v)
-            description = dataset[0x10611005].description
-            print(description)
             self.data[str(dir)]["ProtocolName"] = dataset.ProtocolName
             self.data[str(dir)]["Method"] = dataset.SequenceName.replace(" ", "")
             self.data[str(dir)]["NSlices"] = dataset.NumberOfSlices
@@ -136,14 +131,14 @@ class FolderDetails():
             self.data[str(dir)]["MatrixSize"] = list(dataset.AcquisitionMatrix)
             self.data[str(dir)]["InstanceModality"] = dataset.Modality
             self.data[str(dir)]["AcquisitionDate"] = datetime.strftime(datetime.strptime(dataset.AcquisitionDate, "%Y%m%d"), "%d/%m/%Y")
-            if "Pulse Length (ms)" in dataset[0x10611005].description:
-                self.data[str(dir)]["PulseLength[ms]"] = dataset.PulseLength
-            if hasattr(dataset, "PulseAmplitude"):
-                self.data[str(dir)]["PulseAmplitude[uT]"] = dataset.PulseAmplitude
-            if hasattr(dataset, "PulseLength2"):
-                self.data[str(dir)]["PulseLength2[ms]"] = dataset.PulseLength2
-            if hasattr(dataset, "NumberOfFrequencies"):
-                self.data[str(dir)]["NSaturationFrequencies"] = dataset.NumberOfFrequencies
+            if "Pulse Length" in dataset[0x10611005].name:
+                self.data[str(dir)]["PulseLength[ms]"] = dataset[0x10611005].value
+            if "B1 Saturation" in dataset[0x10611004].name:
+                self.data[str(dir)]["PulseAmplitude[uT]"] = dataset[0x10611004].value
+            if "Pulse Length 2" in dataset[0x10611010].name:
+                self.data[str(dir)]["PulseLength2[ms]"] = dataset[0x10611010].value
+            if "Measurement Number" in dataset[0x10611013].name:
+                self.data[str(dir)]["NSaturationFrequencies"] = dataset[0x10611013].value
         # Transform dictionary into Dataframe
         self.pd_data = pd.DataFrame.from_dict(self.data, orient="index")
         # Sort dataframe according to folder name
