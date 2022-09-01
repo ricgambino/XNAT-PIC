@@ -1,10 +1,6 @@
-from faulthandler import disable
-from logging import exception
 import shutil
 import tkinter as tk
 from tkinter import MULTIPLE, NE, NW, SINGLE, W, filedialog, messagebox
-# from PIL import Image, ImageTk
-#from tkinter import ttk
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 import ttkbootstrap.themes.standard 
@@ -29,7 +25,6 @@ from multiprocessing import Pool, cpu_count
 from credential_manager import CredentialManager
 import pandas
 from layout_style import MyStyle
-import babel.numbers
 from multiprocessing import freeze_support
 from ScrollableNotebook import *
 from create_objects import ProjectManager, SubjectManager, ExperimentManager
@@ -331,7 +326,9 @@ class xnat_pic_gui():
 
         # Close button
         def close_window(*args):
-            self.root.destroy()
+            result = messagebox.askyesno("XNAT-PIC", "XNAT-PIC will be closed. Are you sure?")
+            if result:
+                self.root.destroy()
         self.close_btn = ttk.Button(self.frame, text="Quit", command=close_window,
                                         cursor=CURSOR_HAND)
         self.close_btn.place(relx=0.95, rely=0.9, anchor=tk.NE, relwidth=0.1)
@@ -431,7 +428,6 @@ class xnat_pic_gui():
             self.btn_results.place(relx = 0.05, rely = 0.30, anchor = NW)
             Hovertip(self.btn_results, "Copy additional files (results, parametric maps, graphs, ...)\ninto converted folders")
             
-
             self.separator = ttk.Separator(self.frame_converter, bootstyle="primary")
             self.separator.place(relx = 0.05, rely = 0.35, relwidth = 0.9, anchor = NW)
 
@@ -445,10 +441,26 @@ class xnat_pic_gui():
                 # Ask for project directory
                 self.folder_to_convert.set(filedialog.askdirectory(parent=master.root, initialdir=init_dir, 
                                                                 title="XNAT-PIC: Select directory in Bruker ParaVision format"))
+
+                # Check if folder has not been selected (Cancel button)
                 if self.folder_to_convert.get() == '':
                     messagebox.showerror("XNAT-PIC Converter", "Please select a folder.")
                     #enable_buttons([self.prj_conv_btn, self.sbj_conv_btn, self.exp_conv_btn])
                     return
+
+                # Check if the selected folder is related to the right convertion flag
+                if self.conv_flag.get() == 0:
+                    if glob(self.folder_to_convert.get() + '/**/**/**/**/**/2dseq', recursive=False) == []:
+                        messagebox.showerror("XNAT-PIC Converter", "The selected folder is not project related.\nPlease select an other directory.")
+                        return
+                elif self.conv_flag.get() == 1:
+                    if glob(self.folder_to_convert.get() + '/**/**/**/**/2dseq', recursive=False) == []:
+                        messagebox.showerror("XNAT-PIC Converter", "The selected folder is not subject related.\nPlease select an other directory.")
+                        return
+                elif self.conv_flag.get() == 2:
+                    if glob(self.folder_to_convert.get() + '/**/**/**/2dseq', recursive=False) == []:
+                        messagebox.showerror("XNAT-PIC Converter", "The selected folder is not experiment related.\nPlease select an other directory.")
+                        return
                 # Reset convertion_state parameter
                 self.convertion_state.set(0)
             
