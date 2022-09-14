@@ -327,7 +327,7 @@ Please, **cite these repositories** by using: <br>
 <!-- CONTACT -->
 ## Contact
 
-**Riccardo Gambino** <br> [![LinkedIn][linkedin-shield]][linkedin-url] [![Publons][publons-shield]][publons-url] [![Twitter][twitter-shield]][twitter-url]<br>
+**Riccardo Gambino** <br> [![LinkedIn][linkedin-shield]][linkedin-url] <br>
 Molecular Imaging Center<br>
 Department of Molecular Biotechnology and Health Sciences<br>
 Università degli Studi di Torino<br>
@@ -336,6 +336,16 @@ Università degli Studi di Torino<br>
   </a>
   Via Nizza 52 | 10126 Torino, Italy<br>
 riccardo.gambino@unito.it | T +39 011 670 6473 
+  
+**Francesco Gammaraccio** <br>
+Molecular Imaging Center<br>
+Department of Molecular Biotechnology and Health Sciences<br>
+Università degli Studi di Torino<br>
+<a  href="https://en.unito.it/">
+    <img src="https://innovazione.zipnews.it/wp-content/uploads/sites/6/2017/07/unito.png" alt="Logo" width="220"/> <br>
+  </a>
+  Via Nizza 52 | 10126 Torino, Italy<br>
+francesco.gammaraccio@unito.it | T +39 011 670 6473 
 
 <!-- ACKNOWLEDGEMENTS -->
 ## Funding
