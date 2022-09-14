@@ -329,22 +329,13 @@ Please, **cite these repositories** by using: <br>
 
 **Riccardo Gambino** <br> [![LinkedIn][linkedin-shield]][linkedin-url] [![Publons][publons-shield]][publons-url] [![Twitter][twitter-shield]][twitter-url]<br>
 Molecular Imaging Center<br>
-Department of Molecular Biotechnology and Health Sciences <br>
+Department of Molecular Biotechnology and Health Sciences<br>
+Università degli Studi di Torino<br>
 <a  href="https://en.unito.it/">
     <img src="https://innovazione.zipnews.it/wp-content/uploads/sites/6/2017/07/unito.png" alt="Logo" width="220"/> <br>
   </a>
   Via Nizza 52 | 10126 Torino, Italy<br>
 riccardo.gambino@unito.it | T +39 011 670 6473 
-  
-**Francesco Gammaraccio** <br> [![LinkedIn][linkedin-shield]][linkedin-url] [![Publons][publons-shield]][publons-url] [![Twitter][twitter-shield]][twitter-url]<br>
-Molecular Imaging Center<br>
-Department of Molecular Biotechnology and Health Sciences <br>
-<a  href="https://en.unito.it/">
-    <img src="https://innovazione.zipnews.it/wp-content/uploads/sites/6/2017/07/unito.png" alt="Logo" width="220"/> <br>
-  </a>
-  Via Nizza 52 | 10126 Torino, Italy<br>
-francesco.gammaraccio@unito.it | T +39 011 670 6473 
-
 
 <!-- ACKNOWLEDGEMENTS -->
 ## Funding
@@ -385,10 +376,10 @@ francesco.gammaraccio@unito.it | T +39 011 670 6473
 [license-shield]: https://img.shields.io/github/license/szullino/XNAT-PIC
 [license-url]: https://github.com/szullino/XNAT-PIC/blob/master/LICENSE.md
 [linkedin-shield]: https://img.shields.io/badge/LinkedIn-blue/?style=flat&logo=linkedin&color=0088CC&labelColor=blue
-[linkedin-url]: https://www.linkedin.com/in/sarazullino/
+[linkedin-url]: https://www.linkedin.com/in/riccardo-gambino
 [publons-shield]: https://img.shields.io/badge/Publons-blue/?style=flat&logo=publons&color=0088CC&labelColor=blue
-[publons-url]: https://publons.com/researcher/3602369/sara-zullino/
-[twitter-url]: https://twitter.com/szullina
+[publons-url]: 
+[twitter-url]: 
 [twitter-shield]: https://img.shields.io/badge/Twitter-blue/?style=flat&logo=twitter&color=FFFFFF&labelColor=white
 [xnat-pic-screenshot]: images/Fig1.png
 
